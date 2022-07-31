@@ -11,7 +11,14 @@ const Num = (val) => typeof val === "number";
 const Fn = (val) => typeof val === "function";
 const Obj = (val) => typeof val === "object";
 const Str = (val) => typeof val === "string";
-const Null = (val) => val === null;
+
+const Null = (val) => {
+  if (val === false || val === undefined || val === null) {
+    return null;
+  }
+
+  throw new Error(`${val} cannot be cast to null.`);
+};
 
 // variant type (TODO)
 const Variant = {};
@@ -31,7 +38,7 @@ const variant = (values) => {
 
   valueEntries.forEach(([tag, type]) => {
     variant[tag] = (val) => {
-      type(val);
+      val = type(val);
 
       return Object.defineProperty({ [tag]: val }, "__type__", {
         value: variant,
@@ -43,6 +50,9 @@ const variant = (values) => {
   });
 
   variant.__type__ = Variant;
+
+  // TODO
+  variant.match = () => {};
 
   return variant;
 };
@@ -79,53 +89,58 @@ const option = (T) =>
 
 const MaybeIP = option(IpAddr);
 
-// const { Some: ip, None: none } = MaybeIP.Some({ IPv4: "192.168.1.3" });
-const { Some: ip, None: none } = MaybeIP.None;
+const ifLet = () => {};
+
+console.log(MaybeIP.None());
+
+let { Some: ip, None: none } = MaybeIP.Some({ IPv4: "192.168.1.3" });
+console.log(ip);
+console.log(none);
+
+({ Some: ip, None: none } = MaybeIP.None());
+
 console.log(ip);
 console.log(none);
 
 // struct type (TODO)
-let Struct = {};
+// let Struct = {};
 
-const struct = (fields) => {
-  // TODO ensure that all field values are types
+// const struct = (fields) => {
+//   // TODO ensure that all field values are types
 
-  // annotation function
-  const struct = (incoming) => {
-    // TODO validate
+//   // cast incoming into instance of struct
+//   const struct = (incoming) => {
+//     // TODO validate
 
-    // apply type reference
-    incoming.__type__ = struct;
-    Object.defineProperty(incoming, "__type__", {
-      writable: false,
-      enumerable: false,
-    });
+//     // apply type reference
+//     incoming.__type__ = struct;
+//     Object.defineProperty(incoming, "__type__", {
+//       writable: false,
+//       enumerable: false,
+//     });
 
-    return incoming;
-  };
-  struct.__type__ = Struct;
+//     return incoming;
+//   };
+//   struct.__type__ = Struct;
 
-  Object.entries(fields).forEach(([k, v]) => {
-    fields[k] = v;
-  });
+//   Object.entries(fields).forEach(([k, v]) => {
+//     fields[k] = v;
+//   });
 
-  return struct;
-};
+//   return struct;
+// };
 
-// function types
-const fn = () => {};
+// // function types
+// const fn = () => {};
 
-// pattern match
-const match = () => {};
+// // pattern match
+// const match = () => {};
 
 // Struct = struct({
 //   subtype: (other) => {}, // if this is a subtype of other
 //   is(other) {
 //     return this.__type__ === other.__type__;
 //   },
-//  from(other) { // cast value into this type
-//
-//  }
 // });
 
 // creates a ktype using only information from the given value.
