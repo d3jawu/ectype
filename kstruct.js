@@ -1,61 +1,12 @@
-"use strict";
-// library
+import { typeOf } from "./types.js";
+import { Null, Str } from "./primitives.js";
+import { variant, Variant } from "./variant.js";
 
-// base type
-const Type = (val) => typeof val === "function" && val.__type__ === Type;
-Type.__type__ = Type;
-
-// primitive types
-const Bool = (val) => typeof val === "boolean";
-const Num = (val) => typeof val === "number";
-const Fn = (val) => typeof val === "function";
-const Obj = (val) => typeof val === "object";
-const Str = (val) => typeof val === "string";
-
-const Null = (val) => {
-  if (val === false || val === undefined || val === null) {
-    return null;
-  }
-
-  throw new Error(`${val} cannot be cast to null.`);
-};
-
-// variant type (TODO)
-const Variant = {};
-
-const variant = (values) => {
-  const valueEntries = Object.entries(values);
-
-  const variant = (incoming) => {
-    if (typeof incoming !== "object") {
-      throw new Error("Variant instance must be specified with an object.");
-    }
-
-    const [[tag, val]] = Object.entries(incoming);
-
-    return variant[tag](val);
-  };
-
-  valueEntries.forEach(([tag, type]) => {
-    variant[tag] = (val) => {
-      val = type(val);
-
-      return Object.defineProperty({ [tag]: val }, "__type__", {
-        value: variant,
-        enumerable: false,
-        configurable: false,
-        writable: false,
-      });
-    };
+const option = (T) =>
+  variant({
+    Some: T,
+    None: Null,
   });
-
-  variant.__type__ = Variant;
-
-  // TODO
-  variant.match = () => {};
-
-  return variant;
-};
 
 const directions = variant({
   North: Null,
@@ -63,6 +14,15 @@ const directions = variant({
   East: Null,
   West: Null,
 });
+
+let myDir = directions.North();
+let myDir2 = directions.North();
+let myDir3 = directions.South();
+console.log(typeOf(myDir) === directions.North);
+console.log(typeOf(myDir) === typeOf(myDir2));
+console.log(typeOf(myDir) === typeOf(myDir3));
+
+console.log(directions.has(myDir));
 
 const IpAddr = variant({
   IPv4: Str,
@@ -75,21 +35,9 @@ const myAddrAlt = IpAddr.IPv4("192.168.1.2");
 console.log(myAddr);
 console.log(myAddrAlt);
 
-console.log(directions.North === directions.North);
-console.log(directions.North === directions.South);
-
 const { IPv4: addr4 } = myAddr;
 console.log(addr4);
-
-const option = (T) =>
-  variant({
-    Some: T,
-    None: Null,
-  });
-
 const MaybeIP = option(IpAddr);
-
-const ifLet = () => {};
 
 console.log(MaybeIP.None());
 
@@ -97,10 +45,11 @@ let { Some: ip, None: none } = MaybeIP.Some({ IPv4: "192.168.1.3" });
 console.log(ip);
 console.log(none);
 
-({ Some: ip, None: none } = MaybeIP.None());
+// ({ Some: ip, None: none } = MaybeIP.None());
+const maybeVal = MaybeIP.None();
+console.log(maybeVal);
 
-console.log(ip);
-console.log(none);
+console.log(typeOf(maybeVal) === MaybeIP.Some);
 
 // struct type (TODO)
 // let Struct = {};
