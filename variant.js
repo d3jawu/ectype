@@ -5,10 +5,10 @@ const Variant = {};
 const variant = (values) => {
   // type constructor is convenience function, same as using one of the tag constructors.
   const variant = (incoming) => {
-    if (typeof incoming !== "object") {
+    if (typeof incoming !== "object")
       throw new Error("Variant instance must be specified with an object.");
-    }
 
+    // TODO error handle
     const [[tag, val]] = Object.entries(incoming);
 
     return variant[tag](val);
@@ -25,7 +25,7 @@ const variant = (values) => {
       });
     };
 
-    // set constructor's type as parent variant (?)
+    // set constructor's own type as the variant it belongs to
     Object.defineProperty(variant[tag], "__type__", {
       value: variant,
     });

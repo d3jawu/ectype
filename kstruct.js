@@ -1,12 +1,7 @@
 import { typeOf } from "./types.js";
 import { Null, Str } from "./primitives.js";
 import { variant, Variant } from "./variant.js";
-
-const option = (T) =>
-  variant({
-    Some: T,
-    None: Null,
-  });
+import { option } from "./stdlib.js";
 
 const directions = variant({
   North: Null,
@@ -50,34 +45,6 @@ const maybeVal = MaybeIP.None();
 console.log(maybeVal);
 
 console.log(typeOf(maybeVal) === MaybeIP.Some);
-
-// struct type (TODO)
-// let Struct = {};
-
-// const struct = (fields) => {
-//   // TODO ensure that all field values are types
-
-//   // cast incoming into instance of struct
-//   const struct = (incoming) => {
-//     // TODO validate
-
-//     // apply type reference
-//     incoming.__type__ = struct;
-//     Object.defineProperty(incoming, "__type__", {
-//       writable: false,
-//       enumerable: false,
-//     });
-
-//     return incoming;
-//   };
-//   struct.__type__ = Struct;
-
-//   Object.entries(fields).forEach(([k, v]) => {
-//     fields[k] = v;
-//   });
-
-//   return struct;
-// };
 
 // // function types
 // const fn = () => {};
