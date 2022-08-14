@@ -1,13 +1,24 @@
+import { Type } from "./types.js";
+
 // TODO struct type
 let Struct = {};
 
 const struct = (fields) => {
-  // TODO ensure that all field values are types
+  // make sure each field entry is a type
+  Object.values(fields).forEach((type) => {
+    Type(type);
+  });
 
   // cast incoming into instance of struct
   const struct = (incoming) => {
+    // check field types
+    Object.entries(fields).forEach(([field, fieldType]) => {
+      fieldType(incoming[field]);
+    });
+
     // shallow copy
     const out = { ...incoming };
+
     // apply type reference
     Object.defineProperty(out, "__type__", {
       value: struct,
@@ -30,3 +41,5 @@ const struct = (fields) => {
 
   return struct;
 };
+
+export { Struct, struct };

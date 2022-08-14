@@ -1,7 +1,8 @@
 import { typeOf } from "./types.js";
-import { Null, Str } from "./primitives.js";
+import { Null, Num, Bool, Str } from "./primitives.js";
 import { variant, Variant } from "./variant.js";
 import { option } from "./stdlib.js";
+import { struct } from "./struct.js";
 
 const directions = variant({
   North: Null,
@@ -75,14 +76,26 @@ console.log(typeOf(maybeVal) === MaybeIP.Some);
 // === what do I want to be able to do? ===
 
 // type construction (declare a type and get a reference to it)
-// const MyStruct = struct({
-//   x: Num,
-//   y: Bool,
-// });
+const MyStruct = struct({
+  x: Num,
+  y: Bool,
+});
 
 // type annotation and checking
-// const myStructInstance = MyStruct({});
+const myStructInstance = MyStruct({
+  x: 20,
+  y: false,
+});
 // console.log(myStructInstance);
+
+const MaybeMyStruct = option(MyStruct);
+const maybeMyStruct = MaybeMyStruct.Some({
+  x: 30,
+  y: false,
+});
+
+console.log(MaybeMyStruct);
+console.log(maybeMyStruct);
 
 // type introsepction
 // const myStructInstanceType = typeOf(myStructInstance);
