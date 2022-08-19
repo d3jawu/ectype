@@ -4,6 +4,7 @@ import { variant, Variant } from "./variant.js";
 import { option } from "./stdlib.js";
 import { struct } from "./struct.js";
 
+// variants
 const directions = variant({
   North: Null,
   South: Null,
@@ -33,6 +34,8 @@ console.log(myAddrAlt);
 
 const { IPv4: addr4 } = myAddr;
 console.log(addr4);
+
+// option type
 const MaybeIP = option(IpAddr);
 
 console.log(MaybeIP.None());
@@ -74,6 +77,8 @@ console.log(typeOf(maybeVal) === MaybeIP.Some);
 // const tuple = (types) => {};
 
 // === what do I want to be able to do? ===
+
+// structs (record types)
 
 // type construction (declare a type and get a reference to it)
 const MyStruct = struct({
