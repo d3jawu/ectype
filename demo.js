@@ -1,11 +1,11 @@
-import { typeOf } from "./types.js";
-import { Null, Num, Bool, Str } from "./primitives.js";
-import { variant, Variant } from "./variant.js";
-import { option } from "./stdlib.js";
-import { struct } from "./struct.js";
+import typeOf from "./lib/typeOf.js";
+import { Null, Num, Bool, Str } from "./lib/primitives.js";
+import Variant from "./lib/variant.js";
+import { option } from "./lib/stdlib.js";
+import Struct from "./lib/struct.js";
 
 // variants
-const directions = variant({
+const directions = Variant({
   North: Null,
   South: Null,
   East: Null,
@@ -21,7 +21,7 @@ console.log(typeOf(myDir) === typeOf(myDir3));
 
 console.log(directions.has(myDir));
 
-const IpAddr = variant({
+const IpAddr = Variant({
   IPv4: Str,
   IPv6: Str,
 });
@@ -81,7 +81,7 @@ console.log(typeOf(maybeVal) === MaybeIP.Some);
 // structs (record types)
 
 // type construction (declare a type and get a reference to it)
-const MyStruct = struct({
+const MyStruct = Struct({
   x: Num,
   y: Bool,
 });
@@ -109,15 +109,6 @@ console.log(maybeMyStruct);
 // parameterized types
 
 // tuple types
-
-// variants
-
-// const linkedList = variant({
-//   Node: [],
-//   None: [],
-// });
-
-// const ipAddr = variant({});
 
 // introspection on sum types
 
