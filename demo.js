@@ -1,15 +1,16 @@
 import typeOf from "./lib/typeOf.js";
-import { Null, Num, Bool, Str } from "./lib/primitives.js";
-import Variant from "./lib/variant.js";
+import Type from "./lib/type.js";
+import { Unit, Num, Bool, Str } from "./lib/primitives.js";
+import { variant } from "./lib/variant.js";
 import { option } from "./lib/stdlib.js";
-import Struct from "./lib/struct.js";
+import { struct } from "./lib/struct.js";
 
 // variants
-const directions = Variant({
-  North: Null,
-  South: Null,
-  East: Null,
-  West: Null,
+const [directions] = variant({
+  North: Unit,
+  South: Unit,
+  East: Unit,
+  West: Unit,
 });
 
 let myDir = directions.North();
@@ -21,10 +22,12 @@ console.log(typeOf(myDir) === typeOf(myDir3));
 
 console.log(directions.has(myDir));
 
-const IpAddr = Variant({
+const [IpAddr] = variant({
   IPv4: Str,
   IPv6: Str,
 });
+
+throw new Error("done");
 
 const myAddr = IpAddr({ IPv4: "192.168.1.1" });
 const myAddrAlt = IpAddr.IPv4("192.168.1.2");
