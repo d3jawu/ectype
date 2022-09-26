@@ -5,6 +5,8 @@ import { variant } from "./lib/variant.js";
 import { option } from "./lib/stdlib.js";
 import { struct } from "./lib/struct.js";
 
+import { typeOf, Type, Unit, Num, Bool, Str, struct } from "./runtime.js";
+
 // variants
 const [directions] = variant({
   North: Unit,
