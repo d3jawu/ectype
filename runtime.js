@@ -1,9 +1,3 @@
-// Let me tell you a story of creation, of something springing forth from nothing.
-
-// In the beginning, there was only the *idea* that something could exist.
-let Type;
-
-// Let's start with the most primitive forms of existence.
 const Bool = Object.defineProperty(
   (val) => {
     if (typeof val === "boolean") return val;
@@ -55,7 +49,83 @@ const typeOf = (val) =>
 
 export default typeOf;
 
-let ListType = struct({
+// we need list, objectMap, fn, and struct types to define struct.
+// since struct doesn't exist yet, we have to define them manually.
+
+// StructType describes the type created when calling `struct()`.
+// (That type describes the values created by its constructor.)
+// StructType is built up over time.
+let StructType = {
+  fields: undefined,
+  from: undefined,
+};
+
+// Make a StructType instance.
+// StructType instances are not made with `struct()`.
+const makeStructTypeInstance = (fields) => {
+  return Object.defineProperty(
+    {
+      fields,
+      // TODO replace "from" with struct() itself
+      from: () => {
+        throw new Error(
+          "StructType cannot be constructed. Use `struct` instead."
+        );
+      },
+    },
+    "__type__",
+    { value: StructType }
+  );
+};
+
+// TODO don't allow casting to Type (so user has to go through existing means like struct)
+const Type = makeStructTypeInstance({
+  from: undefined,
+});
+
+// the object map type is first since it's needed early and doesn't contain any of the other types.
+const ObjectMapType = makeStructTypeInstance({
+  contains: Type,
+});
+
+makeObjectMapType = (contains) => {
+  return Object.defineProperty(
+    {
+      contains,
+    },
+    "__type__",
+    { value: ObjectMapType }
+  );
+};
+
+// produces a fully valid objectMap type, but doesn't check against Type
+// and isn't itself a typed function
+const objectMap = (contains) => {
+  return (incoming) => {};
+};
+
+// call ObjectMapType() with a version that doesn't call Type.
+// Type cannot be called until Variant is defined, at the very end.
+structType.fields = ObjectMapType;
+
+let listType, ListType;
+listType = Object.defineProperty(
+  {
+    fields: {
+      contains: Type,
+    },
+  },
+  "__type__",
+  { value: structType }
+);
+ListType = (incoming) => {};
+
+structType = Object.defineProperty({
+  fields: objectMap(Type)[1],
+});
+
+// this is the code we actually want to be able to run:
+ListType = struct({
   contains: Type,
 });
 
@@ -108,11 +178,6 @@ const fn = (params, returns) => {
 
 export { fn, FnType };
 
-// type for structs that describe structs.
-// since it is itself a struct, we have to construct it manually because the
-// struct constructor function doesn't exist yet.
-let StructType;
-
 // `struct` generates a constructor for this struct type, and a type object
 const struct = (fields) => {
   // TODO check this with an objectMap(Type) instead of manually
@@ -122,7 +187,7 @@ const struct = (fields) => {
   });
 
   // TODO resolve circular reference
-  const type = StructType({
+  const type = makeStructTypeInstance({
     fields,
   });
 
@@ -193,3 +258,6 @@ export { variant, VariantType };
 });
 
 export { Type };
+
+// "real" struct function
+const struct = fn([objectMap(Type)], fn([objectMap()]));

@@ -7,6 +7,4 @@ const option = (T) =>
     None: Unit,
   });
 
-const objectMap = (T) => () => {};
-
-export { option, objectMap };
+export { option };
