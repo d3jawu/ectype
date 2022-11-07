@@ -1,17 +1,20 @@
-// sets type in-place on a previously untyped object.
+// First off, a couple utility functions.
+
+// `typed` sets __type__ in-place on a previously untyped object.
 const typed = (type, val) =>
   Object.defineProperty(val, "__type__", { value: type });
 
-// shallow-copies val into a new object with type.
+// `newTyped` shallow-copies `val` into a new object with type `type`.
 const newTyped = (type, val) =>
   Object.defineProperty({ ...val }, "__type__", { value: type });
 
-// writes fields to an object in-place
+// `update` writes fields to an object in-place, to avoid reassignment.
 const update = (existing, updates) => {
   Object.entries(updates).forEach(([k, v]) => {
     existing[k] = v;
   });
 
+  // __type__ can only be written once
   if (!!updates.__type__) {
     typed(updates.__type__, existing);
   }
@@ -23,24 +26,28 @@ const UntypedObject = {};
 const UntypedFunction = {};
 const UntypedArray = {};
 
-// placeholder
-const ObjectMap = {
-  // fields: ObjectMapOfType.from({
-  //   contains: Type,
-  //   from: FnFromUntypedObjectToObjectMap
-  // })
-};
-
+// ObjectMap and Type must be declared first so they can be referred to,
+// and then filled out later.
+const ObjectMap = {};
 const Type = {};
 
 // hard-coded ObjectMap that contains Types
+// this is a very important type, because it describes the `fields` key that all types use
+// to describe the values they create.
 const ObjectMapOfType = typed(ObjectMap, {
-  fields: {}, // TODO
+  fields: {}, // TODO set this to ObjectMap fields. Needing to later update interior values sucks.
   contains: Type,
   from: (obj) => newTyped(obj, ObjectMapOfType),
 });
 
-// type is the root self-describing type.
+update(ObjectMapOfType.fields, {
+  fields: ObjectMapOfType.from({
+    fields: ObjectMapOfType,
+    contains: Type,
+  }),
+});
+
+// Type is the root self-describing type.
 update(Type, {
   fields: ObjectMapOfType.from({
     fields: ObjectMapOfType,
@@ -61,27 +68,10 @@ const Any = typed(Type, {
   from: (val) => typed(val, Any),
 });
 
-const List = {};
-
-// hard-coded List that contains Types
-const ListOfType = typed(List, {
-  fields: ObjectMapOfType.from({
-    // placeholder
-  }),
-  contains: Type,
-  from: (list) => {
-    if (!Array.isArray(list)) {
-      throw new Error("must be a list");
-    }
-
-    return typed(ListOfType, list);
-  },
-});
-
 const Fn = typed(Type, {
   fields: ObjectMapOfType.from({
     fields: ObjectMapOfType,
-    params: ListOfType,
+    params: Type,
     returns: Type,
     // from
   }),
@@ -106,27 +96,6 @@ update(Fn.fields, {
   from: Fn.from(UntypedFunction, Fn),
 });
 
-const FnFromTypeToType = Fn.of(Type, Type);
-console.log(FnFromTypeToType);
-console.log(FnFromTypeToType.__type__);
+// bootstrapping boundary: at this point Type, ObjectMap, Fn are complete and all their features may be used safely without caveat.
 
-update(List, {
-  fields: ObjectMapOfType.from({
-    fields: ObjectMapOfType,
-    contains: Type,
-    // from: FnFromTypeToAny,
-  }),
-  from: (type) =>
-    typed(
-      {
-        fields: ObjectMapOfType.from({
-          get: FnFromNumTotype,
-        }),
-        contains: type,
-        from: FnFromUntypedArrayTotype,
-      },
-      Type
-    ),
-});
-
-// bootstrapping boundary: at this point, ObjectMap, Fn and List are fully complete and all their features may be used safely without caveat.
+export { Type, ObjectMap, Fn };
