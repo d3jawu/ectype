@@ -1,6 +1,22 @@
 import { strict as assert } from "node:assert";
 
-import { Type, ObjectMap, Fn } from "./core.js";
+import { Type, ObjectMap, Any } from "./core.js";
+
+// confirm that all fields have been filled out
+[
+  Type,
+  // ObjectMap,
+  // Fn,
+].forEach((v, i) => {
+  Object.entries(v).forEach(([key, val]) =>
+    assert.ok(
+      typeof val !== "undefined",
+      `key ${key} on object ${i} was not set.`
+    )
+  );
+});
+
+console.log(Type);
 
 const testCircular = (template, actual) => {
   const refs = {};
@@ -15,7 +31,6 @@ const testCircular = (template, actual) => {
   });
 
   const testObject = (t, a) => {
-    // analyze actual objects
     Object.entries(t).forEach(([key, templateVal]) => {
       ({
         object: () => {
@@ -23,10 +38,10 @@ const testCircular = (template, actual) => {
         },
         string: () => {
           if (templateVal[0] === "$") {
-            // test reference
+            // test reference equality
             assert.ok(
               a[key] === refs[templateVal],
-              `Got ${a[templateVal]}, expected ${refs[templateVal]}`
+              `Got ${a[templateVal]}, expected reference ${templateVal} for key ${key}`
             );
           } else {
             throw new Error("Can't test for string equality yet.");
@@ -36,14 +51,13 @@ const testCircular = (template, actual) => {
     });
   };
 
-  // test with each entry in `actual` as its own root
   Object.entries(actual).forEach(([key, actualVal]) => {
     testObject(template[key], actualVal);
   });
 };
 
 // the shape of an object map of types
-const objectMapOfTypeShape = {
+const objectMapOfTypeInstanceShape = {
   contains: "$Type",
 };
 
@@ -51,11 +65,16 @@ testCircular(
   {
     $Type: {
       __type__: "$Type",
+      fields: objectMapOfTypeInstanceShape,
+    },
+    $Any: {
+      __type__: "$Type",
     },
   },
   {
     $Type: Type,
     // $ObjectMap: ObjectMap,
     // $Fn: Fn,
+    $Any: Any,
   }
 );
