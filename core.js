@@ -1,33 +1,34 @@
-// First off, a couple utility functions.
+// First off, a couple utility functions, all prefixed with an underscore.
 
 // `typed` sets __type__ in-place on a previously untyped object.
-const typed = (type, val) =>
+const _typed = (type, val) =>
   Object.defineProperty(val, "__type__", { value: type });
 
-// `newTyped` shallow-copies `val` into a new object with type `type`.
-const newTyped = (type, val) =>
-  Object.defineProperty({ ...val }, "__type__", { value: type });
-
 // `update` writes fields to an object in-place, to avoid reassignment.
-const update = (existing, updates) => {
+const _update = (existing, updates) => {
   Object.entries(updates).forEach(([k, v]) => {
     existing[k] = v;
   });
 
   // __type__ can only be written once
   if (!!updates.__type__) {
-    typed(updates.__type__, existing);
+    _typed(updates.__type__, existing);
   }
 };
 
 // `incomplete` retains a reference to an object or function that will need fields filled in later before
 // initialization is complete, along with a tag referring to how to complete that object.
-const incompletes = [];
-const incomplete = (completion, val) => {
-  incompletes.push({ val, completion });
+const _incompletes = [];
+const _incomplete = (completion, val) => {
+  _incompletes.push({ val, completion });
 
   return val;
 };
+
+// `as` creates a shallow copy of `val` with its type set to `type`.
+// It does not perform any runtime type-checking.
+const as = (type, val) =>
+  Object.defineProperty({ ...val }, "__type__", { value: type });
 
 // These Untyped types are used to represent types of incoming untyped values from JS,
 // about which no guarantees can be made. Mainly used at app boundaries.
@@ -39,93 +40,92 @@ const UntypedArray = {};
 // and then filled out later. We set their keys to undefined now, so we can check
 // later that all of them have been properly filled in.
 // (An undefined key is not the same as an unset key; it appears during enumeration.)
-const ObjectMap = incomplete("ObjectMap", {
+const ObjectMapType = _incomplete("ObjectMap", {
   fields: undefined,
   __type__: undefined,
-  from: undefined,
 });
-const Type = incomplete("Type", {
+const Type = _incomplete("Type", {
   fields: undefined,
   __type__: undefined,
-  from: undefined,
 });
+_typed(Type, Type);
 
 // hard-coded Type for an ObjectMap that contains Types
 // this is a very important type, because it describes the `fields` key that all types use
 // to describe the values they create.
-// We have to be careful to only use `ObjectMapOfType.from` during initialization, and not allow
+// We have to be careful to only use `ObjectMapOfType.of` during initialization, and not allow
 // it to be used afterwards, because it creates incomplete values.
-const TempObjectMapOfType = typed(ObjectMap, {
-  fields: incomplete("ObjectMapOfTypeFields", {}),
+const IncompleteObjectMapOfType = _typed(ObjectMapType, {
+  fields: _incomplete("ObjectMapOfTypeFields", {}),
   contains: Type,
   of: (obj) =>
-    incomplete(
-      "ObjectMapOfTypeConstructor",
-      newTyped(
-        {
-          obj,
-          has: undefined,
-          get: undefined,
-          set: undefined,
-          keys: undefined,
-          values: undefined,
-        },
-        TempObjectMapOfType
-      ) // This function needs to be typed
-    ),
+    _incomplete("ObjectMapOfTypeConstructor", {
+      obj,
+      has: undefined,
+      get: undefined,
+      set: undefined,
+      keys: undefined,
+      values: undefined,
+      __type__: undefined,
+    }),
 });
 
 // Type is the root self-describing type.
-update(Type, {
-  fields: TempObjectMapOfType.of({
-    fields: TempObjectMapOfType,
+_update(Type, {
+  fields: IncompleteObjectMapOfType.of({
+    fields: IncompleteObjectMapOfType,
   }),
 });
-typed(Type, Type);
 
-update(ObjectMap, {
-  fields: TempObjectMapOfType.of({
-    fields: TempObjectMapOfType,
+_update(ObjectMapType, {
+  fields: IncompleteObjectMapOfType.of({
+    fields: IncompleteObjectMapOfType,
     contains: Type,
   }),
 });
 
 // a type with no fields, that anything can be cast to.
-const Any = typed(Type, {
-  fields: TempObjectMapOfType.of({}),
-  from: (val) => typed(val, Any),
+const Any = _typed(Type, {
+  fields: IncompleteObjectMapOfType.of({}),
 });
 
-const Fn = typed(Type, {
-  fields: TempObjectMapOfType.of({
-    fields: TempObjectMapOfType,
-    params: Type,
+const FnType = _typed(Type, {
+  fields: IncompleteObjectMapOfType.of({
+    fields: IncompleteObjectMapOfType,
+    param: Type,
     returns: Type,
-    // from
   }),
-  from: (type) => newTyped(type, Fn),
-  of: (params, returns) => {
-    const newFnType = Fn.from({
-      fields: TempObjectMapOfType.from({}),
-      params,
+  // incomplete: `of` needs to be a typed function
+  // and it needs its Incomplete call
+  of: (param, returns) => {
+    return as(FnType, {
+      fields: IncompleteObjectMapOfType.of({}),
+      param,
       returns,
-      // from:
     });
-
-    update(newFnType, {
-      // TODO
-      from: typed(Fn.of(), (fn) => newTyped(newFnType, fn)),
-    });
-
-    return newFnType;
   },
-});
-update(Fn.fields, {
-  from: Fn.from(UntypedFunction, Fn),
 });
 
 // bootstrapping boundary: at this point Type, ObjectMap, Fn are complete and all their features may be used safely without caveat.
 
-console.log(incompletes);
+const typeOf = (val) =>
+  ({
+    number: () => {
+      throw new Error("Not yet implemented");
+    },
+    string: () => {
+      throw new Error("Not yet implemented");
+    },
+    object: () => {
+      if (val.__type__) {
+        return val.__type__;
+      } else {
+        return Any;
+      }
+    },
+  }[typeof val]());
 
-export { Type, ObjectMap, Fn, Any };
+console.log(_incompletes);
+console.log(FnType.of(Type, Type));
+
+export { Type, ObjectMapType as ObjectMap, Any };

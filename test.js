@@ -78,3 +78,5 @@ testCircular(
     $Any: Any,
   }
 );
+
+// TODO: assert ObjectMapType.of(Type) deep-equals anything that used IncompleteObjectMapOfType
