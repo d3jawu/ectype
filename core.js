@@ -6,10 +6,9 @@ const _objectMapOfType = (val) => {
     get: (key) => val[key],
     has: (key) => val.hasOwnProperty(key),
     set: (key, newVal) => (val[key] = newVal),
-    // TODO
-    // keys: () => Object.keys(val),
-    // values: () => Object.values(val),
-    // entries: () => Object.entries(val),
+    keys: () => Object.keys(val),
+    values: () => Object.values(val),
+    entries: () => Object.entries(val),
   };
 
   _objectMapsOfType.push(m);
@@ -21,6 +20,7 @@ const _objectMapOfType = (val) => {
 const bool = _objectMapOfType({});
 const num = _objectMapOfType({});
 const str = _objectMapOfType({});
+const unit = _objectMapOfType({});
 
 // mark a function with its parameter and return types
 // TODO check param and return type specs as well
@@ -51,24 +51,113 @@ type.get = _type.get;
 type.has = _type.has;
 type.set = _type.set;
 
-const objectMap = (T, val) => ({
-  get: typedFn(str, T, (key) => val[key]),
-  has: typedFn(str, bool, (key) => val.hasOwnProperty(key)),
-  set: typedFn(str, T, (key, newVal) => (val[key] = newVal)),
-  // TODO
-  // keys: () => Object.keys(val),
-  // values: () => Object.values(val),
-  // entries: () => Object.entries(val),
+const typeRegistry = (() => {
+  const byName = {};
+
+  return {
+    register: () => {
+      byName;
+    },
+  };
+})();
+
+// create a tuple from an array.
+const tuple = (arr) =>
+  arr.reduce((acc, curr, i) => {
+    acc["$" + i] = curr;
+    return acc;
+  }, {});
+
+const listContainingType = _objectMapOfType({
+  get: _objectMapOfType({
+    "()": num,
+    "=>": type,
+  }),
+  set: _objectMapOfType({
+    "()": _objectMapOfType({
+      $0: num,
+      $1: type,
+    }),
+    "=>": type,
+  }),
+  append: _objectMapOfType({
+    "()": type,
+    "=>": type,
+  }),
+  append: _objectMapOfType({
+    "()": unit,
+    "=>": num,
+  }),
+});
+
+// create a map backed by an object. keys are always strings.
+const objectMap = (T, obj) => {
+  // generates the type for a list of T.
+  const generateListType = (T) => {
+    if (T == type) {
+      return listContainingType;
+    } else {
+      return objectMap(type, {
+        get: objectMap(type, {
+          "()": num,
+          "=>": T,
+        }),
+        set: objectMap(type, {
+          "()": objectMap(type, {
+            $0: num,
+            $1: T,
+          }),
+          "=>": T,
+        }),
+        append: objectMap(type, {
+          "()": T,
+          "=>": T,
+        }),
+        append: objectMap(type, {
+          "()": unit,
+          "=>": num,
+        }),
+      });
+    }
+  };
+
+  const listContainingT = generateListType(T);
+  const listContainingStr = generateListType(str);
+  const listContainingStrT = generateListType(
+    objectMap(type, {
+      $0: str,
+      $1: T,
+    })
+  );
+
+  return {
+    get: typedFn(str, T, (key) => obj[key]),
+    has: typedFn(str, bool, (key) => obj.hasOwnProperty(key)),
+    set: typedFn(str, T, (key, val) => (obj[key] = val)),
+    keys: typedFn(unit, listContainingStr, () => Object.keys(val)),
+    values: typedFn(unit, listContainingT, () => Object.values(val)),
+    entries: typedFn(unit, listContainingStrT, () => Object.entries(val)),
+  };
+};
+
+// create a list backed by an array.
+const arrayList = (T, arr) => ({
+  get: typedFn(num, T, (i) => arr[i]),
+  set: typedFn(num, T, (i, val) => (arr[i] = val)),
+  append: typedFn(T, T, (val) => (arr.push(val), val)),
+  len: typedFn(unit, num, () => arr.length),
 });
 
 // complete incomplete object maps
 _objectMapsOfType.forEach((om) => {
-  const val = om._obj;
-  om.get = typedFn(str, type, (key) => val[key]);
-  om.has = typedFn(str, bool, (key) => val.hasOwnProperty(key));
-  om.set = typedFn(str, type, (key, newVal) => (val[key] = newVal));
+  const fullMap = objectMap(type, om._obj);
+  Object.entries(fullMap).forEach(([key, val]) => {
+    om[key] = fullMap[key];
+  });
   delete om._obj;
 });
+
+// Bootstrapping boundary
 
 const typeOf = (val) =>
   ({
