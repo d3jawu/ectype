@@ -1,4 +1,4 @@
-import type { Type, VariantType, StructType } from "./types.js";
+import type { Type, VariantType, StructType, TypeType } from "./types.js";
 
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
@@ -26,7 +26,7 @@ const variant = (options: Record<string, Type>): VariantType => {
     has: (name) => options.hasOwnProperty(name),
     option: (name) => options[name],
     sub: (other) => {
-      if (other.kind !== "variant") {
+      if (other.__ktype__ !== "variant") {
         return false;
       }
 
@@ -36,11 +36,10 @@ const variant = (options: Record<string, Type>): VariantType => {
         other.has(key) && options[key].sub(other.option(key));
       });
     },
-    kind: "variant",
+    __ktype__: "variant",
   };
 };
 
-// make a schema for a struct
 const struct = (shape: Record<string, Type>): StructType => {
   const valid = (val: unknown) => {
     if (typeof val !== "object" || val === null) {
@@ -61,7 +60,7 @@ const struct = (shape: Record<string, Type>): StructType => {
     field: (field: string) => shape[field],
     // fields: (): [string, Type][] => Object.entries(shape),
     sub: (other): boolean => {
-      if (other.kind !== "struct") {
+      if (other.__ktype__ !== "struct") {
         return false;
       }
 
@@ -71,8 +70,16 @@ const struct = (shape: Record<string, Type>): StructType => {
         shape[key] && shape[key].sub(other.field(key));
       });
     },
-    kind: "struct",
+    __ktype__: "struct",
   };
+};
+
+// the type that describes type-values themselves.
+const Type: TypeType = {
+  sub: (other) => false,
+  valid: (val) =>
+    typeof val === "object" && val !== null && val.hasOwnProperty("__ktype__"),
+  __ktype__: "type",
 };
 
 export { variant, struct };

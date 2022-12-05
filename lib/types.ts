@@ -6,7 +6,8 @@ export type Type =
   | NumType
   | StrType
   | VariantType
-  | StructType;
+  | StructType
+  | TypeType;
 
 // `sub` returns true if this type is a subtype of `other` - that is,
 // it can be safely used anywhere `other` is used.
@@ -16,7 +17,7 @@ export interface NullType {
   conform: (val: unknown) => Option<null>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
-  kind: "null";
+  __ktype__: "null";
 }
 
 export interface BoolType {
@@ -24,7 +25,7 @@ export interface BoolType {
   conform: (val: unknown) => Option<boolean>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
-  kind: "bool";
+  __ktype__: "bool";
 }
 
 export interface NumType {
@@ -32,7 +33,7 @@ export interface NumType {
   conform: (val: unknown) => Option<number>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
-  kind: "num";
+  __ktype__: "num";
 }
 
 export interface StrType {
@@ -40,7 +41,7 @@ export interface StrType {
   conform: (val: unknown) => Option<string>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
-  kind: "str";
+  __ktype__: "str";
 }
 
 export interface VariantType {
@@ -50,7 +51,7 @@ export interface VariantType {
   has: (name: string) => boolean;
   option: (name: string) => Type;
   sub: (other: Type) => boolean;
-  kind: "variant";
+  __ktype__: "variant";
 }
 
 export interface StructType {
@@ -60,5 +61,11 @@ export interface StructType {
   has: (key: string) => boolean;
   field: (key: string) => Type;
   sub: (other: Type) => boolean;
-  kind: "struct";
+  __ktype__: "struct";
+}
+
+export interface TypeType {
+  valid: (val: unknown) => boolean;
+  sub: (other: Type) => boolean;
+  __ktype__: "type";
 }
