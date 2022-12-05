@@ -1,23 +1,11 @@
-type Optional<T> = { Some: T } | { None: null };
+type Option<T> = { Some: T } | { None: null };
 
-interface Type<T> {
+export interface Type<T> {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Optional<T>;
+  conform: (val: unknown) => Option<T>;
   valid: (val: unknown) => boolean;
   [others: string]: unknown;
 }
-
-const Null: Type<null> = {
-  from: (val) => val,
-  conform: (val) => (val === null ? { None: null } : { Some: null }),
-  valid: (val) => val === null,
-};
-
-const Num: Type<number> = {
-  from: (val) => val,
-  conform: (val) => (typeof val === "number" ? { Some: val } : { None: null }),
-  valid: (val) => typeof val === "number",
-};
 
 const variant = (options: Record<string, Type<unknown>>): Type<unknown> => {
   const valid = (val: unknown) => {
@@ -44,16 +32,12 @@ const variant = (options: Record<string, Type<unknown>>): Type<unknown> => {
   };
 };
 
-const Str = {};
-
 // make a schema for a struct
 const struct = (shape: Record<string, Type<unknown>>): Type<unknown> => {
   const valid = (val: unknown) => {
     if (typeof val !== "object" || val === null) {
       return false;
     }
-
-    console.log(val);
 
     return Object.keys(shape).every((key) => shape[key].valid(val[key]));
   };
@@ -69,4 +53,4 @@ const struct = (shape: Record<string, Type<unknown>>): Type<unknown> => {
   };
 };
 
-export { Null, Num, variant, struct };
+export { variant, struct };
