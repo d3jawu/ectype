@@ -1,4 +1,4 @@
-import { struct } from "../../lib/core/structures.js";
+import { struct } from "../../lib/core/struct.js";
 import { Num } from "../../lib/core/primitives.js";
 
 import { strict as assert } from "node:assert";
