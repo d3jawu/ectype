@@ -25,6 +25,7 @@ const variant = (options: Record<string, Type>): VariantType => {
     // match: () => {},
     has: (name) => options.hasOwnProperty(name),
     option: (name) => options[name],
+    options: () => Object.entries(options),
     sub: (other) => {
       if (other.__ktype__ !== "variant") {
         return false;
@@ -58,6 +59,7 @@ const struct = (shape: Record<string, Type>): StructType => {
     valid,
     has: (field: string) => shape.hasOwnProperty(field),
     field: (field: string) => shape[field],
+    fields: () => Object.entries(shape),
     // fields: (): [string, Type][] => Object.entries(shape),
     sub: (other): boolean => {
       if (other.__ktype__ !== "struct") {
@@ -66,9 +68,9 @@ const struct = (shape: Record<string, Type>): StructType => {
 
       // to be a subtype of `other`, shape must at least have all the fields of `other`,
       // and each field must be a subtype of that same field on `other`.
-      return Object.keys(other).every((key) => {
-        shape[key] && shape[key].sub(other.field(key));
-      });
+      return other
+        .fields()
+        .every(([key]) => shape[key] && shape[key].sub(other.field(key)));
     },
     __ktype__: "struct",
   };

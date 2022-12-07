@@ -60,6 +60,7 @@ export interface VariantType {
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
   option: (name: string) => Type;
+  options: () => [string, Type][];
   sub: (other: Type) => boolean;
   __ktype__: "variant";
 }
@@ -70,6 +71,7 @@ export interface StructType {
   valid: (val: unknown) => boolean;
   has: (key: string) => boolean;
   field: (key: string) => Type;
+  fields: () => [string, Type][];
   sub: (other: Type) => boolean;
   __ktype__: "struct";
 }

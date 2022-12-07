@@ -18,14 +18,11 @@ const failed = tests.filter((test) => {
 
   try {
     test();
-
     process.stdout.write(chalk.black.bgGreenBright("PASS") + "\n");
-
     return false;
   } catch (e) {
     process.stdout.write(chalk.black.bgRedBright("FAIL") + "\n");
     console.log(e);
-
     return true;
   }
 });

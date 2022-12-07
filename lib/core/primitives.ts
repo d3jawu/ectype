@@ -13,7 +13,7 @@ const Bool: BoolType = {
   from: (val) => val,
   conform: (val) => (typeof val === "boolean" ? { Some: val } : { None: null }),
   valid: (val) => typeof val === "boolean",
-  sub: (other) => other["kind" as keyof typeof other] === "bool",
+  sub: (other) => other["__ktype__" as keyof typeof other] === "bool",
   __ktype__: "bool",
 };
 
@@ -21,7 +21,7 @@ const Num: NumType = {
   from: (val) => val,
   conform: (val) => (typeof val === "number" ? { Some: val } : { None: null }),
   valid: (val) => typeof val === "number",
-  sub: (other) => other["kind" as keyof typeof other] === "num",
+  sub: (other) => other["__ktype__" as keyof typeof other] === "num",
   __ktype__: "num",
 };
 
