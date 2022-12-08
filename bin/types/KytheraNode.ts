@@ -1,3 +1,22 @@
-import type { NumericLiteral, BooleanLiteral } from "@swc/core";
+import type {
+  NullLiteral,
+  BooleanLiteral,
+  NumericLiteral,
+  BigIntLiteral,
+  StringLiteral,
+  TemplateLiteral,
+  DebuggerStatement,
+  EmptyStatement,
+} from "@swc/core";
 
-export type KytheraNode = NumericLiteral | BooleanLiteral;
+export type KytheraNode =
+  // literals
+  | NullLiteral
+  | BooleanLiteral
+  | NumericLiteral
+  | BigIntLiteral
+  | StringLiteral
+  | TemplateLiteral
+  // statements
+  | DebuggerStatement
+  | EmptyStatement;
