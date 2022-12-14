@@ -59,7 +59,8 @@ export interface VariantType {
   conform: (val: unknown) => Option<{ [key: string]: any }>;
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
-  option: (name: string) => Type;
+  get: (name: string) => Type; // gets the type held in that option.
+  option: (name: string) => Type; // gets the wrapping struct type for that option.
   options: () => [string, Type][];
   sub: (other: Type) => boolean;
   __ktype__: "variant";

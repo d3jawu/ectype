@@ -1,5 +1,5 @@
 // stdlib.js contains library functions implemented entirely in Kythera user-space.
-import { variant } from "../core/variant";
+import { variant } from "../core/variant.js";
 
 import { Null } from "../core/primitives.js";
 

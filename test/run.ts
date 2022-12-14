@@ -1,20 +1,29 @@
 import * as variants from "./tests/variants.js";
 import * as structs from "./tests/structs.js";
-const imports = [variants, structs];
+const imports = { variants, structs };
 
 import chalk from "chalk";
 
-const tests = imports.flatMap((i) => Object.values(i));
+const tests = Object.entries(imports).flatMap(([module, tests]) =>
+  Object.entries(tests).map(([name, test]) => ({
+    module,
+    name,
+    test,
+  }))
+);
+
+const testName = (module: string, name: string) => `${module}.${name}`;
+
 const lineLength =
-  tests.reduce((acc, test) => {
-    if (test.name.length > acc) {
-      return test.name.length;
+  tests.reduce((acc, { module, name }) => {
+    if (testName(module, name).length > acc) {
+      return testName(module, name).length;
     } else {
       return acc;
     }
   }, 0) + 2;
-const failed = tests.filter((test) => {
-  process.stdout.write((test.name + ": ").padEnd(lineLength));
+const failed = tests.filter(({ module, name, test }) => {
+  process.stdout.write(`${testName(module, name)}:`.padEnd(lineLength));
 
   try {
     test();

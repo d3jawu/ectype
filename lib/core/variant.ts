@@ -1,4 +1,5 @@
 import { Type, VariantType } from "./types.js";
+import { struct } from "./struct.js";
 
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
@@ -24,7 +25,11 @@ const variant = (options: Record<string, Type>): VariantType => {
     valid,
     // match: () => {},
     has: (name) => options.hasOwnProperty(name),
-    option: (name) => options[name],
+    get: (name) => options[name],
+    option: (name) =>
+      struct({
+        [name]: options[name],
+      }),
     options: () => Object.entries(options),
     sub: (other) => {
       if (other.__ktype__ !== "variant") {
@@ -34,11 +39,46 @@ const variant = (options: Record<string, Type>): VariantType => {
       // to be a subtype of `other`, this variant must not have components that `other` does not,
       // and each component must be a subtype of that same component on `other`.
       return Object.keys(options).every((key) => {
-        other.has(key) && options[key].sub(other.option(key));
+        other.has(key) && options[key].sub(other.get(key));
       });
     },
     __ktype__: "variant",
   };
 };
 
-export { variant };
+/*
+
+Desired interface:
+
+ifLet(myOptionVal, {
+  Some: (val) => {
+
+  }
+  None: () => {
+
+  }
+}, () => {
+  // else-behavior
+})
+
+*/
+
+// Interface and implementation subject to change.
+// const ifLet = (key, variantVal, handler) => {};
+
+// Interface and implementation subject to change.
+const match = (
+  variant: {},
+  handlers: Record<string, (val: unknown) => unknown>,
+  elseHandler: () => unknown
+) => {
+  const [variantKey, variantVal] = Object.entries(variant)[0];
+
+  if (handlers.hasOwnProperty(variantKey)) {
+    return handlers[variantKey](variantVal);
+  } else {
+    return elseHandler();
+  }
+};
+
+export { variant, match };
