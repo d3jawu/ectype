@@ -5,6 +5,7 @@ export type Type =
   | BoolType
   | NumType
   | StrType
+  | FnType
   | VariantType
   | StructType
   | TypeType;
@@ -52,6 +53,16 @@ export interface StrType {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   __ktype__: "str";
+}
+
+export interface FnType {
+  from: (val: unknown) => typeof val;
+  conform: (val: unknown) => { None: null }; // functions cannot be conformed at runtime.
+  valid: (val: unknown) => false; // functions cannot be validated at runtime.
+  param: () => Type;
+  returns: () => Type;
+  sub: (other: Type) => boolean;
+  __ktype__: "fn";
 }
 
 export interface VariantType {

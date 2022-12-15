@@ -16,11 +16,11 @@ const struct = (shape: Record<string, Type>): StructType => {
     conform: (val) =>
       valid(val) ? { Some: val as Record<string, any> } : { None: null },
     valid,
-    has: (field: string) => shape.hasOwnProperty(field),
-    field: (field: string) => shape[field],
+    has: (field) => shape.hasOwnProperty(field),
+    field: (field) => shape[field],
     fields: () => Object.entries(shape),
     // fields: (): [string, Type][] => Object.entries(shape),
-    sub: (other): boolean => {
+    sub: (other) => {
       if (other.__ktype__ !== "struct") {
         return false;
       }

@@ -1,6 +1,7 @@
 import * as variants from "./tests/variants.js";
 import * as structs from "./tests/structs.js";
-const imports = { variants, structs };
+import * as fn from "./tests/fn.js";
+const imports = { variants, structs, fn };
 
 import chalk from "chalk";
 
