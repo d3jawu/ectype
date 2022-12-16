@@ -1,7 +1,9 @@
-import * as variants from "./tests/variants.js";
-import * as structs from "./tests/structs.js";
 import * as fn from "./tests/fn.js";
-const imports = { variants, structs, fn };
+import * as variants from "./tests/variants.js";
+import * as tuple from "./tests/tuple.js";
+import * as structs from "./tests/structs.js";
+
+const imports = { fn, variants, tuple, structs };
 
 import chalk from "chalk";
 

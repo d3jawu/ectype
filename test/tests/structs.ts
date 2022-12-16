@@ -1,5 +1,5 @@
-import { struct } from "../../lib/core/struct.js";
-import { Num } from "../../lib/core/primitives.js";
+import { struct } from "../../core/struct.js";
+import { Num } from "../../core/primitives.js";
 
 import { strict as assert } from "node:assert";
 
@@ -26,7 +26,7 @@ export function conform() {
     end: Point,
   });
 
-  const maybeVector = Vector.conform({
+  let maybeVector = Vector.conform({
     start: {
       x: 10,
       y: 15,
@@ -48,6 +48,21 @@ export function conform() {
         y: 40,
       },
     },
+  });
+
+  maybeVector = Vector.conform({
+    start: {
+      x: 10,
+      y: 15,
+    },
+    end: {
+      x: 20,
+      y: "oops",
+    },
+  });
+
+  assert.deepEqual(maybeVector, {
+    None: null,
   });
 }
 

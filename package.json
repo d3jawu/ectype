@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "watch": "tsc --watch",
-    "clean": "rm -rf build/",
-    "test": "node build/test/run.js"
+    "clean": "rm -rf dist/bin dist/core dist/test",
+    "test": "node dist/test/run.js"
   },
   "author": "",
   "license": "ISC",

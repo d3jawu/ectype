@@ -6,6 +6,7 @@ export type Type =
   | NumType
   | StrType
   | FnType
+  | TupleType
   | VariantType
   | StructType
   | TypeType;
@@ -70,11 +71,21 @@ export interface VariantType {
   conform: (val: unknown) => Option<{ [key: string]: any }>;
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
-  get: (name: string) => Type; // gets the type held in that option.
+  get: (name: string) => Type; // gets the type held in that option. name TBD
   option: (name: string) => Type; // gets the wrapping struct type for that option.
   options: () => [string, Type][];
   sub: (other: Type) => boolean;
   __ktype__: "variant";
+}
+
+export interface TupleType {
+  from: (val: unknown) => typeof val;
+  conform: (val: unknown) => Option<unknown[]>;
+  valid: (val: unknown) => boolean;
+  field: (pos: number) => Type; // gets the type held at that position in the tuple.
+  fields: () => Type[];
+  sub: (other: Type) => boolean;
+  __ktype__: "tuple";
 }
 
 export interface StructType {

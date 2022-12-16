@@ -1,7 +1,7 @@
-import { fn } from "../../lib/core/fn.js";
+import { fn } from "../../core/fn.js";
 
-import { struct } from "../../lib/core/struct.js";
-import { Num } from "../../lib/core/primitives.js";
+import { struct } from "../../core/struct.js";
+import { Num } from "../../core/primitives.js";
 
 import { strict as assert } from "node:assert";
 
