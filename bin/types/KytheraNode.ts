@@ -26,8 +26,7 @@ export type KStatement =
   | ExportNamedDeclaration
   | VariableDeclaration
   | KDoWhileStatement
-  | KWhileStatement
-  | KForStatement;
+  | KWhileStatement;
 
 export type KExp =
   // literals
