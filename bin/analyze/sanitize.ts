@@ -1,33 +1,51 @@
 import type { ModuleItem, Expression, ExpressionStatement } from "@swc/core";
-import type { KytheraNode } from "../types/KytheraNode";
+import type { KExp, KNode } from "../types/KytheraNode";
 
 import { match } from "ts-pattern";
 
-export const sanitize = (body: ModuleItem[]): KytheraNode[] =>
+export const sanitize = (body: ModuleItem[]): KNode[] =>
   body.map((node) => sanitizeNode(node));
 
-const sanitizeNode = (node: ModuleItem): KytheraNode =>
-  match<ModuleItem, KytheraNode>(node)
+const sanitizeNode = (node: ModuleItem): KNode =>
+  match<ModuleItem, KNode>(node)
     // passthroughs
     .with({ type: "DebuggerStatement" }, (node) => node)
     .with({ type: "EmptyStatement" }, (node) => node)
+    .with({ type: "BreakStatement" }, (node) => node)
+    .with({ type: "ContinueStatement" }, (node) => node)
 
-    .with({ type: "BlockStatement" }, () => {})
-    .with({ type: "BreakStatement" }, () => {})
-    .with({ type: "ClassDeclaration" }, () => {
-      throw new Error("`class` declarations are forbidden in Kythera.");
+    // statements with rewrites onto Kythera nodes
+    .with({ type: "BlockStatement" }, (node) => ({
+      span: node.span,
+      type: "KBlockStatement",
+      statements: node.stmts.map((st) => sanitizeNode(st)),
+    }))
+    .with({ type: "DoWhileStatement" }, (node) => ({
+      span: node.span,
+      type: "KDoWhileStatement",
+      test: sanitizeExpression(node.test),
+      body: sanitizeNode(node.body),
+    }))
+    .with({ type: "WhileStatement" }, (node) => ({
+      span: node.span,
+      type: "KWhileStatement",
+      test: sanitizeExpression(node.test),
+      body: sanitizeNode(node.body),
+    }))
+    .with({ type: "ForStatement" }, (node) => {})
+
+    // export declaration
+    .with({ type: "ExportDeclaration" }, (node) => {
+      throw new Error("Export declaration TBD");
     })
-    .with({ type: "ContinueStatement" }, () => {})
-    .with({ type: "DoWhileStatement" }, () => {})
+    // TODO: check against naming an export "default"?
+    .with({ type: "ExportNamedDeclaration" }, (node) => node)
 
-    .with({ type: "ExportAllDeclaration" }, () => {})
-    .with({ type: "ExportDeclaration" }, () => {})
-    .with({ type: "ExportDefaultExpression" }, () => {})
-    .with({ type: "ExportNamedDeclaration" }, () => {})
+    // unpack expression
+    .with({ type: "ExpressionStatement" }, (val) =>
+      sanitizeExpression(val.expression)
+    )
 
-    .with({ type: "ExpressionStatement" }, (val) => sanitizeExpression(val))
-
-    .with({ type: "ForStatement" }, () => {})
     .with({ type: "IfStatement" }, () => {})
     .with({ type: "ImportDeclaration" }, () => {})
     .with({ type: "LabeledStatement" }, () => {})
@@ -42,10 +60,16 @@ const sanitizeNode = (node: ModuleItem): KytheraNode =>
         );
       }
 
-      throw new Error("TODO");
+      return node;
     })
-    .with({ type: "WhileStatement" }, () => {})
+
     // forbidden statements
+    .with({ type: "ExportAllDeclaration" }, () => {
+      throw new Error("Export-all declarations are forbidden in Kythera.");
+    })
+    .with({ type: "ExportDefaultExpression" }, () => {
+      throw new Error("Default exports are forbidden in Kythera.");
+    })
     .with({ type: "ExportDefaultDeclaration" }, () => {
       throw new Error(
         "`export default` is forbidden in Kythera. Use a non-default `export` instead."
@@ -68,12 +92,15 @@ const sanitizeNode = (node: ModuleItem): KytheraNode =>
     .with({ type: "WithStatement" }, () => {
       throw new Error("`with` is forbidden in Kythera.");
     })
+    .with({ type: "ClassDeclaration" }, () => {
+      throw new Error("`class` declarations are forbidden in Kythera.");
+    })
     .otherwise(() => {
       throw new Error(`Invalid node: ${node.type}`);
     });
 
-const sanitizeExpression = (node: ExpressionStatement): KytheraNode =>
-  match<Expression, KytheraNode>(node.expression)
+const sanitizeExpression = (node: Expression): KExp =>
+  match<Expression, KExp>(node)
     // literals
     .with({ type: "NullLiteral" }, (exp) => exp)
     .with({ type: "BooleanLiteral" }, (exp) => exp)
