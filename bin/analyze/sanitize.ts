@@ -110,7 +110,7 @@ const sanitizeExpression = (node: ExpressionStatement): KytheraNode =>
     .with({ type: "SuperPropExpression" }, () => {})
     .with({ type: "TaggedTemplateExpression" }, () => {})
 
-    .with({ type: "UnaryExpression" }, () => {})
+    .with({ type: "UnaryExpression" }, (exp) => {})
     .with({ type: "UpdateExpression" }, () => {})
     .with({ type: "YieldExpression" }, () => {})
     // forbidden expressions

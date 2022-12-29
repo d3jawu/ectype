@@ -7,6 +7,7 @@ export type Type =
   | StrType
   | FnType
   | TupleType
+  | ArrayType
   | VariantType
   | StructType
   | TypeType;
@@ -86,6 +87,15 @@ export interface TupleType {
   fields: () => Type[];
   sub: (other: Type) => boolean;
   __ktype__: "tuple";
+}
+
+export interface ArrayType {
+  from: (val: unknown) => typeof val;
+  conform: (val: unknown) => Option<unknown[]>;
+  valid: (val: unknown) => boolean;
+  contains: () => Type;
+  sub: (other: Type) => boolean;
+  __ktype__: "array";
 }
 
 export interface StructType {
