@@ -8,7 +8,7 @@ export const sanitize = (body: ModuleItem[]): KNode[] =>
 
 const sanitizeNode = (node: ModuleItem): KNode =>
   match<ModuleItem, KNode>(node)
-    // passthroughs
+    // direct passthroughs
     .with({ type: "DebuggerStatement" }, (node) => node)
     .with({ type: "EmptyStatement" }, (node) => node)
     .with({ type: "BreakStatement" }, (node) => node)
@@ -33,23 +33,39 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       body: sanitizeNode(node.body),
     }))
     .with({ type: "ForStatement" }, (node) => {})
+    .with({ type: "IfStatement" }, (node) => ({
+      span: node.span,
+      type: "KIfStatement",
+      test: sanitizeExpression(node.test),
+      consequent: sanitizeNode(node.consequent),
+      alternate: node.alternate && sanitizeNode(node.alternate),
+    }))
+    .with({ type: "ReturnStatement" }, (node) => ({
+      span: node.span,
+      type: "KReturnStatement",
+      argument: node.argument && sanitizeExpression(node.argument),
+    }))
+    .with({ type: "LabeledStatement" }, (node) => ({
+      span: node.span,
+      type: "KLabeledStatement",
+      label: node.label,
+      body: sanitizeNode(node.body),
+    }))
 
-    // export declaration
+    // import and export
     .with({ type: "ExportDeclaration" }, (node) => {
       throw new Error("Export declaration TBD");
     })
     // TODO: check against naming an export "default"?
     .with({ type: "ExportNamedDeclaration" }, (node) => node)
+    // TODO: check for default imports
+    .with({ type: "ImportDeclaration" }, (node) => node)
 
     // unpack expression
     .with({ type: "ExpressionStatement" }, (val) =>
       sanitizeExpression(val.expression)
     )
 
-    .with({ type: "IfStatement" }, () => {})
-    .with({ type: "ImportDeclaration" }, () => {})
-    .with({ type: "LabeledStatement" }, () => {})
-    .with({ type: "ReturnStatement" }, () => {})
     .with({ type: "SwitchStatement" }, () => {})
 
     .with({ type: "TryStatement" }, () => {})
@@ -104,6 +120,7 @@ const sanitizeExpression = (node: Expression): KExp =>
     // literals
     .with({ type: "NullLiteral" }, (exp) => exp)
     .with({ type: "BooleanLiteral" }, (exp) => exp)
+    .with({ type: "NumericLiteral" }, (exp) => exp)
     .with({ type: "BigIntLiteral" }, (exp) => exp)
     .with({ type: "StringLiteral" }, (exp) => exp)
     .with({ type: "TemplateLiteral" }, (exp) => exp)
@@ -124,12 +141,11 @@ const sanitizeExpression = (node: Expression): KExp =>
     .with({ type: "CallExpression" }, () => {})
 
     .with({ type: "ConditionalExpression" }, () => {})
-    .with({ type: "Identifier" }, () => {})
+    .with({ type: "Identifier" }, (node) => node)
     .with({ type: "Invalid" }, () => {})
     .with({ type: "MemberExpression" }, () => {})
     .with({ type: "MetaProperty" }, () => {})
 
-    .with({ type: "NumericLiteral" }, (exp) => exp)
     .with({ type: "ObjectExpression" }, () => {})
     .with({ type: "ParenthesisExpression" }, () => {})
     .with({ type: "PrivateName" }, () => {})
@@ -140,6 +156,7 @@ const sanitizeExpression = (node: Expression): KExp =>
     .with({ type: "UnaryExpression" }, (exp) => {})
     .with({ type: "UpdateExpression" }, () => {})
     .with({ type: "YieldExpression" }, () => {})
+
     // forbidden expressions
     .with({ type: "ClassExpression" }, () => {
       throw new Error("`class` expressions are forbidden in Kythera.");
@@ -153,11 +170,13 @@ const sanitizeExpression = (node: Expression): KExp =>
       throw new Error("`new` is forbidden in Kythera.");
     })
     .with({ type: "OptionalChainingExpression" }, () => {
-      "Optional chain `?.` expressions are forbidden in Kythera.";
+      throw new Error(
+        "Optional chain `?.` expressions are forbidden in Kythera."
+      );
     })
     .with({ type: "ThisExpression" }, () => {
       throw new Error("`this` is forbidden in Kythera.");
     })
     .otherwise(() => {
-      throw new Error(`Invalid expression node: ${node.expression.type}`);
+      throw new Error(`Invalid expression node: ${node.type}`);
     });
