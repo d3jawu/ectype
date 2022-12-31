@@ -13,7 +13,6 @@ import type {
   ContinueStatement,
   ExportNamedDeclaration,
   ImportDeclaration,
-  VariableDeclaration,
   Identifier,
 } from "@swc/core";
 
@@ -29,9 +28,12 @@ export type KStatement =
   | ContinueStatement
   | ExportNamedDeclaration
   | ImportDeclaration
-  | VariableDeclaration
+  | KVariableDeclaration
+  | KForStatement
+  | KSwitchStatement
   | KDoWhileStatement
   | KWhileStatement
+  | KTryStatement
   | KIfStatement
   | KReturnStatement
   | KLabeledStatement;
@@ -91,8 +93,47 @@ export interface KVariableDeclaration extends Node, HasSpan {
 export type KVariableDeclarationKind = "let" | "const";
 
 export interface KVariableDeclarator extends Node, HasSpan {
-  type: "VariableDeclarator";
+  type: "KVariableDeclarator";
   id: KPattern;
   init?: KExp;
   definite: boolean;
+}
+
+export interface KForStatement extends Node, HasSpan {
+  type: "KForStatement";
+  init?: KVariableDeclaration | KExp;
+  test?: KExp;
+  update?: KExp;
+  body: KNode;
+}
+
+export interface KSwitchStatement extends Node, HasSpan {
+  type: "KSwitchStatement";
+  discriminant: KExp;
+  cases: KSwitchCase[];
+}
+
+export interface KSwitchCase extends Node, HasSpan {
+  type: "KSwitchCase";
+  /**
+   * Undefined for default case
+   */
+  test?: KExp;
+  consequent: KNode[];
+}
+
+export interface KTryStatement extends Node, HasSpan {
+  type: "KTryStatement";
+  block: KBlockStatement;
+  handler?: KCatchClause;
+  finalizer?: KBlockStatement;
+}
+
+export interface KCatchClause extends Node, HasSpan {
+  type: "KCatchClause";
+  /**
+   * The param is `undefined` if the catch binding is omitted. E.g., `try { foo() } catch {}`
+   */
+  param?: KPattern;
+  body: KBlockStatement;
 }

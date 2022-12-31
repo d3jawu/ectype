@@ -1,7 +1,13 @@
-import type { ModuleItem, Expression, ExpressionStatement } from "@swc/core";
-import type { KExp, KNode } from "../types/KytheraNode";
+import type { ModuleItem, Expression, Pattern } from "@swc/core";
+import type {
+  KBlockStatement,
+  KExp,
+  KNode,
+  KVariableDeclaration,
+} from "../types/KytheraNode";
 
 import { match } from "ts-pattern";
+import { KPattern } from "../types/KPattern";
 
 export const sanitize = (body: ModuleItem[]): KNode[] =>
   body.map((node) => sanitizeNode(node));
@@ -32,7 +38,18 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       test: sanitizeExpression(node.test),
       body: sanitizeNode(node.body),
     }))
-    .with({ type: "ForStatement" }, (node) => {})
+    .with({ type: "ForStatement" }, (node) => ({
+      span: node.span,
+      type: "KForStatement",
+      init:
+        node.init &&
+        (node.init.type === "VariableDeclaration"
+          ? (sanitizeNode(node.init) as KVariableDeclaration)
+          : sanitizeExpression(node.init)),
+      test: node.test && sanitizeExpression(node.test),
+      update: node.update && sanitizeExpression(node.update),
+      body: sanitizeNode(node.body),
+    }))
     .with({ type: "IfStatement" }, (node) => ({
       span: node.span,
       type: "KIfStatement",
@@ -51,6 +68,51 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       label: node.label,
       body: sanitizeNode(node.body),
     }))
+    .with({ type: "SwitchStatement" }, (node) => ({
+      span: node.span,
+      type: "KSwitchStatement",
+      discriminant: sanitizeExpression(node.discriminant),
+      cases: node.cases.map((c) => ({
+        type: "KSwitchCase",
+        span: c.span,
+        test: c.test && sanitizeExpression(c.test),
+        consequent: c.consequent.map((n) => sanitizeNode(n)),
+      })),
+    }))
+    .with({ type: "TryStatement" }, (node) => ({
+      span: node.span,
+      type: "KTryStatement",
+      block: sanitizeNode(node.block) as KBlockStatement,
+      handler: node.handler && {
+        span: node.handler.span,
+        type: "KCatchClause",
+        param: node.handler.param && sanitizePattern(node.handler.param),
+        body: sanitizeNode(node.handler.body) as KBlockStatement,
+      },
+      finalizer:
+        node.finalizer && (sanitizeNode(node.finalizer) as KBlockStatement),
+    }))
+    .with({ type: "VariableDeclaration" }, (node) => {
+      if (node.kind === "var") {
+        throw new Error(
+          "`var` is forbidden in Kythera. Use `const` or `let` instead."
+        );
+      }
+
+      return {
+        span: node.span,
+        type: "KVariableDeclaration",
+        kind: node.kind,
+        declare: node.declare,
+        declarations: node.declarations.map((decl) => ({
+          span: decl.span,
+          type: "KVariableDeclarator",
+          id: sanitizePattern(decl.id),
+          init: decl.init && sanitizeExpression(decl.init),
+          definite: decl.definite,
+        })),
+      };
+    })
 
     // import and export
     .with({ type: "ExportDeclaration" }, (node) => {
@@ -65,19 +127,6 @@ const sanitizeNode = (node: ModuleItem): KNode =>
     .with({ type: "ExpressionStatement" }, (val) =>
       sanitizeExpression(val.expression)
     )
-
-    .with({ type: "SwitchStatement" }, () => {})
-
-    .with({ type: "TryStatement" }, () => {})
-    .with({ type: "VariableDeclaration" }, (node) => {
-      if (node.kind === "var") {
-        throw new Error(
-          "`var` is forbidden in Kythera. Use `const` or `let` instead."
-        );
-      }
-
-      return node;
-    })
 
     // forbidden statements
     .with({ type: "ExportAllDeclaration" }, () => {
@@ -180,3 +229,68 @@ const sanitizeExpression = (node: Expression): KExp =>
     .otherwise(() => {
       throw new Error(`Invalid expression node: ${node.type}`);
     });
+
+const sanitizePattern = (pattern: Pattern): KPattern =>
+  match<Pattern, KPattern>(pattern)
+    .with({ type: "Identifier" }, (p) => p)
+    .with({ type: "ArrayPattern" }, (p) => ({
+      span: p.span,
+      type: "KArrayPattern",
+      elements: p.elements.map((el) => el && sanitizePattern(el)),
+      optional: p.optional,
+    }))
+    .with({ type: "RestElement" }, (p) => ({
+      span: p.span,
+      type: "KRestElement",
+      rest: p.rest,
+      argument: sanitizePattern(p.argument),
+    }))
+    .with({ type: "ObjectPattern" }, (p) => ({
+      span: p.span,
+      type: "KObjectPattern",
+      properties: p.properties.map((prop) => {
+        if (prop.type === "AssignmentPatternProperty") {
+          return {
+            span: prop.span,
+            type: "KAssignmentPatternProperty",
+            key: prop.key,
+            value: prop.value && sanitizeExpression(prop.value),
+          };
+        } else if (prop.type === "KeyValuePatternProperty") {
+          return {
+            type: "KKeyValuePatternProperty",
+            key:
+              prop.key.type === "Computed"
+                ? {
+                    span: prop.key.span,
+                    type: "KComputed",
+                    expression: sanitizeExpression(prop.key.expression),
+                  }
+                : prop.key,
+            value: sanitizePattern(prop.value),
+          };
+        } else if (prop.type === "RestElement") {
+          return {
+            span: prop.span,
+            type: "KRestElement",
+            rest: prop.rest,
+            argument: sanitizePattern(prop.argument),
+          };
+        } else {
+          prop;
+          throw new Error(`Unreachable ("prop" has type never)`);
+        }
+      }),
+      optional: p.optional,
+    }))
+    .with({ type: "AssignmentPattern" }, (p) => ({
+      span: p.span,
+      type: "KAssignmentPattern",
+      left: sanitizePattern(p.left),
+      right: sanitizeExpression(p.right),
+    }))
+    .with({ type: "Invalid" }, (p) => {
+      throw new Error(`Invalid pattern at ${JSON.stringify(p.span)}`);
+    })
+    // otherwise, pattern is an expression
+    .otherwise(() => sanitizeExpression(pattern as Expression));

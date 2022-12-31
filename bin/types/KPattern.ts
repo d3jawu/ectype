@@ -3,6 +3,9 @@ import type {
   HasSpan,
   Span,
   BindingIdentifier,
+  StringLiteral,
+  NumericLiteral,
+  BigIntLiteral,
   Invalid,
   KeyValuePatternProperty,
   Identifier,
@@ -16,31 +19,48 @@ export type KPattern =
   | KRestElement
   | KObjectPattern
   | KAssignmentPattern
-  | Invalid
   | KExp;
 
 export interface KArrayPattern extends Node, HasSpan {
-  type: "ArrayPattern";
+  type: "KArrayPattern";
   elements: (KPattern | undefined)[];
   optional: boolean;
 }
 
 export interface KRestElement extends Node, HasSpan {
-  type: "RestElement";
+  type: "KRestElement";
   rest: Span;
   argument: KPattern;
 }
 
 export interface KObjectPattern extends Node, HasSpan {
-  type: "ObjectPattern";
-  properties: ObjectPatternProperty[];
+  type: "KObjectPattern";
+  properties: KObjectPatternProperty[];
   optional: boolean;
 }
 
-export type ObjectPatternProperty =
-  | KeyValuePatternProperty
+export type KObjectPatternProperty =
+  | KKeyValuePatternProperty
   | KAssignmentPatternProperty
   | KRestElement;
+
+export interface KKeyValuePatternProperty extends Node {
+  type: "KKeyValuePatternProperty";
+  key: KPropertyName;
+  value: KPattern;
+}
+
+export type KPropertyName =
+  | Identifier
+  | StringLiteral
+  | NumericLiteral
+  | KComputedPropName
+  | BigIntLiteral;
+
+export interface KComputedPropName extends Node, HasSpan {
+  type: "KComputed";
+  expression: KExp;
+}
 
 export interface KAssignmentPatternProperty extends Node, HasSpan {
   type: "KAssignmentPatternProperty";
