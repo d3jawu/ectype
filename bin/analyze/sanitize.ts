@@ -164,8 +164,8 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       throw new Error(`Invalid node: ${node.type}`);
     });
 
-const sanitizeExpression = (node: Expression): KExp =>
-  match<Expression, KExp>(node)
+const sanitizeExpression = (exp: Expression): KExp =>
+  match<Expression, KExp>(exp)
     // literals
     .with({ type: "NullLiteral" }, (exp) => exp)
     .with({ type: "BooleanLiteral" }, (exp) => exp)
@@ -176,35 +176,81 @@ const sanitizeExpression = (node: Expression): KExp =>
     .with({ type: "RegExpLiteral" }, () => {
       throw new Error("Regexes are not yet implemented.");
     })
-
     .with({ type: "ArrayExpression" }, () => {})
-
-    .with({ type: "ArrowFunctionExpression" }, () => {})
-
+    .with({ type: "ArrowFunctionExpression" }, (exp) => {})
     .with({ type: "AssignmentExpression" }, () => {})
+    .with({ type: "AwaitExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KAwaitExpression",
+      argument: sanitizeExpression(exp.argument),
+    }))
+    .with({ type: "BinaryExpression" }, (exp) => {
+      if (
+        exp.operator === "==" ||
+        exp.operator === "!=" ||
+        exp.operator === "in" ||
+        exp.operator === "instanceof"
+      ) {
+        throw new Error(`\`${exp.operator}\` is forbidden in Kythera.`);
+      }
 
-    .with({ type: "AwaitExpression" }, () => {})
-
-    .with({ type: "BinaryExpression" }, () => {})
-
+      return {
+        span: exp.span,
+        type: "KBinaryExpression",
+        operator: exp.operator,
+        left: sanitizeExpression(exp.left),
+        right: sanitizeExpression(exp.right),
+      };
+    })
     .with({ type: "CallExpression" }, () => {})
-
     .with({ type: "ConditionalExpression" }, () => {})
-    .with({ type: "Identifier" }, (node) => node)
-    .with({ type: "Invalid" }, () => {})
-    .with({ type: "MemberExpression" }, () => {})
-    .with({ type: "MetaProperty" }, () => {})
+    .with({ type: "Identifier" }, (exp) => exp)
+    .with({ type: "MemberExpression" }, (exp) => {
+      // Computed properties are valid for arrays but not structs, so
+      // they are weeded out later when type-checking information is availble.
 
+      if (exp.property.type === "PrivateName") {
+        throw new Error("Private names are forbidden in Kythera.");
+      }
+
+      // TODO: check if member expression is a keyword function, e.g. Type.sub
+
+      return {
+        span: exp.span,
+        type: "KMemberExpression",
+        object: sanitizeExpression(exp.object),
+        property:
+          exp.property.type === "Identifier"
+            ? exp.property
+            : {
+                span: exp.property.span,
+                type: "KComputed",
+                expression: sanitizeExpression(exp.property.expression),
+              },
+      };
+    })
     .with({ type: "ObjectExpression" }, () => {})
-    .with({ type: "ParenthesisExpression" }, () => {})
-    .with({ type: "PrivateName" }, () => {})
+    .with({ type: "ParenthesisExpression" }, (exp) =>
+      sanitizeExpression(exp.expression)
+    )
     .with({ type: "SequenceExpression" }, () => {})
-    .with({ type: "SuperPropExpression" }, () => {})
     .with({ type: "TaggedTemplateExpression" }, () => {})
+    .with({ type: "UnaryExpression" }, (exp) => {
+      if (
+        exp.operator === "typeof" ||
+        exp.operator === "void" ||
+        exp.operator === "delete"
+      ) {
+        throw new Error(`${exp.operator} is forbidden in Kythera.`);
+      }
 
-    .with({ type: "UnaryExpression" }, (exp) => {})
-    .with({ type: "UpdateExpression" }, () => {})
-    .with({ type: "YieldExpression" }, () => {})
+      return {
+        span: exp.span,
+        type: "KUnaryExpression",
+        operator: exp.operator,
+        argument: sanitizeExpression(exp.argument),
+      };
+    })
 
     // forbidden expressions
     .with({ type: "ClassExpression" }, () => {
@@ -215,6 +261,9 @@ const sanitizeExpression = (node: Expression): KExp =>
         "`function` expressions are forbidden in Kythera. Use an arrow function () => {} instead."
       );
     })
+    .with({ type: "MetaProperty" }, () => {
+      throw new Error("No meta-properties are supported in Kythera.");
+    })
     .with({ type: "NewExpression" }, () => {
       throw new Error("`new` is forbidden in Kythera.");
     })
@@ -223,11 +272,23 @@ const sanitizeExpression = (node: Expression): KExp =>
         "Optional chain `?.` expressions are forbidden in Kythera."
       );
     })
+    .with({ type: "PrivateName" }, () => {
+      throw new Error("Private names are not currently supported in Kythera.");
+    })
+    .with({ type: "SuperPropExpression" }, () => {
+      throw new Error("Super props are forbidden in Kythera.");
+    })
     .with({ type: "ThisExpression" }, () => {
       throw new Error("`this` is forbidden in Kythera.");
     })
+    .with({ type: "UpdateExpression" }, () => {
+      throw new Error("++ and -- are forbidden in Kythera.");
+    })
+    .with({ type: "YieldExpression" }, () => {
+      throw new Error("Yield expressions are forbidden in Kythera.");
+    })
     .otherwise(() => {
-      throw new Error(`Invalid expression node: ${node.type}`);
+      throw new Error(`Invalid expression node: ${exp.type}`);
     });
 
 const sanitizePattern = (pattern: Pattern): KPattern =>

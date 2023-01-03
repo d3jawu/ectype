@@ -38,16 +38,6 @@ export type KStatement =
   | KReturnStatement
   | KLabeledStatement;
 
-export type KExp =
-  // literals
-  | NullLiteral
-  | BooleanLiteral
-  | NumericLiteral
-  | BigIntLiteral
-  | StringLiteral
-  | TemplateLiteral
-  | Identifier;
-
 export interface KBlockStatement extends Node, HasSpan {
   type: "KBlockStatement";
   statements: KNode[];
@@ -136,4 +126,72 @@ export interface KCatchClause extends Node, HasSpan {
    */
   param?: KPattern;
   body: KBlockStatement;
+}
+
+export type KExp =
+  // literals
+  | NullLiteral
+  | BooleanLiteral
+  | NumericLiteral
+  | BigIntLiteral
+  | StringLiteral
+  | TemplateLiteral
+  | Identifier
+  | KAwaitExpression
+  | KBinaryExpression
+  | KMemberExpression
+  | KUnaryExpression;
+
+export interface KAwaitExpression extends Node, HasSpan {
+  type: "KAwaitExpression";
+  argument: KExp;
+}
+
+export type KBinaryOperator =
+  | "==="
+  | "!=="
+  | "<"
+  | "<="
+  | ">"
+  | ">="
+  | "<<"
+  | ">>"
+  | ">>>"
+  | "+"
+  | "-"
+  | "*"
+  | "/"
+  | "%"
+  | "|"
+  | "^"
+  | "&"
+  | "||"
+  | "&&"
+  | "**"
+  | "??";
+
+export interface KBinaryExpression extends Node, HasSpan {
+  type: "KBinaryExpression";
+  operator: KBinaryOperator;
+  left: KExp;
+  right: KExp;
+}
+
+export interface KMemberExpression extends Node, HasSpan {
+  type: "KMemberExpression";
+  object: KExp;
+  property: Identifier | KComputedPropName;
+}
+
+export interface KComputedPropName extends Node, HasSpan {
+  type: "KComputed";
+  expression: KExp;
+}
+
+export type KUnaryOperator = "-" | "+" | "!" | "~";
+
+export interface KUnaryExpression extends Node, HasSpan {
+  type: "KUnaryExpression";
+  operator: KUnaryOperator;
+  argument: KExp;
 }
