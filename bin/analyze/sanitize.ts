@@ -166,7 +166,6 @@ const sanitizeNode = (node: ModuleItem): KNode =>
 
 const sanitizeExpression = (exp: Expression): KExp =>
   match<Expression, KExp>(exp)
-    // literals
     .with({ type: "NullLiteral" }, (exp) => exp)
     .with({ type: "BooleanLiteral" }, (exp) => exp)
     .with({ type: "NumericLiteral" }, (exp) => exp)
@@ -177,8 +176,26 @@ const sanitizeExpression = (exp: Expression): KExp =>
       throw new Error("Regexes are not yet implemented.");
     })
     .with({ type: "ArrayExpression" }, () => {})
-    .with({ type: "ArrowFunctionExpression" }, (exp) => {})
-    .with({ type: "AssignmentExpression" }, () => {})
+    // The SWC type definition for an arrow function expression has a "generator" flag, but
+    // it's not syntactically possible for an arrow function to be a generator, so we don't
+    // test for that here.
+    .with({ type: "ArrowFunctionExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KArrowFunctionExpression",
+      params: exp.params.map((param) => sanitizePattern(param)),
+      body:
+        exp.body.type === "BlockStatement"
+          ? (sanitizeNode(exp.body) as KBlockStatement)
+          : sanitizeExpression(exp.body),
+      async: exp.async,
+    }))
+    .with({ type: "AssignmentExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KAssignmentExpression",
+      operator: exp.operator,
+      left: sanitizePattern(exp.left),
+      right: sanitizeExpression(exp.right),
+    }))
     .with({ type: "AwaitExpression" }, (exp) => ({
       span: exp.span,
       type: "KAwaitExpression",
@@ -203,7 +220,13 @@ const sanitizeExpression = (exp: Expression): KExp =>
       };
     })
     .with({ type: "CallExpression" }, () => {})
-    .with({ type: "ConditionalExpression" }, () => {})
+    .with({ type: "ConditionalExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KConditionalExpression",
+      test: sanitizeExpression(exp.test),
+      consequent: sanitizeExpression(exp.consequent),
+      alternate: sanitizeExpression(exp.alternate),
+    }))
     .with({ type: "Identifier" }, (exp) => exp)
     .with({ type: "MemberExpression" }, (exp) => {
       // Computed properties are valid for arrays but not structs, so
@@ -233,7 +256,11 @@ const sanitizeExpression = (exp: Expression): KExp =>
     .with({ type: "ParenthesisExpression" }, (exp) =>
       sanitizeExpression(exp.expression)
     )
-    .with({ type: "SequenceExpression" }, () => {})
+    .with({ type: "SequenceExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KSequenceExpression",
+      expressions: exp.expressions.map((e) => sanitizeExpression(e)),
+    }))
     .with({ type: "TaggedTemplateExpression" }, () => {})
     .with({ type: "UnaryExpression" }, (exp) => {
       if (

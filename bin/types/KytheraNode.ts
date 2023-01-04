@@ -1,6 +1,7 @@
 import type {
   Node,
   HasSpan,
+  Span,
   NullLiteral,
   BooleanLiteral,
   NumericLiteral,
@@ -14,6 +15,7 @@ import type {
   ExportNamedDeclaration,
   ImportDeclaration,
   Identifier,
+  AssignmentOperator,
 } from "@swc/core";
 
 import type { KPattern } from "./KPattern";
@@ -135,12 +137,39 @@ export type KExp =
   | NumericLiteral
   | BigIntLiteral
   | StringLiteral
-  | TemplateLiteral
   | Identifier
+  | KArrayExpression
+  | KArrowFunctionExpression
+  | KAssignmentExpression
   | KAwaitExpression
   | KBinaryExpression
+  | KConditionalExpression
   | KMemberExpression
+  | KSequenceExpression
   | KUnaryExpression;
+
+export interface KArrayExpression extends Node, HasSpan {
+  type: "KArrayExpression";
+  elements: (KExprOrSpread | undefined)[];
+}
+export interface KExprOrSpread {
+  spread?: Span;
+  expression: KExp;
+}
+
+export interface KArrowFunctionExpression extends Node, HasSpan {
+  type: "KArrowFunctionExpression";
+  params: KPattern[];
+  body: KBlockStatement | KExp;
+  async: boolean;
+}
+
+export interface KAssignmentExpression extends Node, HasSpan {
+  type: "KAssignmentExpression";
+  operator: AssignmentOperator;
+  left: KExp | KPattern;
+  right: KExp;
+}
 
 export interface KAwaitExpression extends Node, HasSpan {
   type: "KAwaitExpression";
@@ -177,6 +206,13 @@ export interface KBinaryExpression extends Node, HasSpan {
   right: KExp;
 }
 
+export interface KConditionalExpression extends Node, HasSpan {
+  type: "KConditionalExpression";
+  test: KExp;
+  consequent: KExp;
+  alternate: KExp;
+}
+
 export interface KMemberExpression extends Node, HasSpan {
   type: "KMemberExpression";
   object: KExp;
@@ -186,6 +222,11 @@ export interface KMemberExpression extends Node, HasSpan {
 export interface KComputedPropName extends Node, HasSpan {
   type: "KComputed";
   expression: KExp;
+}
+
+export interface KSequenceExpression extends Node, HasSpan {
+  type: "KSequenceExpression";
+  expressions: KExp[];
 }
 
 export type KUnaryOperator = "-" | "+" | "!" | "~";
