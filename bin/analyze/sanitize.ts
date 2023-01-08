@@ -1,8 +1,9 @@
-import type { ModuleItem, Expression, Pattern } from "@swc/core";
+import type { ModuleItem, Expression, Pattern, PropertyName } from "@swc/core";
 import type {
   KBlockStatement,
   KExp,
   KNode,
+  KProperty,
   KTemplateLiteral,
   KVariableDeclaration,
 } from "../types/KytheraNode";
@@ -294,7 +295,88 @@ const sanitizeExpression = (exp: Expression): KExp =>
               },
       };
     })
-    .with({ type: "ObjectExpression" }, () => {})
+    .with({ type: "ObjectExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KObjectExpression",
+      properties: exp.properties.map((prop) => {
+        if (prop.type === "SpreadElement") {
+          return {
+            type: "KSpreadElement",
+            spread: prop.spread,
+            arguments: sanitizeExpression(prop.arguments),
+          };
+        }
+
+        if (prop.type === "KeyValueProperty") {
+          return {
+            type: "KKeyValueProperty",
+            key:
+              prop.key.type === "Computed"
+                ? {
+                    span: prop.key.span,
+                    type: "KComputed",
+                    expression: sanitizeExpression(prop.key.expression),
+                  }
+                : prop.key,
+            value: sanitizeExpression(prop.value),
+          };
+        }
+
+        if (prop.type === "AssignmentProperty") {
+          return {
+            type: "KAssignmentProperty",
+            key: prop.key,
+            value: sanitizeExpression(prop.value),
+          };
+        }
+
+        if (prop.type === "GetterProperty") {
+          return {
+            span: prop.span,
+            type: "KGetterProperty",
+            key:
+              prop.key.type === "Computed"
+                ? {
+                    span: prop.key.span,
+                    type: "KComputed",
+                    expression: sanitizeExpression(prop.key.expression),
+                  }
+                : prop.key,
+            body: prop.body && (sanitizeNode(prop.body) as KBlockStatement),
+          };
+        }
+
+        if (prop.type === "SetterProperty") {
+          return {
+            span: prop.span,
+            type: "KSetterProperty",
+            key:
+              prop.key.type === "Computed"
+                ? {
+                    span: prop.key.span,
+                    type: "KComputed",
+                    expression: sanitizeExpression(prop.key.expression),
+                  }
+                : prop.key,
+            param: sanitizePattern(prop.param),
+            body: prop.body && (sanitizeNode(prop.body) as KBlockStatement),
+          };
+        }
+
+        if (prop.type === "MethodProperty") {
+          throw new Error(
+            "Object methods are forbidden in Kythera. Use an arrow function member instead."
+          );
+        }
+
+        if (prop.type === "Identifier") {
+          return prop;
+        }
+
+        prop;
+        throw new Error("Unreachable (prop has type never)");
+      }),
+    }))
     .with({ type: "ParenthesisExpression" }, (exp) =>
       sanitizeExpression(exp.expression)
     )
@@ -385,7 +467,9 @@ const sanitizePattern = (pattern: Pattern): KPattern =>
             key: prop.key,
             value: prop.value && sanitizeExpression(prop.value),
           };
-        } else if (prop.type === "KeyValuePatternProperty") {
+        }
+
+        if (prop.type === "KeyValuePatternProperty") {
           return {
             type: "KKeyValuePatternProperty",
             key:
@@ -398,17 +482,19 @@ const sanitizePattern = (pattern: Pattern): KPattern =>
                 : prop.key,
             value: sanitizePattern(prop.value),
           };
-        } else if (prop.type === "RestElement") {
+        }
+
+        if (prop.type === "RestElement") {
           return {
             span: prop.span,
             type: "KRestElement",
             rest: prop.rest,
             argument: sanitizePattern(prop.argument),
           };
-        } else {
-          prop;
-          throw new Error(`Unreachable ("prop" has type never)`);
         }
+
+        prop;
+        throw new Error(`Unreachable (prop has type never)`);
       }),
       optional: p.optional,
     }))

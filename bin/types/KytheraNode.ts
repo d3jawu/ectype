@@ -147,11 +147,13 @@ export type KExp =
   | KCallExpression
   | KConditionalExpression
   | KMemberExpression
+  | KObjectExpression
   | KSequenceExpression
+  | KTaggedTemplateExpression
   | KTemplateLiteral
   | KUnaryExpression;
 
-export interface KArrayExpression extends Node, HasSpan {
+export interface KArrayExpression extends Node {
   type: "KArrayExpression";
   elements: (KExprOrSpread | undefined)[];
 }
@@ -233,6 +235,60 @@ export interface KMemberExpression extends Node, HasSpan {
   property: Identifier | KComputedPropName;
 }
 
+export interface KComputedPropName extends Node, HasSpan {
+  type: "KComputed";
+  expression: KExp;
+}
+
+export interface KObjectExpression extends Node, HasSpan {
+  type: "KObjectExpression";
+  properties: (KSpreadElement | KProperty)[];
+}
+
+export interface KSpreadElement extends Node {
+  type: "KSpreadElement";
+  spread: Span;
+  arguments: KExp;
+}
+
+export type KProperty =
+  | Identifier
+  | KKeyValueProperty
+  | KAssignmentProperty
+  | KGetterProperty
+  | KSetterProperty;
+
+export interface KKeyValueProperty extends Node {
+  type: "KKeyValueProperty";
+  key: KPropertyName;
+  value: KExp;
+}
+
+export interface KAssignmentProperty extends Node {
+  type: "KAssignmentProperty";
+  key: Identifier;
+  value: KExp;
+}
+
+export interface KGetterProperty extends Node, HasSpan {
+  type: "KGetterProperty";
+  key: KPropertyName;
+  body?: KBlockStatement;
+}
+
+export interface KSetterProperty extends Node, HasSpan {
+  type: "KSetterProperty";
+  key: KPropertyName;
+  param: KPattern;
+  body?: KBlockStatement;
+}
+
+export type KPropertyName =
+  | Identifier
+  | StringLiteral
+  | NumericLiteral
+  | KComputedPropName
+  | BigIntLiteral;
 export interface KComputedPropName extends Node, HasSpan {
   type: "KComputed";
   expression: KExp;
