@@ -3,6 +3,7 @@ import type {
   KBlockStatement,
   KExp,
   KNode,
+  KTemplateLiteral,
   KVariableDeclaration,
 } from "../types/KytheraNode";
 
@@ -171,11 +172,35 @@ const sanitizeExpression = (exp: Expression): KExp =>
     .with({ type: "NumericLiteral" }, (exp) => exp)
     .with({ type: "BigIntLiteral" }, (exp) => exp)
     .with({ type: "StringLiteral" }, (exp) => exp)
-    .with({ type: "TemplateLiteral" }, (exp) => exp)
+    .with({ type: "TaggedTemplateExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KTaggedTemplateExpression",
+      tag: sanitizeExpression(exp.tag),
+      template: sanitizeExpression(exp.template) as KTemplateLiteral,
+    }))
+    .with({ type: "TemplateLiteral" }, (exp) => ({
+      span: exp.span,
+      type: "KTemplateLiteral",
+      expressions: exp.expressions.map((e) => sanitizeExpression(e)),
+      quasis: exp.quasis,
+    }))
     .with({ type: "RegExpLiteral" }, () => {
       throw new Error("Regexes are not yet implemented.");
     })
-    .with({ type: "ArrayExpression" }, () => {})
+    .with({ type: "ArrayExpression" }, (exp) => ({
+      span: exp.span,
+      type: "KArrayExpression",
+      elements: exp.elements.map((el) => {
+        if (!el) {
+          return undefined;
+        }
+
+        return {
+          spread: el.spread,
+          expression: sanitizeExpression(el.expression),
+        };
+      }),
+    }))
     // The SWC type definition for an arrow function expression has a "generator" flag, but
     // it's not syntactically possible for an arrow function to be a generator, so we don't
     // test for that here.
@@ -219,7 +244,24 @@ const sanitizeExpression = (exp: Expression): KExp =>
         right: sanitizeExpression(exp.right),
       };
     })
-    .with({ type: "CallExpression" }, () => {})
+    .with({ type: "CallExpression" }, (exp) => {
+      if (exp.callee.type === "Super") {
+        throw new Error("`super` is forbidden in Kythera.");
+      }
+
+      return {
+        span: exp.span,
+        type: "KCallExpression",
+        callee:
+          exp.callee.type === "Import"
+            ? exp.callee
+            : sanitizeExpression(exp.callee),
+        arguments: exp.arguments.map((arg) => ({
+          spread: arg.spread,
+          expression: sanitizeExpression(arg.expression),
+        })),
+      };
+    })
     .with({ type: "ConditionalExpression" }, (exp) => ({
       span: exp.span,
       type: "KConditionalExpression",
@@ -261,7 +303,6 @@ const sanitizeExpression = (exp: Expression): KExp =>
       type: "KSequenceExpression",
       expressions: exp.expressions.map((e) => sanitizeExpression(e)),
     }))
-    .with({ type: "TaggedTemplateExpression" }, () => {})
     .with({ type: "UnaryExpression" }, (exp) => {
       if (
         exp.operator === "typeof" ||

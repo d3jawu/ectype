@@ -7,13 +7,14 @@ import type {
   NumericLiteral,
   BigIntLiteral,
   StringLiteral,
-  TemplateLiteral,
   DebuggerStatement,
   EmptyStatement,
   BreakStatement,
   ContinueStatement,
   ExportNamedDeclaration,
   ImportDeclaration,
+  Import,
+  TemplateElement,
   Identifier,
   AssignmentOperator,
 } from "@swc/core";
@@ -143,9 +144,11 @@ export type KExp =
   | KAssignmentExpression
   | KAwaitExpression
   | KBinaryExpression
+  | KCallExpression
   | KConditionalExpression
   | KMemberExpression
   | KSequenceExpression
+  | KTemplateLiteral
   | KUnaryExpression;
 
 export interface KArrayExpression extends Node, HasSpan {
@@ -206,6 +209,17 @@ export interface KBinaryExpression extends Node, HasSpan {
   right: KExp;
 }
 
+export interface KCallExpression extends Node, HasSpan {
+  type: "KCallExpression";
+  callee: Import | KExp;
+  arguments: KArgument[];
+}
+
+export interface KArgument {
+  spread?: Span;
+  expression: KExp;
+}
+
 export interface KConditionalExpression extends Node, HasSpan {
   type: "KConditionalExpression";
   test: KExp;
@@ -227,6 +241,18 @@ export interface KComputedPropName extends Node, HasSpan {
 export interface KSequenceExpression extends Node, HasSpan {
   type: "KSequenceExpression";
   expressions: KExp[];
+}
+
+export interface KTaggedTemplateExpression extends Node, HasSpan {
+  type: "KTaggedTemplateExpression";
+  tag: KExp;
+  template: KTemplateLiteral;
+}
+
+export interface KTemplateLiteral extends Node, HasSpan {
+  type: "KTemplateLiteral";
+  expressions: KExp[];
+  quasis: TemplateElement[];
 }
 
 export type KUnaryOperator = "-" | "+" | "!" | "~";
