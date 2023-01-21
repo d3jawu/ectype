@@ -1,4 +1,5 @@
 // The type used for type annotations.
+
 // Not to be conflated with the Type value used at runtime (found in /core).
 export type TypeAnnotation =
   // The "deferred" tag is given to values whose types are not knowable at compile-time.
@@ -45,4 +46,5 @@ export type TypeAnnotation =
     }
   | {
       ktype: "type";
+      type: TypeAnnotation;
     };
