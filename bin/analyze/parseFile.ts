@@ -1,6 +1,6 @@
 import { parseFileSync } from "@swc/core";
 import { sanitize } from "./sanitize.js";
-import { annotate } from "./annotate.js";
+import { typeCheck } from "./typeCheck.js";
 
 export function parseFile(path: string) {
   const { body: ast } = parseFileSync(path);
@@ -8,5 +8,5 @@ export function parseFile(path: string) {
   const sanitized = sanitize(ast);
   console.log(sanitized);
 
-  const annotated = annotate(sanitized);
+  typeCheck(sanitized);
 }

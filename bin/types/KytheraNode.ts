@@ -20,11 +20,10 @@ import type {
 } from "@swc/core";
 
 import type { KPattern } from "./KPattern";
-import { TypeAnnotation } from "./TypeAnnotation";
 
 export type KNode = KExp | KStatement;
 
-export type KStatement = (
+export type KStatement =
   | DebuggerStatement
   | EmptyStatement
   | KBlockStatement
@@ -40,10 +39,7 @@ export type KStatement = (
   | KTryStatement
   | KIfStatement
   | KReturnStatement
-  | KLabeledStatement
-) & {
-  atype?: { ktype: "statement" };
-};
+  | KLabeledStatement;
 
 export interface KBlockStatement extends Node, HasSpan {
   type: "KBlockStatement";
@@ -135,7 +131,7 @@ export interface KCatchClause extends Node, HasSpan {
   body: KBlockStatement;
 }
 
-export type KExp = (
+export type KExp =
   | NullLiteral
   | BooleanLiteral
   | NumericLiteral
@@ -154,10 +150,7 @@ export type KExp = (
   | KSequenceExpression
   | KTaggedTemplateExpression
   | KTemplateLiteral
-  | KUnaryExpression
-) & {
-  atype?: TypeAnnotation;
-};
+  | KUnaryExpression;
 
 export interface KArrayExpression extends Node {
   type: "KArrayExpression";

@@ -1,5 +1,3 @@
-// The type used for type annotations.
-
 // Not to be conflated with the Type value used at runtime (found in /core).
 export type TypeAnnotation =
   // The "deferred" tag is given to values whose types are not knowable at compile-time.
@@ -48,3 +46,24 @@ export type TypeAnnotation =
       ktype: "type";
       type: TypeAnnotation;
     };
+
+const Deferred: TypeAnnotation = {
+  ktype: "deferred",
+};
+const Statement: TypeAnnotation = {
+  ktype: "statement",
+};
+const Null: TypeAnnotation = {
+  ktype: "null",
+};
+const Bool: TypeAnnotation = {
+  ktype: "bool",
+};
+const Num: TypeAnnotation = {
+  ktype: "num",
+};
+const Str: TypeAnnotation = {
+  ktype: "str",
+};
+
+export { Deferred, Statement, Null, Bool, Num, Str };

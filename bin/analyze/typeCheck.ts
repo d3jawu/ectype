@@ -1,4 +1,5 @@
-import type { TypeAnnotation } from "../types/TypeAnnotation";
+import { Bool, TypeAnnotation } from "../types/TypeAnnotation";
+import { Num } from "../types/TypeAnnotation";
 import type {
   KBinaryOperator,
   KExp,
@@ -37,13 +38,13 @@ class SymbolTable {
   }
 }
 
-export const annotate = (body: KNode[]): KNode[] =>
-  body.map((node) => annotateNode(node));
-
 let currentScope = new SymbolTable(null);
 
-const annotateNode = (node: KNode): KNode =>
-  match<KNode, KNode>(node)
+export const typeCheck = (body: KNode[]) =>
+  body.forEach((node) => typeCheckNode(node));
+
+const typeCheckNode = (node: KNode) =>
+  match<KNode, void>(node)
     .with(
       { type: "BreakStatement" },
       { type: "ContinueStatement" },
@@ -51,10 +52,12 @@ const annotateNode = (node: KNode): KNode =>
       { type: "EmptyStatement" },
       { type: "ExportNamedDeclaration" },
       { type: "ImportDeclaration" },
-      (node) => ({ ...node, atype: { ktype: "statement" } })
+      () => {}
     )
-    .with({ type: "KBlockStatement" }, () => {})
-    .with({ type: "KDoWhileStatement" }, () => {})
+    .with({ type: "KBlockStatement" }, (node) => {
+      node.statements.forEach((st) => typeCheckNode(st));
+    })
+    .with({ type: "KDoWhileStatement" }, (node) => {})
     .with({ type: "KForStatement" }, () => {})
     .with({ type: "KIfStatement" }, () => {})
     .with({ type: "KLabeledStatement" }, () => {})
@@ -63,38 +66,23 @@ const annotateNode = (node: KNode): KNode =>
     .with({ type: "KTryStatement" }, () => {})
     .with({ type: "KVariableDeclaration" }, () => {})
     .with({ type: "KWhileStatement" }, () => {})
-    .otherwise((node) => annotateExp(node as KExp));
+    .otherwise((node) => typeCheckExp(node as KExp));
 
-const annotateExp = (node: KExp): KExp =>
-  match<KExp, KExp>(node)
+const typeCheckExp = (node: KExp): TypeAnnotation =>
+  match<KExp, TypeAnnotation>(node)
     // TODO is this right for BigInt?
-    .with({ type: "BigIntLiteral" }, (node) => ({
-      ...node,
-      atype: { ktype: "num" },
-    }))
-    .with({ type: "BooleanLiteral" }, (node) => ({
-      ...node,
-      atype: { ktype: "bool" },
-    }))
-    .with({ type: "NullLiteral" }, (node) => ({
-      ...node,
-      atype: { ktype: "null" },
-    }))
-    .with({ type: "NumericLiteral" }, (node) => ({
-      ...node,
-      atype: { ktype: "num" },
-    }))
-    .with({ type: "StringLiteral" }, (node) => ({
-      ...node,
-      atype: { ktype: "str" },
-    }))
+    .with({ type: "BigIntLiteral" }, (node) => ({ ktype: "num" }))
+    .with({ type: "BooleanLiteral" }, (node) => ({ ktype: "bool" }))
+    .with({ type: "NullLiteral" }, (node) => ({ ktype: "null" }))
+    .with({ type: "NumericLiteral" }, (node) => ({ ktype: "num" }))
+    .with({ type: "StringLiteral" }, (node) => ({ ktype: "str" }))
     .with({ type: "Identifier" }, (node) => {
       const maybeType = currentScope.get(node.value);
       if (!maybeType) {
         throw new Error(`${node.value} is undeclared.`);
       }
 
-      return { ...node, atype: maybeType };
+      return maybeType;
     })
     .with({ type: "KArrayExpression" }, () => {
       throw new Error(
@@ -111,13 +99,27 @@ const annotateExp = (node: KExp): KExp =>
       throw new Error(`await is not yet implemented.`);
     })
     .with({ type: "KBinaryExpression" }, (node) =>
-      match<KBinaryOperator, KExp>(node.operator)
-        .with("===", "!==", "&&", "||", "<", "<=", ">", ">=", () => ({
-          ...node,
-          left: annotateExp(node.left),
-          right: annotateExp(node.right),
-          atype: { ktype: "bool" },
-        }))
+      match<KBinaryOperator, TypeAnnotation>(node.operator)
+        .with("===", "!==", "&&", "||", () => {
+          const left = typeCheckExp(node.left);
+          const right = typeCheckExp(node.right);
+
+          if (!typeEq(left, Bool) || !typeEq(right, Bool)) {
+            throw new Error(``);
+          }
+
+          return { ktype: "bool" };
+        })
+        .with("<", "<=", ">", ">=", () => {
+          const left = typeCheckExp(node.left);
+          const right = typeCheckExp(node.right);
+
+          if (!typeEq(left, Num) || !typeEq(right, Num)) {
+            throw new Error(``);
+          }
+
+          return { ktype: "bool" };
+        })
         .with(
           "+",
           "-",
@@ -131,44 +133,55 @@ const annotateExp = (node: KExp): KExp =>
           "<<",
           ">>",
           ">>>",
-          () => ({
-            ...node,
-            atype: { ktype: "num" },
-          })
+          () => {
+            const left = typeCheckExp(node.left);
+            const right = typeCheckExp(node.right);
+
+            if (!typeEq(left, Num) || !typeEq(right, Num)) {
+              throw new Error(``);
+            }
+
+            return { ktype: "num" };
+          }
         )
         .with("??", () => {
           throw new Error("`??` is forbidden in Kythera.");
         })
         .exhaustive()
     )
-    .with({ type: "KCallExpression" }, () => {
-      // This is the big one. Calls to type constructors are handled here too.
-      // Type constructors are only ever called directly.
+    .with({ type: "KCallExpression" }, (node) => {
+      if (node.callee.type === "Identifier") {
+        // Check to see if the callee was a keyword function.
+      }
+
+      // If not, it's a normal call expression.
     })
-    .with({ type: "KConditionalExpression" }, () => {})
+    .with({ type: "KConditionalExpression" }, (node) => {})
     .with({ type: "KMemberExpression" }, () => {})
     .with({ type: "KObjectExpression" }, () => {})
     .with({ type: "KSequenceExpression" }, () => {})
     .with({ type: "KTaggedTemplateExpression" }, () => {})
     .with({ type: "KTemplateLiteral" }, () => {})
     .with({ type: "KUnaryExpression" }, (node) =>
-      match<KUnaryOperator, KExp>(node.operator)
-        .with("!", () => ({
-          ...node,
-          atype: { ktype: "bool" },
-        }))
-        .with("+", () => ({
-          ...node,
-          atype: { ktype: "num" },
-        }))
-        .with("-", () => ({
-          ...node,
-          atype: { ktype: "num" },
-        }))
-        .with("~", () => ({
-          ...node,
-          atype: { ktype: "num" },
-        }))
+      match<KUnaryOperator, TypeAnnotation>(node.operator)
+        .with("!", () => ({ ktype: "bool" }))
+        .with("+", () => ({ ktype: "num" }))
+        .with("-", () => ({ ktype: "num" }))
+        .with("~", () => ({ ktype: "num" }))
         .exhaustive()
     )
     .exhaustive();
+
+const typeEq = (a: TypeAnnotation, b: TypeAnnotation): boolean => {
+  const ktype = a.ktype;
+
+  if (ktype !== b.ktype) {
+    return false;
+  }
+
+  if (ktype === "fn") {
+    return typeEq(a.from, b.from);
+  } else {
+    return true;
+  }
+};
