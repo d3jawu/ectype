@@ -9,6 +9,7 @@ import type {
 } from "../types/KytheraNode";
 
 import { match } from "ts-pattern";
+import { KPattern } from "../types/KPattern";
 
 class SymbolTable {
   parent: SymbolTable | null;
@@ -57,16 +58,91 @@ const typeCheckNode = (node: KNode) =>
     .with({ type: "KBlockStatement" }, (node) => {
       node.statements.forEach((st) => typeCheckNode(st));
     })
-    .with({ type: "KDoWhileStatement" }, (node) => {})
-    .with({ type: "KForStatement" }, () => {})
-    .with({ type: "KIfStatement" }, () => {})
-    .with({ type: "KLabeledStatement" }, () => {})
-    .with({ type: "KReturnStatement" }, () => {})
-    .with({ type: "KSwitchStatement" }, () => {})
-    .with({ type: "KTryStatement" }, () => {})
+    .with({ type: "KDoWhileStatement" }, (node) => {
+      const testType = typeCheckExp(node.test);
+      if (!typeEq(testType, Bool)) {
+        throw new Error(`Condition for do-while must be a Bool.`);
+      }
+
+      typeCheckNode(node.body);
+    })
+    .with({ type: "KForStatement" }, (node) => {
+      if (node.init && node.init.type !== "KVariableDeclaration") {
+        typeCheckExp(node.init);
+      }
+
+      if (node.test) {
+        const testType = typeCheckExp(node.test);
+
+        if (!typeEq(testType, Bool)) {
+          throw new Error(`Condition for for-loop must be a Bool.`);
+        }
+      }
+
+      if (node.update) {
+        typeCheckExp(node.update);
+      }
+
+      typeCheckNode(node.body);
+    })
+    .with({ type: "KIfStatement" }, (node) => {
+      const testType = typeCheckExp(node.test);
+      if (!typeEq(testType, Bool)) {
+        throw new Error(`Condition for if-statement must be a Bool.`);
+      }
+
+      typeCheckNode(node.consequent);
+
+      if (node.alternate) {
+        typeCheckNode(node.alternate);
+      }
+    })
+    .with({ type: "KLabeledStatement" }, (node) => {
+      typeCheckNode(node.body);
+    })
+    .with({ type: "KReturnStatement" }, (node) => {
+      if (node.argument) {
+        typeCheckExp(node.argument);
+      }
+    })
+    .with({ type: "KSwitchStatement" }, (node) => {
+      typeCheckExp(node.discriminant);
+
+      node.cases.forEach((c) => {
+        if (c.test) {
+          typeCheckExp(c.test);
+        }
+
+        c.consequent.forEach((n) => typeCheckNode(n));
+      });
+    })
+    .with({ type: "KTryStatement" }, (node) => {
+      typeCheckNode(node.block);
+
+      if (node.handler) {
+        if (node.handler.param) {
+          typeCheckPattern(node.handler.param);
+        }
+
+        typeCheckNode(node.handler.body);
+      }
+
+      if (node.finalizer) {
+        typeCheckNode(node.finalizer);
+      }
+    })
     .with({ type: "KVariableDeclaration" }, () => {})
-    .with({ type: "KWhileStatement" }, () => {})
+    .with({ type: "KWhileStatement" }, (node) => {
+      const testType = typeCheckExp(node.test);
+      if (!typeEq(testType, Bool)) {
+        throw new Error(`Condition for while-statement must be a Bool.`);
+      }
+
+      typeCheckNode(node.body);
+    })
     .otherwise((node) => typeCheckExp(node as KExp));
+
+const typeCheckPattern = (pattern: KPattern) => {};
 
 const typeCheckExp = (node: KExp): TypeAnnotation =>
   match<KExp, TypeAnnotation>(node)
@@ -154,7 +230,7 @@ const typeCheckExp = (node: KExp): TypeAnnotation =>
         // Check to see if the callee was a keyword function.
       }
 
-      // If not, it's a normal call expression.
+      // Otherwise, it's a normal call expression.
     })
     .with({ type: "KConditionalExpression" }, (node) => {})
     .with({ type: "KMemberExpression" }, () => {})
@@ -173,15 +249,50 @@ const typeCheckExp = (node: KExp): TypeAnnotation =>
     .exhaustive();
 
 const typeEq = (a: TypeAnnotation, b: TypeAnnotation): boolean => {
-  const ktype = a.ktype;
-
-  if (ktype !== b.ktype) {
+  if (a.ktype !== b.ktype) {
     return false;
   }
 
-  if (ktype === "fn") {
-    return typeEq(a.from, b.from);
-  } else {
-    return true;
+  // Would love to know if there's a more elegant way to write these type guards.
+
+  if (a.ktype === "fn" && b.ktype === "fn") {
+    return typeEq(a.from, b.from) && typeEq(a.to, b.to);
   }
+
+  if (a.ktype === "variant" && b.ktype === "variant") {
+    const aOptions = Object.entries(a.options);
+    const bOptions = Object.entries(b.options);
+
+    return (
+      aOptions.length === bOptions.length &&
+      aOptions.every(
+        ([aKey, aVal]) => b.options[aKey] && typeEq(aVal, b.options[aKey])
+      )
+    );
+  }
+
+  if (a.ktype === "tuple" && b.ktype === "tuple") {
+    return (
+      a.fields.length === b.fields.length &&
+      a.fields.every((val, i) => typeEq(val, b.fields[i]))
+    );
+  }
+
+  if (a.ktype === "array" && b.ktype === "array") {
+    return typeEq(a.contains, b.contains);
+  }
+
+  if (a.ktype === "variant" && b.ktype === "variant") {
+    const aOptions = Object.entries(a.options);
+    const bOptions = Object.entries(b.options);
+
+    return (
+      aOptions.length === bOptions.length &&
+      aOptions.every(
+        ([aKey, aVal]) => b.options[aKey] && typeEq(aVal, b.options[aKey])
+      )
+    );
+  }
+
+  return true;
 };
