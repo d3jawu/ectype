@@ -147,7 +147,7 @@ const typeCheckPattern = (pattern: KPattern) => {};
 
 const typeCheckExp = (node: KExp): Type =>
   match<KExp, Type>(node)
-    // TODO is this right for BigInt?
+    // TODO BigInt needs its own type.
     .with({ type: "BigIntLiteral" }, (node) => Num)
     .with({ type: "BooleanLiteral" }, (node) => Bool)
     .with({ type: "NullLiteral" }, (node) => Null)
@@ -233,12 +233,39 @@ const typeCheckExp = (node: KExp): Type =>
 
       // Otherwise, it's a normal call expression.
     })
-    .with({ type: "KConditionalExpression" }, (node) => {})
+    .with({ type: "KConditionalExpression" }, (node) => {
+      const testType = typeCheckExp(node.test);
+      if (!testType.sub(Bool)) {
+        throw new Error(`Condition for ternary expression must be a Bool.`);
+      }
+
+      const consequentType = typeCheckExp(node.consequent);
+      const alternateType = typeCheckExp(node.alternate);
+
+      if (
+        !consequentType.sub(alternateType) ||
+        !alternateType.sub(consequentType)
+      ) {
+        throw new Error(`Types for ternary expression results must match.`);
+      }
+
+      return alternateType;
+    })
     .with({ type: "KMemberExpression" }, () => {})
     .with({ type: "KObjectExpression" }, () => {})
-    .with({ type: "KSequenceExpression" }, () => {})
-    .with({ type: "KTaggedTemplateExpression" }, () => {})
-    .with({ type: "KTemplateLiteral" }, () => {})
+    .with({ type: "KSequenceExpression" }, (node) => {
+      node.expressions.forEach((exp) => typeCheckExp(exp));
+
+      return typeCheckExp(node.expressions[node.expressions.length - 1]);
+    })
+    .with({ type: "KTaggedTemplateExpression" }, () => {
+      throw new Error(`Tagged tempaltes are not yet implemented.`);
+    })
+    .with({ type: "KTemplateLiteral" }, (node) => {
+      node.expressions.forEach((exp) => typeCheckExp(exp));
+
+      return Str;
+    })
     .with({ type: "KUnaryExpression" }, (node) =>
       match<KUnaryOperator, Type>(node.operator)
         .with("!", () => Bool)
