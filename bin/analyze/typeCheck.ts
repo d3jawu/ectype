@@ -1,5 +1,3 @@
-import { Bool, TypeAnnotation } from "../types/TypeAnnotation";
-import { Num } from "../types/TypeAnnotation";
 import type {
   KBinaryOperator,
   KExp,
@@ -8,19 +6,22 @@ import type {
   KUnaryOperator,
 } from "../types/KytheraNode";
 
+import { Type } from "../../core/types.js";
+import { Null, Num, Bool, Str } from "../../core/primitives.js";
+
 import { match } from "ts-pattern";
 import { KPattern } from "../types/KPattern";
 
 class SymbolTable {
   parent: SymbolTable | null;
-  values: Record<string, TypeAnnotation>;
+  values: Record<string, Type>;
 
   constructor(parent: SymbolTable | null) {
     this.parent = parent;
     this.values = {};
   }
 
-  get(name: string): TypeAnnotation | null {
+  get(name: string): Type | null {
     if (name in this.values) {
       return this.values[name];
     } else if (this.parent !== null) {
@@ -30,7 +31,7 @@ class SymbolTable {
     }
   }
 
-  set(name: string, type: TypeAnnotation) {
+  set(name: string, type: Type) {
     if (name in this.values) {
       throw new Error(`${name} is already defined in this immediate scope.`);
     }
@@ -60,7 +61,7 @@ const typeCheckNode = (node: KNode) =>
     })
     .with({ type: "KDoWhileStatement" }, (node) => {
       const testType = typeCheckExp(node.test);
-      if (!typeEq(testType, Bool)) {
+      if (!testType.sub(Bool)) {
         throw new Error(`Condition for do-while must be a Bool.`);
       }
 
@@ -74,7 +75,7 @@ const typeCheckNode = (node: KNode) =>
       if (node.test) {
         const testType = typeCheckExp(node.test);
 
-        if (!typeEq(testType, Bool)) {
+        if (!testType.sub(Bool)) {
           throw new Error(`Condition for for-loop must be a Bool.`);
         }
       }
@@ -87,7 +88,7 @@ const typeCheckNode = (node: KNode) =>
     })
     .with({ type: "KIfStatement" }, (node) => {
       const testType = typeCheckExp(node.test);
-      if (!typeEq(testType, Bool)) {
+      if (!testType.sub(Bool)) {
         throw new Error(`Condition for if-statement must be a Bool.`);
       }
 
@@ -134,7 +135,7 @@ const typeCheckNode = (node: KNode) =>
     .with({ type: "KVariableDeclaration" }, () => {})
     .with({ type: "KWhileStatement" }, (node) => {
       const testType = typeCheckExp(node.test);
-      if (!typeEq(testType, Bool)) {
+      if (!testType.sub(Bool)) {
         throw new Error(`Condition for while-statement must be a Bool.`);
       }
 
@@ -144,14 +145,14 @@ const typeCheckNode = (node: KNode) =>
 
 const typeCheckPattern = (pattern: KPattern) => {};
 
-const typeCheckExp = (node: KExp): TypeAnnotation =>
-  match<KExp, TypeAnnotation>(node)
+const typeCheckExp = (node: KExp): Type =>
+  match<KExp, Type>(node)
     // TODO is this right for BigInt?
-    .with({ type: "BigIntLiteral" }, (node) => ({ ktype: "num" }))
-    .with({ type: "BooleanLiteral" }, (node) => ({ ktype: "bool" }))
-    .with({ type: "NullLiteral" }, (node) => ({ ktype: "null" }))
-    .with({ type: "NumericLiteral" }, (node) => ({ ktype: "num" }))
-    .with({ type: "StringLiteral" }, (node) => ({ ktype: "str" }))
+    .with({ type: "BigIntLiteral" }, (node) => Num)
+    .with({ type: "BooleanLiteral" }, (node) => Bool)
+    .with({ type: "NullLiteral" }, (node) => Null)
+    .with({ type: "NumericLiteral" }, (node) => Num)
+    .with({ type: "StringLiteral" }, (node) => Str)
     .with({ type: "Identifier" }, (node) => {
       const maybeType = currentScope.get(node.value);
       if (!maybeType) {
@@ -175,26 +176,26 @@ const typeCheckExp = (node: KExp): TypeAnnotation =>
       throw new Error(`await is not yet implemented.`);
     })
     .with({ type: "KBinaryExpression" }, (node) =>
-      match<KBinaryOperator, TypeAnnotation>(node.operator)
+      match<KBinaryOperator, Type>(node.operator)
         .with("===", "!==", "&&", "||", () => {
           const left = typeCheckExp(node.left);
           const right = typeCheckExp(node.right);
 
-          if (!typeEq(left, Bool) || !typeEq(right, Bool)) {
-            throw new Error(``);
+          if (!left.sub(Bool) || !right.sub(Bool)) {
+            throw new Error(`${node.operator} requires a Bool on both sides.`);
           }
 
-          return { ktype: "bool" };
+          return Bool;
         })
         .with("<", "<=", ">", ">=", () => {
           const left = typeCheckExp(node.left);
           const right = typeCheckExp(node.right);
 
-          if (!typeEq(left, Num) || !typeEq(right, Num)) {
-            throw new Error(``);
+          if (!left.sub(Num) || !right.sub(Num)) {
+            throw new Error(`${node.operator} requires a Num on both sides.`);
           }
 
-          return { ktype: "bool" };
+          return Bool;
         })
         .with(
           "+",
@@ -213,11 +214,11 @@ const typeCheckExp = (node: KExp): TypeAnnotation =>
             const left = typeCheckExp(node.left);
             const right = typeCheckExp(node.right);
 
-            if (!typeEq(left, Num) || !typeEq(right, Num)) {
-              throw new Error(``);
+            if (!left.sub(Num) || !right.sub(Num)) {
+              throw new Error(`${node.operator} requires a Num on both sides.`);
             }
 
-            return { ktype: "num" };
+            return Num;
           }
         )
         .with("??", () => {
@@ -239,60 +240,11 @@ const typeCheckExp = (node: KExp): TypeAnnotation =>
     .with({ type: "KTaggedTemplateExpression" }, () => {})
     .with({ type: "KTemplateLiteral" }, () => {})
     .with({ type: "KUnaryExpression" }, (node) =>
-      match<KUnaryOperator, TypeAnnotation>(node.operator)
-        .with("!", () => ({ ktype: "bool" }))
-        .with("+", () => ({ ktype: "num" }))
-        .with("-", () => ({ ktype: "num" }))
-        .with("~", () => ({ ktype: "num" }))
+      match<KUnaryOperator, Type>(node.operator)
+        .with("!", () => Bool)
+        .with("+", () => Num)
+        .with("-", () => Num)
+        .with("~", () => Num)
         .exhaustive()
     )
     .exhaustive();
-
-const typeEq = (a: TypeAnnotation, b: TypeAnnotation): boolean => {
-  if (a.ktype !== b.ktype) {
-    return false;
-  }
-
-  // Would love to know if there's a more elegant way to write these type guards.
-
-  if (a.ktype === "fn" && b.ktype === "fn") {
-    return typeEq(a.from, b.from) && typeEq(a.to, b.to);
-  }
-
-  if (a.ktype === "variant" && b.ktype === "variant") {
-    const aOptions = Object.entries(a.options);
-    const bOptions = Object.entries(b.options);
-
-    return (
-      aOptions.length === bOptions.length &&
-      aOptions.every(
-        ([aKey, aVal]) => b.options[aKey] && typeEq(aVal, b.options[aKey])
-      )
-    );
-  }
-
-  if (a.ktype === "tuple" && b.ktype === "tuple") {
-    return (
-      a.fields.length === b.fields.length &&
-      a.fields.every((val, i) => typeEq(val, b.fields[i]))
-    );
-  }
-
-  if (a.ktype === "array" && b.ktype === "array") {
-    return typeEq(a.contains, b.contains);
-  }
-
-  if (a.ktype === "variant" && b.ktype === "variant") {
-    const aOptions = Object.entries(a.options);
-    const bOptions = Object.entries(b.options);
-
-    return (
-      aOptions.length === bOptions.length &&
-      aOptions.every(
-        ([aKey, aVal]) => b.options[aKey] && typeEq(aVal, b.options[aKey])
-      )
-    );
-  }
-
-  return true;
-};
