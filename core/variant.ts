@@ -46,23 +46,6 @@ const variant = (options: Record<string, Type>): VariantType => {
   };
 };
 
-/*
-
-Desired interface:
-
-ifLet(myOptionVal, {
-  Some: (val) => {
-
-  }
-  None: () => {
-
-  }
-}, () => {
-  // else-behavior
-})
-
-*/
-
 // Interface and implementation subject to change.
 // const ifLet = (key, variantVal, handler) => {};
 

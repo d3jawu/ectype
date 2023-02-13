@@ -1,6 +1,7 @@
 type Option<T> = { Some: T } | { None: null };
 
 export type Type =
+  | VoidType
   | NullType
   | BoolType
   | NumType
@@ -24,6 +25,14 @@ export type Type =
 
 // `sub` returns true if the type is a subtype of `other` - that is, values of
 // the type can be safely substituted in anywhere a value of `other` is present.
+
+export interface VoidType {
+  from: (val: null) => never;
+  conform: (val: unknown) => never;
+  valid: (val: unknown) => boolean;
+  sub: (other: Type) => boolean;
+  __ktype__: "void";
+}
 
 export interface NullType {
   from: (val: null) => null;

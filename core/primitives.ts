@@ -1,4 +1,17 @@
-import type { NullType, BoolType, NumType, StrType } from "./types";
+import type { NullType, BoolType, NumType, StrType, VoidType } from "./types";
+
+// Void is a type that has no values.
+const Void: VoidType = {
+  from: (val) => {
+    throw new Error(`No values can be created under the null type.`);
+  },
+  conform: (val) => {
+    throw new Error(`No values with the null type exist.`);
+  },
+  valid: (val) => false,
+  sub: (other) => other.__ktype__ === "void",
+  __ktype__: "void",
+};
 
 // Null is a type that only has one value, `null`.
 const Null: NullType = {
@@ -33,4 +46,4 @@ const Str: StrType = {
   __ktype__: "str",
 };
 
-export { Null, Bool, Num, Str };
+export { Void, Null, Bool, Num, Str };
