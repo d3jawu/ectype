@@ -3,10 +3,10 @@ import type { NullType, BoolType, NumType, StrType, VoidType } from "./types";
 // Void is a type that has no values.
 const Void: VoidType = {
   from: (val) => {
-    throw new Error(`No values can be created under the null type.`);
+    throw new Error(`No values can be created under the void type.`);
   },
   conform: (val) => {
-    throw new Error(`No values with the null type exist.`);
+    throw new Error(`No values with the void type exist.`);
   },
   valid: (val) => false,
   sub: (other) => other.__ktype__ === "void",

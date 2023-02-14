@@ -1,5 +1,7 @@
 import { Type, VariantType } from "./types.js";
+import { Void, Bool } from "./primitives.js";
 import { struct } from "./struct.js";
+import { fn } from "./fn.js";
 
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
@@ -18,6 +20,18 @@ const variant = (options: Record<string, Type>): VariantType => {
     return options[key].valid(val[key as keyof typeof val]);
   };
 
+  // construct the interface that all options under this variant will fulfill.
+  const optionType: Record<string, Type> = Object.entries(options).reduce(
+    (acc, [k, v]) => {
+      acc[`is${k}`] = fn(Void, Bool);
+
+      return acc;
+    },
+    {}
+  );
+
+  const Option = struct(optionType);
+
   return {
     from: (val) => val,
     conform: (val) =>
@@ -26,11 +40,6 @@ const variant = (options: Record<string, Type>): VariantType => {
     // match: () => {},
     has: (name) => options.hasOwnProperty(name),
     get: (name) => options[name],
-    option: (name) =>
-      struct({
-        [name]: options[name],
-      }),
-    options: () => Object.entries(options),
     sub: (other) => {
       if (other.__ktype__ !== "variant") {
         return false;
@@ -42,26 +51,26 @@ const variant = (options: Record<string, Type>): VariantType => {
         other.has(key) && options[key].sub(other.get(key));
       });
     },
+    match: (val) => {},
+    Option,
+    of: (mappedVal: Record<string, unknown>) => {
+      // assume analyzer has ensured record has exactly one entry.
+      const [name, val] = Object.entries(mappedVal)[0];
+
+      // fulfill Option type.
+      const members = Object.entries(options).reduce((acc, [k, v]) => {
+        acc[`is${k}`] = k === name ? () => true : () => false;
+
+        return acc;
+      }, {});
+
+      return Option.from({
+        [name]: val,
+        ...members,
+      });
+    },
     __ktype__: "variant",
   };
 };
 
-// Interface and implementation subject to change.
-// const ifLet = (key, variantVal, handler) => {};
-
-// Interface and implementation subject to change.
-const match = (
-  variant: {},
-  handlers: Record<string, (val: unknown) => unknown>,
-  elseHandler: () => unknown
-) => {
-  const [variantKey, variantVal] = Object.entries(variant)[0];
-
-  if (handlers.hasOwnProperty(variantKey)) {
-    return handlers[variantKey](variantVal);
-  } else {
-    return elseHandler();
-  }
-};
-
-export { variant, match };
+export { variant };

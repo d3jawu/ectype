@@ -82,9 +82,10 @@ export interface VariantType {
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
   get: (name: string) => Type; // gets the type held in that option. name TBD
-  option: (name: string) => Type; // gets the wrapping struct type for that option.
-  options: () => [string, Type][];
+  match: (val: unknown) => unknown;
+  of: (val: Record<string, unknown>) => unknown;
   sub: (other: Type) => boolean;
+  Option: Type;
   __ktype__: "variant";
 }
 

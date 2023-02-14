@@ -1,5 +1,8 @@
 import type { Type, TupleType } from "./types.js";
 
+// Something has to import variant, or TypeScript won't compile it for some reason. >:(
+import { variant } from "./variant.js";
+
 const tuple = (fields: Type[]): TupleType => {
   const valid = (val: unknown) => {
     if (!Array.isArray(val)) {
