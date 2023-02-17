@@ -59,7 +59,9 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       // fulfill Option type.
       const members = Object.entries(options).reduce((acc, [k, v]) => {
-        acc[`is${k}`] = k === name ? () => true : () => false;
+        acc[`is${k}`] = fn(Void, Bool).from(
+          k === name ? () => true : () => false
+        );
 
         return acc;
       }, {});

@@ -69,7 +69,7 @@ export interface StrType {
 export interface FnType {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => { None: null }; // functions cannot be conformed at runtime.
-  valid: (val: unknown) => false; // functions cannot be validated at runtime.
+  valid: (val: unknown) => boolean;
   param: () => Type;
   returns: () => Type;
   sub: (other: Type) => boolean;
