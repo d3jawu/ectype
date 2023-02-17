@@ -1,4 +1,5 @@
 import { Type, FnType } from "./types.js";
+import { None, someOf } from "./util.js";
 
 const fn = (param: Type, returns: Type): FnType => {
   const valid = (val: unknown): boolean => {
@@ -19,7 +20,7 @@ const fn = (param: Type, returns: Type): FnType => {
       val.__kreturns__ = returns;
       return val;
     },
-    conform: () => ({ None: null }),
+    conform: (val) => (valid(val) ? someOf(val as Function) : None),
     valid,
     param: () => param,
     returns: () => returns,

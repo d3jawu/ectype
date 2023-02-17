@@ -2,6 +2,7 @@ import { Type, VariantType } from "./types.js";
 import { Void, Bool } from "./primitives.js";
 import { struct } from "./struct.js";
 import { fn } from "./fn.js";
+import { someOf, None } from "./util.js";
 
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
@@ -22,7 +23,7 @@ const variant = (options: Record<string, Type>): VariantType => {
 
   // construct the interface that all options under this variant will fulfill.
   const optionType: Record<string, Type> = Object.entries(options).reduce(
-    (acc, [k, v]) => {
+    (acc, [k]) => {
       acc[`is${k}`] = fn(Void, Bool);
 
       return acc;
@@ -35,7 +36,7 @@ const variant = (options: Record<string, Type>): VariantType => {
   return {
     from: (val) => val,
     conform: (val) =>
-      valid(val) ? { Some: val as { [key: string]: any } } : { None: null },
+      valid(val) ? someOf(val as { [key: string]: any }) : None,
     valid,
     // match: () => {},
     has: (name) => options.hasOwnProperty(name),

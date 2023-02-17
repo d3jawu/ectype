@@ -1,4 +1,14 @@
-type Option<T> = { Some: T } | { None: null };
+export type Option<T> =
+  | {
+      Some: T;
+      isSome: () => true;
+      isNone: () => false;
+    }
+  | {
+      None: undefined;
+      isSome: () => false;
+      isNone: () => true;
+    };
 
 export type Type =
   | VoidType
@@ -68,7 +78,7 @@ export interface StrType {
 
 export interface FnType {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => { None: null }; // functions cannot be conformed at runtime.
+  conform: (val: unknown) => Option<Function>;
   valid: (val: unknown) => boolean;
   param: () => Type;
   returns: () => Type;

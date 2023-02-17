@@ -1,7 +1,6 @@
 import type { Type, TupleType } from "./types.js";
 
-// Something has to import variant, or TypeScript won't compile it for some reason. >:(
-import { variant } from "./variant.js";
+import { someOf, None } from "./util.js";
 
 const tuple = (fields: Type[]): TupleType => {
   const valid = (val: unknown) => {
@@ -16,8 +15,7 @@ const tuple = (fields: Type[]): TupleType => {
 
   return {
     from: (val) => val,
-    conform: (val) =>
-      valid(val) ? { Some: val as unknown[] } : { None: null },
+    conform: (val) => (valid(val) ? someOf(val as unknown[]) : None),
     valid,
     field: (pos) => fields[pos],
     fields: () => fields,

@@ -1,6 +1,8 @@
 import { struct } from "../../core/struct.js";
 import { Num } from "../../core/primitives.js";
 
+import { someOf, None } from "../../core/util.js";
+
 import { strict as assert } from "node:assert";
 
 export function conform() {
@@ -14,12 +16,15 @@ export function conform() {
     y: 30,
   });
 
-  assert.deepEqual(maybePoint, {
-    Some: {
-      x: 20,
-      y: 30,
-    },
-  });
+  assert.deepEqual(
+    JSON.stringify(maybePoint),
+    JSON.stringify(
+      someOf({
+        x: 20,
+        y: 30,
+      })
+    )
+  );
 
   const Vector = struct({
     start: Point,
@@ -37,18 +42,21 @@ export function conform() {
     },
   });
 
-  assert.deepEqual(maybeVector, {
-    Some: {
-      start: {
-        x: 10,
-        y: 15,
-      },
-      end: {
-        x: 20,
-        y: 40,
-      },
-    },
-  });
+  assert.deepEqual(
+    JSON.stringify(maybeVector),
+    JSON.stringify(
+      someOf({
+        start: {
+          x: 10,
+          y: 15,
+        },
+        end: {
+          x: 20,
+          y: 40,
+        },
+      })
+    )
+  );
 
   maybeVector = Vector.conform({
     start: {
@@ -61,9 +69,7 @@ export function conform() {
     },
   });
 
-  assert.deepEqual(maybeVector, {
-    None: null,
-  });
+  assert.deepEqual(JSON.stringify(maybeVector), JSON.stringify(None));
 }
 
 export function subtype() {

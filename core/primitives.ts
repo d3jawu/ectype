@@ -1,4 +1,5 @@
 import type { NullType, BoolType, NumType, StrType, VoidType } from "./types";
+import { None, someOf } from "./util.js";
 
 // Void is a type that has no values.
 const Void: VoidType = {
@@ -16,7 +17,7 @@ const Void: VoidType = {
 // Null is a type that only has one value, `null`.
 const Null: NullType = {
   from: (val) => val,
-  conform: (val) => (val === null ? { None: null } : { Some: null }),
+  conform: (val) => (val === null ? someOf(null) : None),
   valid: (val) => val === null,
   sub: (other) => other.__ktype__ === "null",
   __ktype__: "null",
@@ -24,7 +25,7 @@ const Null: NullType = {
 
 const Bool: BoolType = {
   from: (val) => val,
-  conform: (val) => (typeof val === "boolean" ? { Some: val } : { None: null }),
+  conform: (val) => (typeof val === "boolean" ? someOf(val) : None),
   valid: (val) => typeof val === "boolean",
   sub: (other) => other["__ktype__" as keyof typeof other] === "bool",
   __ktype__: "bool",
@@ -32,7 +33,7 @@ const Bool: BoolType = {
 
 const Num: NumType = {
   from: (val) => val,
-  conform: (val) => (typeof val === "number" ? { Some: val } : { None: null }),
+  conform: (val) => (typeof val === "number" ? someOf(val) : None),
   valid: (val) => typeof val === "number",
   sub: (other) => other["__ktype__" as keyof typeof other] === "num",
   __ktype__: "num",
@@ -40,7 +41,7 @@ const Num: NumType = {
 
 const Str: StrType = {
   from: (val) => val,
-  conform: (val) => (typeof val === "string" ? { Some: val } : { None: null }),
+  conform: (val) => (typeof val === "string" ? someOf(val) : None),
   valid: (val) => typeof val === "string",
   sub: (other) => other.__ktype__ === "str",
   __ktype__: "str",

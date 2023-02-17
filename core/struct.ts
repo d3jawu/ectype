@@ -1,4 +1,5 @@
 import type { Type, StructType } from "./types.js";
+import { someOf, None } from "./util.js";
 
 const struct = (shape: Record<string, Type>): StructType => {
   const valid = (val: unknown) => {
@@ -13,8 +14,7 @@ const struct = (shape: Record<string, Type>): StructType => {
 
   return {
     from: (val) => val,
-    conform: (val) =>
-      valid(val) ? { Some: val as Record<string, any> } : { None: null },
+    conform: (val) => (valid(val) ? someOf(val as Record<string, any>) : None),
     valid,
     has: (field) => shape.hasOwnProperty(field),
     field: (field) => shape[field],
