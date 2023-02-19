@@ -32,6 +32,7 @@ const fn = (param: Type, returns: Type): FnType => {
       // contravariant on the parameter type, covariant on the return type
       return other.param().sub(param) && returns.sub(other.returns());
     },
+    toString: () => `fn(${param} => ${returns})`,
     __ktype__: "fn",
   };
 };

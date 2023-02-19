@@ -11,6 +11,7 @@ const Void: VoidType = {
   },
   valid: (val) => false,
   sub: (other) => other.__ktype__ === "void",
+  toString: () => "Void",
   __ktype__: "void",
 };
 
@@ -20,6 +21,7 @@ const Null: NullType = {
   conform: (val) => (val === null ? someOf(null) : None),
   valid: (val) => val === null,
   sub: (other) => other.__ktype__ === "null",
+  toString: () => "Num",
   __ktype__: "null",
 };
 
@@ -28,6 +30,7 @@ const Bool: BoolType = {
   conform: (val) => (typeof val === "boolean" ? someOf(val) : None),
   valid: (val) => typeof val === "boolean",
   sub: (other) => other["__ktype__" as keyof typeof other] === "bool",
+  toString: () => "Bool",
   __ktype__: "bool",
 };
 
@@ -36,6 +39,7 @@ const Num: NumType = {
   conform: (val) => (typeof val === "number" ? someOf(val) : None),
   valid: (val) => typeof val === "number",
   sub: (other) => other["__ktype__" as keyof typeof other] === "num",
+  toString: () => "Num",
   __ktype__: "num",
 };
 
@@ -44,6 +48,7 @@ const Str: StrType = {
   conform: (val) => (typeof val === "string" ? someOf(val) : None),
   valid: (val) => typeof val === "string",
   sub: (other) => other.__ktype__ === "str",
+  toString: () => "Str",
   __ktype__: "str",
 };
 

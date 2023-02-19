@@ -171,7 +171,7 @@ export interface KArrowFunctionExpression extends Node, HasSpan {
 export interface KAssignmentExpression extends Node, HasSpan {
   type: "KAssignmentExpression";
   operator: AssignmentOperator;
-  left: KExp | KPattern;
+  left: KPattern;
   right: KExp;
 }
 

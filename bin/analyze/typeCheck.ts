@@ -2,7 +2,6 @@ import type {
   KBinaryOperator,
   KExp,
   KNode,
-  KStatement,
   KUnaryOperator,
 } from "../types/KytheraNode";
 
@@ -132,7 +131,23 @@ const typeCheckNode = (node: KNode) =>
         typeCheckNode(node.finalizer);
       }
     })
-    .with({ type: "KVariableDeclaration" }, () => {})
+    .with({ type: "KVariableDeclaration" }, (node) => {
+      node.declarations.forEach((decl) => {
+        if (!decl.init) {
+          throw new Error(`Variable ${decl.id} must be initialized.`);
+        }
+
+        const ident: string = match(decl.id)
+          .with({ type: "Identifier" }, (id) => id.value)
+          .otherwise(() => {
+            throw new Error(
+              `Declarations with ${decl.id.type} are not yet supported.`
+            );
+          });
+
+        currentScope.set(ident, typeCheckExp(decl.init));
+      });
+    })
     .with({ type: "KWhileStatement" }, (node) => {
       const testType = typeCheckExp(node.test);
       if (!testType.sub(Bool)) {
@@ -171,7 +186,34 @@ const typeCheckExp = (node: KExp): Type =>
         `Bare function expressions are forbidden; they must be attached to a function type.`
       );
     })
-    .with({ type: "KAssignmentExpression" }, (node) => {})
+    .with({ type: "KAssignmentExpression" }, (node) => {
+      const leftType: Type = match(node.left)
+        .with(
+          { type: "Identifier" },
+          (node) =>
+            currentScope.get(node.value) ||
+            (() => {
+              throw new Error(
+                `Attempted to assign to undefined variable ${node.value}`
+              );
+            })()
+        )
+        .otherwise(() => {
+          throw new Error(
+            `Assignments to ${node.left.type} are not yet supported.`
+          );
+        });
+
+      const rightType = typeCheckExp(node.right);
+
+      if (!rightType.sub(leftType)) {
+        throw new Error(
+          `Expected type compatible with ${leftType} but got ${rightType}`
+        );
+      }
+
+      return rightType;
+    })
     .with({ type: "KAwaitExpression" }, () => {
       throw new Error(`await is not yet implemented.`);
     })

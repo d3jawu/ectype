@@ -31,6 +31,11 @@ const struct = (shape: Record<string, Type>): StructType => {
         .fields()
         .every(([key]) => shape[key] && shape[key].sub(other.field(key)));
     },
+    toString: () =>
+      `struct{\n${Object.entries(shape).reduce(
+        (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,
+        ""
+      )}\n}`,
     __ktype__: "struct",
   };
 };

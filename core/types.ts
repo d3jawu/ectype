@@ -41,6 +41,7 @@ export interface VoidType {
   conform: (val: unknown) => never;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "void";
 }
 
@@ -49,6 +50,7 @@ export interface NullType {
   conform: (val: unknown) => Option<null>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "null";
 }
 
@@ -57,6 +59,7 @@ export interface BoolType {
   conform: (val: unknown) => Option<boolean>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "bool";
 }
 
@@ -65,6 +68,7 @@ export interface NumType {
   conform: (val: unknown) => Option<number>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "num";
 }
 
@@ -73,6 +77,7 @@ export interface StrType {
   conform: (val: unknown) => Option<string>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "str";
 }
 
@@ -83,6 +88,7 @@ export interface FnType {
   param: () => Type;
   returns: () => Type;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "fn";
 }
 
@@ -95,6 +101,7 @@ export interface VariantType {
   match: (val: unknown) => unknown;
   of: (val: Record<string, unknown>) => unknown;
   sub: (other: Type) => boolean;
+  toString: () => string;
   Option: Type;
   __ktype__: "variant";
 }
@@ -106,6 +113,7 @@ export interface TupleType {
   field: (pos: number) => Type; // gets the type held at that position in the tuple.
   fields: () => Type[];
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "tuple";
 }
 
@@ -115,6 +123,7 @@ export interface ArrayType {
   valid: (val: unknown) => boolean;
   contains: () => Type;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "array";
 }
 
@@ -126,11 +135,13 @@ export interface StructType {
   field: (key: string) => Type;
   fields: () => [string, Type][];
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "struct";
 }
 
 export interface TypeType {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  toString: () => string;
   __ktype__: "type";
 }

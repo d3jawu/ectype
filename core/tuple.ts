@@ -32,6 +32,7 @@ const tuple = (fields: Type[]): TupleType => {
 
       return other.fields().every((_, i) => fields[i].sub(other.field(i)));
     },
+    toString: () => `(${fields.join(",")})`,
     __ktype__: "tuple",
   };
 };

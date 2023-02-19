@@ -22,6 +22,7 @@ const array = (contains: Type): ArrayType => {
 
       return contains.sub(other.contains());
     },
+    toString: () => `${contains}[]`,
     __ktype__: "array",
   };
 };

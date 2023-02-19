@@ -5,6 +5,7 @@ const Type: TypeType = {
   sub: (other) => false,
   valid: (val) =>
     typeof val === "object" && val !== null && val.hasOwnProperty("__ktype__"),
+  toString: () => "Type",
   __ktype__: "type",
 };
 

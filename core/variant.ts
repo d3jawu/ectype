@@ -72,6 +72,11 @@ const variant = (options: Record<string, Type>): VariantType => {
         ...members,
       });
     },
+    toString: () =>
+      `variant{\n${Object.entries(options).reduce(
+        (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,
+        ""
+      )}\n}`,
     __ktype__: "variant",
   };
 };
