@@ -34,7 +34,6 @@ export type KStatement =
   | KVariableDeclaration
   | KForStatement
   | KSwitchStatement
-  | KDoWhileStatement
   | KWhileStatement
   | KTryStatement
   | KIfStatement
@@ -44,12 +43,6 @@ export type KStatement =
 export interface KBlockStatement extends Node, HasSpan {
   type: "KBlockStatement";
   statements: KNode[];
-}
-
-export interface KDoWhileStatement extends Node, HasSpan {
-  type: "KDoWhileStatement";
-  test: KExp;
-  body: KNode;
 }
 
 export interface KWhileStatement extends Node, HasSpan {

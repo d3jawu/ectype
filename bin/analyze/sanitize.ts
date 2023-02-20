@@ -28,12 +28,6 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       type: "KBlockStatement",
       statements: node.stmts.map((st) => sanitizeNode(st)),
     }))
-    .with({ type: "DoWhileStatement" }, (node) => ({
-      span: node.span,
-      type: "KDoWhileStatement",
-      test: sanitizeExpression(node.test),
-      body: sanitizeNode(node.body),
-    }))
     .with({ type: "WhileStatement" }, (node) => ({
       span: node.span,
       type: "KWhileStatement",
@@ -131,6 +125,9 @@ const sanitizeNode = (node: ModuleItem): KNode =>
     )
 
     // forbidden statements
+    .with({ type: "DoWhileStatement" }, () => {
+      throw new Error("Do-while statements are forbidden in Kythera.");
+    })
     .with({ type: "ExportAllDeclaration" }, () => {
       throw new Error("Export-all declarations are forbidden in Kythera.");
     })

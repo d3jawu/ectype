@@ -9,7 +9,6 @@ import { Type } from "../../core/types.js";
 import { Null, Num, Bool, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
-import { KPattern } from "../types/KPattern";
 
 class SymbolTable {
   parent: SymbolTable | null;
@@ -57,14 +56,6 @@ const typeCheckNode = (node: KNode) =>
     )
     .with({ type: "KBlockStatement" }, (node) => {
       node.statements.forEach((st) => typeCheckNode(st));
-    })
-    .with({ type: "KDoWhileStatement" }, (node) => {
-      const testType = typeCheckExp(node.test);
-      if (!testType.sub(Bool)) {
-        throw new Error(`Condition for do-while must be a Bool.`);
-      }
-
-      typeCheckNode(node.body);
     })
     .with({ type: "KForStatement" }, (node) => {
       if (node.init && node.init.type !== "KVariableDeclaration") {
@@ -158,8 +149,6 @@ const typeCheckNode = (node: KNode) =>
     })
     .otherwise((node) => typeCheckExp(node as KExp));
 
-const typeCheckPattern = (pattern: KPattern) => {};
-
 const typeCheckExp = (node: KExp): Type =>
   match<KExp, Type>(node)
     // TODO BigInt needs its own type.
@@ -175,16 +164,6 @@ const typeCheckExp = (node: KExp): Type =>
       }
 
       return maybeType;
-    })
-    .with({ type: "KArrayExpression" }, () => {
-      throw new Error(
-        `Bare array expressions are forbidden; they must be attached to an array type.`
-      );
-    })
-    .with({ type: "KArrowFunctionExpression" }, () => {
-      throw new Error(
-        `Bare function expressions are forbidden; they must be attached to a function type.`
-      );
     })
     .with({ type: "KAssignmentExpression" }, (node) => {
       const leftType: Type = match(node.left)
@@ -274,6 +253,8 @@ const typeCheckExp = (node: KExp): Type =>
       }
 
       // Otherwise, it's a normal call expression.
+
+      throw new Error(`Not yet implemented`);
     })
     .with({ type: "KConditionalExpression" }, (node) => {
       const testType = typeCheckExp(node.test);
@@ -293,15 +274,70 @@ const typeCheckExp = (node: KExp): Type =>
 
       return alternateType;
     })
-    .with({ type: "KMemberExpression" }, () => {})
-    .with({ type: "KObjectExpression" }, () => {})
+    .with({ type: "KMemberExpression" }, (node) => {
+      const targetType = typeCheckExp(node.object);
+
+      return match(targetType)
+        .with({ __ktype__: "struct" }, (structType) => {
+          if (node.property.type === "KComputed") {
+            throw new Error("Bracket accesses on a struct are forbidden.");
+          }
+
+          if (!structType.has(node.property.value)) {
+            throw new Error(
+              `Type ${targetType} has no field ${node.property.value}.`
+            );
+          }
+
+          return structType.field(node.property.value);
+        })
+        .with({ __ktype__: "array" }, (arrayType) => {
+          if (node.property.type === "Identifier") {
+            // must be an array member like length, map, etc.
+          } else if (node.property.type === "KComputed") {
+            // field access; must be a number.
+
+            if (!typeCheckExp(node.property.expression).sub(Num)) {
+              throw new Error(`Array index must be a nunmber.`);
+            }
+
+            return arrayType.contains();
+          }
+        })
+        .with({ __ktype__: "variant" }, () => {
+          throw new Error(`Not yet implemented`);
+        })
+        .with({ __ktype__: "type" }, () => {
+          throw new Error(`Not yet implemented`);
+        })
+        .otherwise(() => {
+          throw new Error(
+            `Member expressions are not supported on ${targetType}.`
+          );
+        });
+    })
+    .with({ type: "KArrayExpression" }, () => {
+      throw new Error(
+        `Bare array expressions are forbidden; they must be attached to an array type.`
+      );
+    })
+    .with({ type: "KArrowFunctionExpression" }, () => {
+      throw new Error(
+        `Bare function expressions are forbidden; they must be attached to a function type.`
+      );
+    })
+    .with({ type: "KObjectExpression" }, () => {
+      throw new Error(
+        `Bare object expressions are not permitted in Kythera; they must be attached to a struct or variant type.`
+      );
+    })
     .with({ type: "KSequenceExpression" }, (node) => {
       node.expressions.forEach((exp) => typeCheckExp(exp));
 
       return typeCheckExp(node.expressions[node.expressions.length - 1]);
     })
     .with({ type: "KTaggedTemplateExpression" }, () => {
-      throw new Error(`Tagged tempaltes are not yet implemented.`);
+      throw new Error(`Tagged templates are not yet implemented.`);
     })
     .with({ type: "KTemplateLiteral" }, (node) => {
       node.expressions.forEach((exp) => typeCheckExp(exp));
