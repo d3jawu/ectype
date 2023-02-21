@@ -20,8 +20,7 @@ export type Type =
   | TupleType
   | ArrayType
   | VariantType
-  | StructType
-  | TypeType;
+  | StructType;
 
 // `from` is a passthrough function used to signal to the type-checker
 // that the value being passed in is expected to verifiably fulfill
@@ -137,11 +136,4 @@ export interface StructType {
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "struct";
-}
-
-export interface TypeType {
-  valid: (val: unknown) => boolean;
-  sub: (other: Type) => boolean;
-  toString: () => string;
-  __ktype__: "type";
 }

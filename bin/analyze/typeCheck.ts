@@ -5,10 +5,39 @@ import type {
   KUnaryOperator,
 } from "../types/KytheraNode";
 
-import { Type } from "../../core/types.js";
-import { Null, Num, Bool, Str } from "../../core/primitives.js";
+import { Type as RuntimeType } from "../../core/types.js";
+import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
+
+type Type =
+  | RuntimeType
+  // "type" is the type of type-values. This feature does not exist at runtime, but we need a way to represent them in the type checker.
+  | {
+      __ktype__: "type";
+      sub: () => boolean;
+      valid: (other: unknown) => boolean;
+      type: () => Type;
+    }
+  // "deferred" is the type given to values whose type cannot be determined statically.
+  | {
+      __ktype__: "deferred";
+      sub: () => false;
+      valid: (other: unknown) => boolean;
+    };
+
+const typeFrom = (t: Type): Type => {
+  if (t.__ktype__ === "type") {
+    throw new Error("A type-value cannot contain a type-value.");
+  }
+
+  return {
+    __ktype__: "type",
+    sub: () => false,
+    valid: (other: unknown) => false,
+    type: () => t,
+  };
+};
 
 class SymbolTable {
   parent: SymbolTable | null;
@@ -39,6 +68,12 @@ class SymbolTable {
 }
 
 let currentScope = new SymbolTable(null);
+// Seed root scope with existing types.
+currentScope.set("Void", typeFrom(Void));
+currentScope.set("Null", typeFrom(Null));
+currentScope.set("Bool", typeFrom(Bool));
+currentScope.set("Num", typeFrom(Num));
+currentScope.set("Str", typeFrom(Str));
 
 export const typeCheck = (body: KNode[]) =>
   body.forEach((node) => typeCheckNode(node));
@@ -250,11 +285,33 @@ const typeCheckExp = (node: KExp): Type =>
     .with({ type: "KCallExpression" }, (node) => {
       if (node.callee.type === "Identifier") {
         // Check to see if the callee was a keyword function.
+        return match(node.callee.value)
+          .with("struct", () => {
+            if (node.arguments.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to struct() but got ${node.arguments.length}`
+              );
+            }
+
+            const shapeNode = node.arguments[0].expression;
+
+            if (shapeNode.type !== "KObjectExpression") {
+              throw new Error(`struct() parameter must be an object literal.`);
+            }
+
+            shapeNode.properties.reduce((acc, prop) => {}, {});
+            throw new Error(`Not yet implemented`);
+          })
+          .otherwise(
+            (name) =>
+              currentScope.get(name) ||
+              (() => {
+                throw new Error(`${name} is not defined.`);
+              })()
+          );
+      } else {
+        // Otherwise, it's a normal call expression.
       }
-
-      // Otherwise, it's a normal call expression.
-
-      throw new Error(`Not yet implemented`);
     })
     .with({ type: "KConditionalExpression" }, (node) => {
       const testType = typeCheckExp(node.test);
@@ -353,3 +410,34 @@ const typeCheckExp = (node: KExp): Type =>
         .exhaustive()
     )
     .exhaustive();
+
+// Resolves the value of a type-expression.
+// Whereas `typeCheckExp` returns the type of an expression, `resolveType` returns the *value*
+// of that expression - but only for type values. (This will not resolve other values, such as numbers).
+// Example: typeCheckExp(Num) => Type // resolveType(Num) => Num
+const resolveTypeExp = (node: KExp): Type =>
+  match<KExp, Type>(node)
+    .with({ type: "Identifier" }, (node) =>
+      match(node.value)
+        .with("Void", () => Void)
+        .with("Null", () => Null)
+        .with("Bool", () => Bool)
+        .with("Num", () => Num)
+        .with("Str", () => Str)
+        .otherwise(() => {
+          const maybeType = currentScope.get(node.value);
+
+          if (maybeType === null) {
+            throw new Error(`${node.value} is not defined.`);
+          }
+
+          if (maybeType.__ktype__ !== "type") {
+            throw new Error(`${node.value} is not a type-value.`);
+          }
+
+          return maybeType.type();
+        })
+    )
+    .otherwise(() => {
+      throw new Error(`Cannot resolve ${node} to a type.`);
+    });
