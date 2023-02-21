@@ -11,7 +11,7 @@ import type {
 import { match } from "ts-pattern";
 import { KPattern } from "../types/KPattern";
 
-export const sanitize = (body: ModuleItem[]): KNode[] =>
+export const lower = (body: ModuleItem[]): KNode[] =>
   body.map((node) => sanitizeNode(node));
 
 const sanitizeNode = (node: ModuleItem): KNode =>
