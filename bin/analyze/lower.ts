@@ -11,10 +11,11 @@ import type {
 import { match } from "ts-pattern";
 import { KPattern } from "../types/KPattern";
 
+// Lowering simplifies some nodes and removes nodes not allowed in Kythera.
 export const lower = (body: ModuleItem[]): KNode[] =>
-  body.map((node) => sanitizeNode(node));
+  body.map((node) => lowerNode(node));
 
-const sanitizeNode = (node: ModuleItem): KNode =>
+const lowerNode = (node: ModuleItem): KNode =>
   match<ModuleItem, KNode>(node)
     // direct passthroughs
     .with({ type: "DebuggerStatement" }, (node) => node)
@@ -26,13 +27,13 @@ const sanitizeNode = (node: ModuleItem): KNode =>
     .with({ type: "BlockStatement" }, (node) => ({
       span: node.span,
       type: "KBlockStatement",
-      statements: node.stmts.map((st) => sanitizeNode(st)),
+      statements: node.stmts.map((st) => lowerNode(st)),
     }))
     .with({ type: "WhileStatement" }, (node) => ({
       span: node.span,
       type: "KWhileStatement",
-      test: sanitizeExpression(node.test),
-      body: sanitizeNode(node.body),
+      test: lowerExpression(node.test),
+      body: lowerNode(node.body),
     }))
     .with({ type: "ForStatement" }, (node) => ({
       span: node.span,
@@ -40,53 +41,53 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       init:
         node.init &&
         (node.init.type === "VariableDeclaration"
-          ? (sanitizeNode(node.init) as KVariableDeclaration)
-          : sanitizeExpression(node.init)),
-      test: node.test && sanitizeExpression(node.test),
-      update: node.update && sanitizeExpression(node.update),
-      body: sanitizeNode(node.body),
+          ? (lowerNode(node.init) as KVariableDeclaration)
+          : lowerExpression(node.init)),
+      test: node.test && lowerExpression(node.test),
+      update: node.update && lowerExpression(node.update),
+      body: lowerNode(node.body),
     }))
     .with({ type: "IfStatement" }, (node) => ({
       span: node.span,
       type: "KIfStatement",
-      test: sanitizeExpression(node.test),
-      consequent: sanitizeNode(node.consequent),
-      alternate: node.alternate && sanitizeNode(node.alternate),
+      test: lowerExpression(node.test),
+      consequent: lowerNode(node.consequent),
+      alternate: node.alternate && lowerNode(node.alternate),
     }))
     .with({ type: "ReturnStatement" }, (node) => ({
       span: node.span,
       type: "KReturnStatement",
-      argument: node.argument && sanitizeExpression(node.argument),
+      argument: node.argument && lowerExpression(node.argument),
     }))
     .with({ type: "LabeledStatement" }, (node) => ({
       span: node.span,
       type: "KLabeledStatement",
       label: node.label,
-      body: sanitizeNode(node.body),
+      body: lowerNode(node.body),
     }))
     .with({ type: "SwitchStatement" }, (node) => ({
       span: node.span,
       type: "KSwitchStatement",
-      discriminant: sanitizeExpression(node.discriminant),
+      discriminant: lowerExpression(node.discriminant),
       cases: node.cases.map((c) => ({
         type: "KSwitchCase",
         span: c.span,
-        test: c.test && sanitizeExpression(c.test),
-        consequent: c.consequent.map((n) => sanitizeNode(n)),
+        test: c.test && lowerExpression(c.test),
+        consequent: c.consequent.map((n) => lowerNode(n)),
       })),
     }))
     .with({ type: "TryStatement" }, (node) => ({
       span: node.span,
       type: "KTryStatement",
-      block: sanitizeNode(node.block) as KBlockStatement,
+      block: lowerNode(node.block) as KBlockStatement,
       handler: node.handler && {
         span: node.handler.span,
         type: "KCatchClause",
-        param: node.handler.param && sanitizePattern(node.handler.param),
-        body: sanitizeNode(node.handler.body) as KBlockStatement,
+        param: node.handler.param && lowerPattern(node.handler.param),
+        body: lowerNode(node.handler.body) as KBlockStatement,
       },
       finalizer:
-        node.finalizer && (sanitizeNode(node.finalizer) as KBlockStatement),
+        node.finalizer && (lowerNode(node.finalizer) as KBlockStatement),
     }))
     .with({ type: "VariableDeclaration" }, (node) => {
       if (node.kind === "var") {
@@ -103,8 +104,8 @@ const sanitizeNode = (node: ModuleItem): KNode =>
         declarations: node.declarations.map((decl) => ({
           span: decl.span,
           type: "KVariableDeclarator",
-          id: sanitizePattern(decl.id),
-          init: decl.init && sanitizeExpression(decl.init),
+          id: lowerPattern(decl.id),
+          init: decl.init && lowerExpression(decl.init),
           definite: decl.definite,
         })),
       };
@@ -121,7 +122,7 @@ const sanitizeNode = (node: ModuleItem): KNode =>
 
     // unpack expression
     .with({ type: "ExpressionStatement" }, (val) =>
-      sanitizeExpression(val.expression)
+      lowerExpression(val.expression)
     )
 
     // forbidden statements
@@ -163,7 +164,7 @@ const sanitizeNode = (node: ModuleItem): KNode =>
       throw new Error(`Invalid node: ${node.type}`);
     });
 
-const sanitizeExpression = (exp: Expression): KExp =>
+const lowerExpression = (exp: Expression): KExp =>
   match<Expression, KExp>(exp)
     .with({ type: "NullLiteral" }, (exp) => exp)
     .with({ type: "BooleanLiteral" }, (exp) => exp)
@@ -173,13 +174,13 @@ const sanitizeExpression = (exp: Expression): KExp =>
     .with({ type: "TaggedTemplateExpression" }, (exp) => ({
       span: exp.span,
       type: "KTaggedTemplateExpression",
-      tag: sanitizeExpression(exp.tag),
-      template: sanitizeExpression(exp.template) as KTemplateLiteral,
+      tag: lowerExpression(exp.tag),
+      template: lowerExpression(exp.template) as KTemplateLiteral,
     }))
     .with({ type: "TemplateLiteral" }, (exp) => ({
       span: exp.span,
       type: "KTemplateLiteral",
-      expressions: exp.expressions.map((e) => sanitizeExpression(e)),
+      expressions: exp.expressions.map((e) => lowerExpression(e)),
       quasis: exp.quasis,
     }))
     .with({ type: "RegExpLiteral" }, () => {
@@ -195,7 +196,7 @@ const sanitizeExpression = (exp: Expression): KExp =>
 
         return {
           spread: el.spread,
-          expression: sanitizeExpression(el.expression),
+          expression: lowerExpression(el.expression),
         };
       }),
     }))
@@ -205,24 +206,24 @@ const sanitizeExpression = (exp: Expression): KExp =>
     .with({ type: "ArrowFunctionExpression" }, (exp) => ({
       span: exp.span,
       type: "KArrowFunctionExpression",
-      params: exp.params.map((param) => sanitizePattern(param)),
+      params: exp.params.map((param) => lowerPattern(param)),
       body:
         exp.body.type === "BlockStatement"
-          ? (sanitizeNode(exp.body) as KBlockStatement)
-          : sanitizeExpression(exp.body),
+          ? (lowerNode(exp.body) as KBlockStatement)
+          : lowerExpression(exp.body),
       async: exp.async,
     }))
     .with({ type: "AssignmentExpression" }, (exp) => ({
       span: exp.span,
       type: "KAssignmentExpression",
       operator: exp.operator,
-      left: sanitizePattern(exp.left),
-      right: sanitizeExpression(exp.right),
+      left: lowerPattern(exp.left),
+      right: lowerExpression(exp.right),
     }))
     .with({ type: "AwaitExpression" }, (exp) => ({
       span: exp.span,
       type: "KAwaitExpression",
-      argument: sanitizeExpression(exp.argument),
+      argument: lowerExpression(exp.argument),
     }))
     .with({ type: "BinaryExpression" }, (exp) => {
       if (
@@ -238,8 +239,8 @@ const sanitizeExpression = (exp: Expression): KExp =>
         span: exp.span,
         type: "KBinaryExpression",
         operator: exp.operator,
-        left: sanitizeExpression(exp.left),
-        right: sanitizeExpression(exp.right),
+        left: lowerExpression(exp.left),
+        right: lowerExpression(exp.right),
       };
     })
     .with({ type: "CallExpression" }, (exp) => {
@@ -253,19 +254,19 @@ const sanitizeExpression = (exp: Expression): KExp =>
         callee:
           exp.callee.type === "Import"
             ? exp.callee
-            : sanitizeExpression(exp.callee),
+            : lowerExpression(exp.callee),
         arguments: exp.arguments.map((arg) => ({
           spread: arg.spread,
-          expression: sanitizeExpression(arg.expression),
+          expression: lowerExpression(arg.expression),
         })),
       };
     })
     .with({ type: "ConditionalExpression" }, (exp) => ({
       span: exp.span,
       type: "KConditionalExpression",
-      test: sanitizeExpression(exp.test),
-      consequent: sanitizeExpression(exp.consequent),
-      alternate: sanitizeExpression(exp.alternate),
+      test: lowerExpression(exp.test),
+      consequent: lowerExpression(exp.consequent),
+      alternate: lowerExpression(exp.alternate),
     }))
     .with({ type: "Identifier" }, (exp) => exp)
     .with({ type: "MemberExpression" }, (exp) => {
@@ -281,14 +282,14 @@ const sanitizeExpression = (exp: Expression): KExp =>
       return {
         span: exp.span,
         type: "KMemberExpression",
-        object: sanitizeExpression(exp.object),
+        object: lowerExpression(exp.object),
         property:
           exp.property.type === "Identifier"
             ? exp.property
             : {
                 span: exp.property.span,
                 type: "KComputed",
-                expression: sanitizeExpression(exp.property.expression),
+                expression: lowerExpression(exp.property.expression),
               },
       };
     })
@@ -300,7 +301,7 @@ const sanitizeExpression = (exp: Expression): KExp =>
           return {
             type: "KSpreadElement",
             spread: prop.spread,
-            arguments: sanitizeExpression(prop.arguments),
+            arguments: lowerExpression(prop.arguments),
           };
         }
 
@@ -312,10 +313,10 @@ const sanitizeExpression = (exp: Expression): KExp =>
                 ? {
                     span: prop.key.span,
                     type: "KComputed",
-                    expression: sanitizeExpression(prop.key.expression),
+                    expression: lowerExpression(prop.key.expression),
                   }
                 : prop.key,
-            value: sanitizeExpression(prop.value),
+            value: lowerExpression(prop.value),
           };
         }
 
@@ -323,7 +324,7 @@ const sanitizeExpression = (exp: Expression): KExp =>
           return {
             type: "KAssignmentProperty",
             key: prop.key,
-            value: sanitizeExpression(prop.value),
+            value: lowerExpression(prop.value),
           };
         }
 
@@ -336,10 +337,10 @@ const sanitizeExpression = (exp: Expression): KExp =>
                 ? {
                     span: prop.key.span,
                     type: "KComputed",
-                    expression: sanitizeExpression(prop.key.expression),
+                    expression: lowerExpression(prop.key.expression),
                   }
                 : prop.key,
-            body: prop.body && (sanitizeNode(prop.body) as KBlockStatement),
+            body: prop.body && (lowerNode(prop.body) as KBlockStatement),
           };
         }
 
@@ -352,11 +353,11 @@ const sanitizeExpression = (exp: Expression): KExp =>
                 ? {
                     span: prop.key.span,
                     type: "KComputed",
-                    expression: sanitizeExpression(prop.key.expression),
+                    expression: lowerExpression(prop.key.expression),
                   }
                 : prop.key,
-            param: sanitizePattern(prop.param),
-            body: prop.body && (sanitizeNode(prop.body) as KBlockStatement),
+            param: lowerPattern(prop.param),
+            body: prop.body && (lowerNode(prop.body) as KBlockStatement),
           };
         }
 
@@ -375,12 +376,12 @@ const sanitizeExpression = (exp: Expression): KExp =>
       }),
     }))
     .with({ type: "ParenthesisExpression" }, (exp) =>
-      sanitizeExpression(exp.expression)
+      lowerExpression(exp.expression)
     )
     .with({ type: "SequenceExpression" }, (exp) => ({
       span: exp.span,
       type: "KSequenceExpression",
-      expressions: exp.expressions.map((e) => sanitizeExpression(e)),
+      expressions: exp.expressions.map((e) => lowerExpression(e)),
     }))
     .with({ type: "UnaryExpression" }, (exp) => {
       if (
@@ -395,7 +396,7 @@ const sanitizeExpression = (exp: Expression): KExp =>
         span: exp.span,
         type: "KUnaryExpression",
         operator: exp.operator,
-        argument: sanitizeExpression(exp.argument),
+        argument: lowerExpression(exp.argument),
       };
     })
 
@@ -438,20 +439,20 @@ const sanitizeExpression = (exp: Expression): KExp =>
       throw new Error(`Invalid expression node: ${exp.type}`);
     });
 
-const sanitizePattern = (pattern: Pattern): KPattern =>
+const lowerPattern = (pattern: Pattern): KPattern =>
   match<Pattern, KPattern>(pattern)
     .with({ type: "Identifier" }, (p) => p)
     .with({ type: "ArrayPattern" }, (p) => ({
       span: p.span,
       type: "KArrayPattern",
-      elements: p.elements.map((el) => el && sanitizePattern(el)),
+      elements: p.elements.map((el) => el && lowerPattern(el)),
       optional: p.optional,
     }))
     .with({ type: "RestElement" }, (p) => ({
       span: p.span,
       type: "KRestElement",
       rest: p.rest,
-      argument: sanitizePattern(p.argument),
+      argument: lowerPattern(p.argument),
     }))
     .with({ type: "ObjectPattern" }, (p) => ({
       span: p.span,
@@ -462,7 +463,7 @@ const sanitizePattern = (pattern: Pattern): KPattern =>
             span: prop.span,
             type: "KAssignmentPatternProperty",
             key: prop.key,
-            value: prop.value && sanitizeExpression(prop.value),
+            value: prop.value && lowerExpression(prop.value),
           };
         }
 
@@ -474,10 +475,10 @@ const sanitizePattern = (pattern: Pattern): KPattern =>
                 ? {
                     span: prop.key.span,
                     type: "KComputed",
-                    expression: sanitizeExpression(prop.key.expression),
+                    expression: lowerExpression(prop.key.expression),
                   }
                 : prop.key,
-            value: sanitizePattern(prop.value),
+            value: lowerPattern(prop.value),
           };
         }
 
@@ -486,7 +487,7 @@ const sanitizePattern = (pattern: Pattern): KPattern =>
             span: prop.span,
             type: "KRestElement",
             rest: prop.rest,
-            argument: sanitizePattern(prop.argument),
+            argument: lowerPattern(prop.argument),
           };
         }
 
@@ -498,11 +499,11 @@ const sanitizePattern = (pattern: Pattern): KPattern =>
     .with({ type: "AssignmentPattern" }, (p) => ({
       span: p.span,
       type: "KAssignmentPattern",
-      left: sanitizePattern(p.left),
-      right: sanitizeExpression(p.right),
+      left: lowerPattern(p.left),
+      right: lowerExpression(p.right),
     }))
     .with({ type: "Invalid" }, (p) => {
       throw new Error(`Invalid pattern at ${JSON.stringify(p.span)}`);
     })
     // otherwise, pattern is an expression
-    .otherwise(() => sanitizeExpression(pattern as Expression));
+    .otherwise(() => lowerExpression(pattern as Expression));
