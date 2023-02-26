@@ -9,7 +9,9 @@ const fn = (param: Type, returns: Type): FnType => {
 
     // Functions without param and return type tags are assumed to not match the fn type.
     // contravariant on the parameter type, covariant on the return type
-    return val?.__kparam__?.sub(param) && returns.sub(val?.__kreturns__);
+    return Boolean(
+      val?.__kparam__?.sub(param) && returns.sub(val?.__kreturns__)
+    );
   };
 
   return {

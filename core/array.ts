@@ -1,4 +1,5 @@
 import type { Type, ArrayType } from "./types.js";
+import { someOf, None } from "./util.js";
 
 const array = (contains: Type): ArrayType => {
   const valid = (val: unknown) => {
@@ -11,8 +12,7 @@ const array = (contains: Type): ArrayType => {
 
   return {
     from: (val) => val,
-    conform: (val) =>
-      valid(val) ? { Some: val as unknown[] } : { None: null },
+    conform: (val) => (valid(val) ? someOf(val as unknown[]) : None),
     valid,
     contains: () => contains,
     sub: (other) => {

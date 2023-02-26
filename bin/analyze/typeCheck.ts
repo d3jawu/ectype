@@ -5,28 +5,12 @@ import type {
   KUnaryOperator,
 } from "../types/KytheraNode";
 
-import { Type as RuntimeType } from "../../core/types.js";
+import { Type } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
 
-type Type =
-  | RuntimeType
-  // "type" is the type of type-values. This feature does not exist at runtime, but we need a way to represent them in the type checker.
-  | {
-      __ktype__: "type";
-      sub: () => boolean;
-      valid: (other: unknown) => boolean;
-      type: () => Type;
-    }
-  // "deferred" is the type given to values whose type cannot be determined statically.
-  | {
-      __ktype__: "deferred";
-      sub: () => false;
-      valid: (other: unknown) => boolean;
-    };
-
-const typeFrom = (t: Type): Type => {
+const typeValFrom = (t: Type): Type => {
   if (t.__ktype__ === "type") {
     throw new Error("A type-value cannot contain a type-value.");
   }
@@ -69,11 +53,11 @@ class SymbolTable {
 
 let currentScope = new SymbolTable(null);
 // Seed root scope with existing types.
-currentScope.set("Void", typeFrom(Void));
-currentScope.set("Null", typeFrom(Null));
-currentScope.set("Bool", typeFrom(Bool));
-currentScope.set("Num", typeFrom(Num));
-currentScope.set("Str", typeFrom(Str));
+currentScope.set("Void", typeValFrom(Void));
+currentScope.set("Null", typeValFrom(Null));
+currentScope.set("Bool", typeValFrom(Bool));
+currentScope.set("Num", typeValFrom(Num));
+currentScope.set("Str", typeValFrom(Str));
 
 export const typeCheck = (body: KNode[]) =>
   body.forEach((node) => typeCheckNode(node));

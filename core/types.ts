@@ -20,7 +20,9 @@ export type Type =
   | TupleType
   | ArrayType
   | VariantType
-  | StructType;
+  | StructType
+  | DeferredType
+  | TypeType;
 
 // `from` is a passthrough function used to signal to the type-checker
 // that the value being passed in is expected to verifiably fulfill
@@ -35,52 +37,52 @@ export type Type =
 // `sub` returns true if the type is a subtype of `other` - that is, values of
 // the type can be safely substituted in anywhere a value of `other` is present.
 
-export interface VoidType {
+export type VoidType = {
   from: (val: null) => never;
   conform: (val: unknown) => never;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "void";
-}
+};
 
-export interface NullType {
+export type NullType = {
   from: (val: null) => null;
   conform: (val: unknown) => Option<null>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "null";
-}
+};
 
-export interface BoolType {
+export type BoolType = {
   from: (val: boolean) => boolean;
   conform: (val: unknown) => Option<boolean>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "bool";
-}
+};
 
-export interface NumType {
+export type NumType = {
   from: (val: number) => number;
   conform: (val: unknown) => Option<number>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "num";
-}
+};
 
-export interface StrType {
+export type StrType = {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => Option<string>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "str";
-}
+};
 
-export interface FnType {
+export type FnType = {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => Option<Function>;
   valid: (val: unknown) => boolean;
@@ -89,9 +91,9 @@ export interface FnType {
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "fn";
-}
+};
 
-export interface VariantType {
+export type VariantType = {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => Option<{ [key: string]: any }>;
   valid: (val: unknown) => boolean;
@@ -103,9 +105,9 @@ export interface VariantType {
   toString: () => string;
   Option: Type;
   __ktype__: "variant";
-}
+};
 
-export interface TupleType {
+export type TupleType = {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => Option<unknown[]>;
   valid: (val: unknown) => boolean;
@@ -114,9 +116,9 @@ export interface TupleType {
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "tuple";
-}
+};
 
-export interface ArrayType {
+export type ArrayType = {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => Option<unknown[]>;
   valid: (val: unknown) => boolean;
@@ -124,9 +126,9 @@ export interface ArrayType {
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "array";
-}
+};
 
-export interface StructType {
+export type StructType = {
   from: (val: unknown) => typeof val;
   conform: (val: unknown) => Option<Record<string, any>>;
   valid: (val: unknown) => boolean;
@@ -136,4 +138,23 @@ export interface StructType {
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "struct";
-}
+};
+
+// The following types do not appear at runtime, but are used during type-checking.
+// Because this entire file compiles away to an empty file, there is no overhead for these.
+
+// "deferred" is the type given to values whose type cannot be determined statically.
+export type DeferredType = {
+  __ktype__: "deferred";
+  sub: () => false;
+  valid: (other: unknown) => boolean;
+};
+
+// "type" is the type of type-values. Getting the type of a type-value is not possible at runtime,
+// (and allowing that opens up a giant can of worms) but we need a way to represent type values in the type checker.
+export type TypeType = {
+  __ktype__: "type";
+  sub: () => boolean;
+  valid: (other: unknown) => boolean;
+  type: () => Type;
+};
