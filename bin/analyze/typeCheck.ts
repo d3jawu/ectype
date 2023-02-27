@@ -9,6 +9,7 @@ import { Type } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
+import { struct } from "../../core/struct.js";
 
 const typeValFrom = (t: Type): Type => {
   if (t.__ktype__ === "type") {
@@ -59,8 +60,9 @@ currentScope.set("Bool", typeValFrom(Bool));
 currentScope.set("Num", typeValFrom(Num));
 currentScope.set("Str", typeValFrom(Str));
 
-export const typeCheck = (body: KNode[]) =>
-  body.forEach((node) => typeCheckNode(node));
+export const typeCheck = (body: KNode[]) => (
+  body.forEach((node) => typeCheckNode(node)), console.log(currentScope)
+);
 
 const typeCheckNode = (node: KNode) =>
   match<KNode, void>(node)
@@ -303,13 +305,28 @@ const typeCheckExp = (node: KExp): Type =>
               throw new Error(`struct() parameter must be an object literal.`);
             }
 
-            shapeNode.properties.reduce((acc, prop) => {
-              if (prop.type) {
-              }
+            const shape = shapeNode.properties.reduce(
+              (acc: Record<string, Type>, prop) => {
+                if (prop.type !== "KKeyValueProperty") {
+                  throw new Error(
+                    `${prop.type} in struct shapes are not yet supported.`
+                  );
+                }
 
-              return acc;
-            }, {});
-            throw new Error(`Not yet implemented`);
+                if (prop.key.type !== "Identifier") {
+                  throw new Error(
+                    `Cannot use ${prop.key.type} key in struct shape.`
+                  );
+                }
+
+                acc[prop.key.value] = resolveTypeExp(prop.value);
+
+                return acc;
+              },
+              {}
+            );
+
+            return struct(shape);
           })
           .otherwise(() => {
             throw new Error("Unreachable");
