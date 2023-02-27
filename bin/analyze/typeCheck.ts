@@ -267,9 +267,29 @@ const typeCheckExp = (node: KExp): Type =>
         .exhaustive()
     )
     .with({ type: "KCallExpression" }, (node) => {
-      if (node.callee.type === "Identifier") {
-        // Check to see if the callee was a keyword function.
+      // Because Kythera "keywords" are implemented as functions, the Call Expression handler has extra logic for handling these special cases.
+
+      // Check to see if the callee was a keyword function.
+      if (
+        node.callee.type === "Identifier" &&
+        ["fn", "tuple", "array", "variant", "struct"].includes(
+          node.callee.value
+        )
+      ) {
+        // Keyword functions.
         return match(node.callee.value)
+          .with("fn", () => {
+            throw new Error("Not yet implemented");
+          })
+          .with("tuple", () => {
+            throw new Error("Not yet implemented");
+          })
+          .with("array", () => {
+            throw new Error("Not yet implemented");
+          })
+          .with("variant", () => {
+            throw new Error("Not yet implemented");
+          })
           .with("struct", () => {
             if (node.arguments.length !== 1) {
               throw new Error(
@@ -283,19 +303,51 @@ const typeCheckExp = (node: KExp): Type =>
               throw new Error(`struct() parameter must be an object literal.`);
             }
 
-            shapeNode.properties.reduce((acc, prop) => {}, {});
+            shapeNode.properties.reduce((acc, prop) => {
+              if (prop.type) {
+              }
+
+              return acc;
+            }, {});
             throw new Error(`Not yet implemented`);
           })
-          .otherwise(
-            (name) =>
-              currentScope.get(name) ||
-              (() => {
-                throw new Error(`${name} is not defined.`);
-              })()
-          );
-      } else {
-        // Otherwise, it's a normal call expression.
+          .otherwise(() => {
+            throw new Error("Unreachable");
+          });
       }
+
+      if (node.callee.type === "Import") {
+        throw new Error(`import() is not supported at this time.`);
+      }
+
+      // Normal call expression.
+      const fnType = typeCheckExp(node.callee); // Type of the function being called.
+      if (fnType.__ktype__ !== "fn") {
+        throw new Error(`Callee is not a function.`);
+      }
+
+      if (node.arguments.length === 0) {
+        if (fnType.param().__ktype__ !== "void") {
+          throw new Error(
+            `Function called with no arguments but expected ${fnType.param()}`
+          );
+        }
+      } else {
+        if (fnType.param().__ktype__ === "void") {
+          throw new Error(
+            `Expected no arguments to be passed to void function, but got ${node.arguments.length}`
+          );
+        }
+
+        const argType = typeCheckExp(node.arguments[0].expression);
+        if (!argType.sub(fnType.param())) {
+          throw new Error(
+            `Expected ${fnType.param()} for parameter but got ${argType}`
+          );
+        }
+      }
+
+      return fnType.returns();
     })
     .with({ type: "KConditionalExpression" }, (node) => {
       const testType = typeCheckExp(node.test);

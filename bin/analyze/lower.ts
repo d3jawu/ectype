@@ -328,37 +328,10 @@ const lowerExpression = (exp: Expression): KExp =>
           };
         }
 
-        if (prop.type === "GetterProperty") {
-          return {
-            span: prop.span,
-            type: "KGetterProperty",
-            key:
-              prop.key.type === "Computed"
-                ? {
-                    span: prop.key.span,
-                    type: "KComputed",
-                    expression: lowerExpression(prop.key.expression),
-                  }
-                : prop.key,
-            body: prop.body && (lowerNode(prop.body) as KBlockStatement),
-          };
-        }
-
-        if (prop.type === "SetterProperty") {
-          return {
-            span: prop.span,
-            type: "KSetterProperty",
-            key:
-              prop.key.type === "Computed"
-                ? {
-                    span: prop.key.span,
-                    type: "KComputed",
-                    expression: lowerExpression(prop.key.expression),
-                  }
-                : prop.key,
-            param: lowerPattern(prop.param),
-            body: prop.body && (lowerNode(prop.body) as KBlockStatement),
-          };
+        if (prop.type === "GetterProperty" || prop.type === "SetterProperty") {
+          throw new Error(
+            `Getter and setter properties are forbidden in Kythera.`
+          );
         }
 
         if (prop.type === "MethodProperty") {

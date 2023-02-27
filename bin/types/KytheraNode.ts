@@ -243,12 +243,7 @@ export interface KSpreadElement extends Node {
   arguments: KExp;
 }
 
-export type KProperty =
-  | Identifier
-  | KKeyValueProperty
-  | KAssignmentProperty
-  | KGetterProperty
-  | KSetterProperty;
+export type KProperty = Identifier | KKeyValueProperty | KAssignmentProperty;
 
 export interface KKeyValueProperty extends Node {
   type: "KKeyValueProperty";
@@ -260,19 +255,6 @@ export interface KAssignmentProperty extends Node {
   type: "KAssignmentProperty";
   key: Identifier;
   value: KExp;
-}
-
-export interface KGetterProperty extends Node, HasSpan {
-  type: "KGetterProperty";
-  key: KPropertyName;
-  body?: KBlockStatement;
-}
-
-export interface KSetterProperty extends Node, HasSpan {
-  type: "KSetterProperty";
-  key: KPropertyName;
-  param: KPattern;
-  body?: KBlockStatement;
 }
 
 export type KPropertyName =
