@@ -5,7 +5,7 @@ import type {
   KUnaryOperator,
 } from "../types/KytheraNode";
 
-import { Type } from "../../core/types.js";
+import { StructType, Type } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
@@ -326,7 +326,7 @@ const typeCheckExp = (node: KExp): Type =>
               {}
             );
 
-            return struct(shape);
+            return typeValFrom(struct(shape));
           })
           .otherwise(() => {
             throw new Error("Unreachable");
@@ -389,6 +389,7 @@ const typeCheckExp = (node: KExp): Type =>
 
       return match(targetType)
         .with({ __ktype__: "struct" }, (structType) => {
+          // Read on a struct value.
           if (node.property.type === "KComputed") {
             throw new Error("Bracket accesses on a struct are forbidden.");
           }
@@ -417,8 +418,23 @@ const typeCheckExp = (node: KExp): Type =>
         .with({ __ktype__: "variant" }, () => {
           throw new Error(`Not yet implemented`);
         })
-        .with({ __ktype__: "type" }, () => {
-          throw new Error(`Not yet implemented`);
+        .with({ __ktype__: "type" }, (targetType) => {
+          // Member access on a type-value, which must be a function call.
+          return match(targetType.type())
+            .with({ __ktype__: "struct"}, (structType) => {
+              if(node.property.type === "KComputed") {
+                throw new Error(`Computed property calls on struct are forbidden.`)
+              }
+
+              return match(node.property.value as keyof StructType)
+                .with("from", () => {
+
+                })
+                .otherwise(() => { throw new Error(`${node.property.value} is not a valid struct operation.`)})
+            })
+            .otherwise(() => {
+              throw new Error(`Type methods on ${targetType.__ktype__} are not yet implemented.`)
+            })
         })
         .otherwise(() => {
           throw new Error(
@@ -492,5 +508,6 @@ const resolveTypeExp = (node: KExp): Type =>
         })
     )
     .otherwise(() => {
+      // TODO return Deferred here instead of throwing.
       throw new Error(`Cannot resolve ${node} to a type.`);
     });
