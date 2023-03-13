@@ -5,11 +5,17 @@ import type {
   KUnaryOperator,
 } from "../types/KytheraNode";
 
-import { StructType, Type } from "../../core/types.js";
+import type { Identifier } from "@swc/core";
+
+import { StructType, Type, TypeType } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
 import { struct } from "../../core/struct.js";
+
+// TODO: type this more strongly?
+const isTypeName = (name: string): boolean =>
+  ["fn", "tuple", "array", "variant", "struct"].includes(name);
 
 const typeValFrom = (t: Type): Type => {
   if (t.__ktype__ === "type") {
@@ -133,6 +139,7 @@ const typeCheckNode = (node: KNode) =>
 
       if (node.handler) {
         if (node.handler.param) {
+          // TODO: this should probably use the same logic as destructuring on function parameters
           typeCheckPattern(node.handler.param);
         }
 
@@ -271,14 +278,8 @@ const typeCheckExp = (node: KExp): Type =>
     .with({ type: "KCallExpression" }, (node) => {
       // Because Kythera "keywords" are implemented as functions, the Call Expression handler has extra logic for handling these special cases.
 
-      // Check to see if the callee was a keyword function.
-      if (
-        node.callee.type === "Identifier" &&
-        ["fn", "tuple", "array", "variant", "struct"].includes(
-          node.callee.value
-        )
-      ) {
-        // Keyword functions.
+      // Check to see if call was a type declaration, e.g. struct({})
+      if (node.callee.type === "Identifier" && isTypeName(node.callee.value)) {
         return match(node.callee.value)
           .with("fn", () => {
             throw new Error("Not yet implemented");
@@ -330,6 +331,81 @@ const typeCheckExp = (node: KExp): Type =>
           })
           .otherwise(() => {
             throw new Error("Unreachable");
+          });
+      }
+
+      // Check if call was a type method, e.g. MyType.from()
+      // TODO find a way to avoid type-checking node.callee.object twice
+      if (
+        node.callee.type === "KMemberExpression" &&
+        typeCheckExp(node.callee.object).__ktype__ === "type"
+      ) {
+        const memberExp = node.callee;
+
+        if (memberExp.property.type === "KComputed") {
+          throw new Error(`Computed property calls on types are forbidden.`);
+        }
+
+        const methodName = memberExp.property.value;
+
+        const targetType = typeCheckExp(memberExp.object) as TypeType;
+
+        return match(targetType.type())
+          .with({ __ktype__: "struct" }, (structType) => {
+            return match(methodName)
+              .with("from", () => {
+                const shapeNode = node.arguments[0].expression;
+
+                if (shapeNode.type !== "KObjectExpression") {
+                  throw new Error(
+                    `struct() parameter must be an object literal.`
+                  );
+                }
+
+                const shape = shapeNode.properties.reduce(
+                  (acc: Record<string, Type>, prop) => {
+                    if (prop.type !== "KKeyValueProperty") {
+                      throw new Error(
+                        `${prop.type} in struct shapes are not yet supported.`
+                      );
+                    }
+
+                    if (prop.key.type !== "Identifier") {
+                      throw new Error(
+                        `Cannot use ${prop.key.type} key in struct shape.`
+                      );
+                    }
+
+                    acc[prop.key.value] = typeCheckExp(prop.value);
+
+                    return acc;
+                  },
+                  {}
+                );
+
+                const inputType = struct(shape);
+
+                if (!inputType.sub(structType)) {
+                  throw new Error(
+                    `Invalid cast to struct type: ${inputType} vs ${structType}`
+                  );
+                }
+
+                return structType;
+              })
+              .with("conform", () => {
+                // TODO type-check this anyway, in case it's impossible for the input value to conform
+              })
+              .otherwise(() => {
+                throw new Error(
+                  `${methodName} is not a valid struct operation.`
+                );
+              });
+          })
+          .otherwise(() => {
+            throw new Error(
+              `Type methods on ${targetType.__ktype__} are not yet implemented.`
+            );
           });
       }
 
@@ -387,7 +463,7 @@ const typeCheckExp = (node: KExp): Type =>
     .with({ type: "KMemberExpression" }, (node) => {
       const targetType = typeCheckExp(node.object);
 
-      return match(targetType)
+      return match<Type, Type>(targetType)
         .with({ __ktype__: "struct" }, (structType) => {
           // Read on a struct value.
           if (node.property.type === "KComputed") {
@@ -405,6 +481,8 @@ const typeCheckExp = (node: KExp): Type =>
         .with({ __ktype__: "array" }, (arrayType) => {
           if (node.property.type === "Identifier") {
             // must be an array member like length, map, etc.
+
+            throw new Error(`Array functions are not yet implemented.`);
           } else if (node.property.type === "KComputed") {
             // field access; must be a number.
 
@@ -414,27 +492,18 @@ const typeCheckExp = (node: KExp): Type =>
 
             return arrayType.contains();
           }
+
+          node.property;
+          throw new Error(`Unreachable (node.property has type never)`);
         })
         .with({ __ktype__: "variant" }, () => {
           throw new Error(`Not yet implemented`);
         })
-        .with({ __ktype__: "type" }, (targetType) => {
-          // Member access on a type-value, which must be a function call.
-          return match(targetType.type())
-            .with({ __ktype__: "struct"}, (structType) => {
-              if(node.property.type === "KComputed") {
-                throw new Error(`Computed property calls on struct are forbidden.`)
-              }
-
-              return match(node.property.value as keyof StructType)
-                .with("from", () => {
-
-                })
-                .otherwise(() => { throw new Error(`${node.property.value} is not a valid struct operation.`)})
-            })
-            .otherwise(() => {
-              throw new Error(`Type methods on ${targetType.__ktype__} are not yet implemented.`)
-            })
+        .with({ __ktype__: "type" }, () => {
+          // All members on a type-value are methods and must be called.
+          // Calls to type-value methods are handled with call expressions.
+          // If parsing has reached this point, a member on a type has been accessed without a call.
+          throw new Error(`Type methods must be called.`);
         })
         .otherwise(() => {
           throw new Error(
@@ -481,9 +550,10 @@ const typeCheckExp = (node: KExp): Type =>
     .exhaustive();
 
 // Resolves the value of a type-expression.
-// Whereas `typeCheckExp` returns the type of an expression, `resolveType` returns the *value*
+// While `typeCheckExp` returns the type of an expression, `resolveType` attempts to parse and return the *value*
 // of that expression - but only for type values. (This will not resolve other values, such as numbers).
 // Example: typeCheckExp(Num) => Type // resolveType(Num) => Num
+// Example: typeCheckExp(2) => Num // resolveType(2) => (invalid)
 const resolveTypeExp = (node: KExp): Type =>
   match<KExp, Type>(node)
     .with({ type: "Identifier" }, (node) =>
