@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
-import { variant } from "../../core/variant.js";
-import { Str, Void } from "../../core/primitives.js";
+import { variant } from "../../../core/variant.js";
+import { Str, Void } from "../../../core/primitives.js";
 
 export function variants() {
   const MaybeStr = variant({

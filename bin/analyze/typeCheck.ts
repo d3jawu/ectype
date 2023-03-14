@@ -68,9 +68,8 @@ currentScope.set("Bool", typeValFrom(Bool));
 currentScope.set("Num", typeValFrom(Num));
 currentScope.set("Str", typeValFrom(Str));
 
-export const typeCheck = (body: KNode[]) => (
-  body.forEach((node) => typeCheckNode(node)), console.log(currentScope)
-);
+export const typeCheck = (body: KNode[]) =>
+  body.forEach((node) => typeCheckNode(node));
 
 const typeCheckNode = (node: KNode) =>
   match<KNode, void>(node)

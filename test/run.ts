@@ -1,20 +1,15 @@
-import * as fn from "./tests/fn.js";
-import * as variants from "./tests/variants.js";
-import * as tuple from "./tests/tuple.js";
-import * as array from "./tests/array.js";
-import * as structs from "./tests/structs.js";
+import { tests as coreTests } from "./core/run.js";
+import { tests as binTests } from "./bin/run.js";
 
-const imports = { fn, variants, tuple, array, structs };
+export type Test = {
+  test: () => void;
+  module: string;
+  name: string;
+};
+
+const tests = [...coreTests, ...binTests];
 
 import chalk from "chalk";
-
-const tests = Object.entries(imports).flatMap(([module, tests]) =>
-  Object.entries(tests).map(([name, test]) => ({
-    module,
-    name,
-    test,
-  }))
-);
 
 const testName = (module: string, name: string) => `${module}.${name}`;
 

@@ -1,7 +1,7 @@
-import { tuple } from "../../core/tuple.js";
-import { struct } from "../../core/struct.js";
+import { tuple } from "../../../core/tuple.js";
+import { struct } from "../../../core/struct.js";
 
-import { Num, Str } from "../../core/primitives.js";
+import { Num, Str } from "../../../core/primitives.js";
 
 import { strict as assert } from "node:assert";
 
