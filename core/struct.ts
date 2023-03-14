@@ -19,13 +19,12 @@ const struct = (shape: Record<string, Type>): StructType => {
     has: (field) => shape.hasOwnProperty(field),
     field: (field) => shape[field],
     fields: () => Object.entries(shape),
-    // fields: (): [string, Type][] => Object.entries(shape),
     sub: (other) => {
       if (other.__ktype__ !== "struct") {
         return false;
       }
 
-      // to be a subtype of `other`, shape must at least have all the fields of `other`,
+      // To be a subtype of `other`, shape must at least have all the fields of `other`,
       // and each field must be a subtype of that same field on `other`.
       return other
         .fields()

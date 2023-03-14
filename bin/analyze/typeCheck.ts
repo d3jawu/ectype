@@ -7,11 +7,13 @@ import type {
 
 import type { Identifier } from "@swc/core";
 
-import { StructType, Type, TypeType } from "../../core/types.js";
+import { Type, TypeType } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
 import { struct } from "../../core/struct.js";
+
+import { option } from "../../lib/option.js";
 
 // TODO: type this more strongly?
 const isTypeName = (name: string): boolean =>
@@ -386,6 +388,7 @@ const typeCheckExp = (node: KExp): Type =>
                 const inputType = struct(shape);
 
                 if (!inputType.sub(structType)) {
+                  // TODO explain incompatibility in error message
                   throw new Error(
                     `Invalid cast to struct type: ${inputType} vs ${structType}`
                   );
@@ -394,7 +397,11 @@ const typeCheckExp = (node: KExp): Type =>
                 return structType;
               })
               .with("conform", () => {
-                // TODO type-check this anyway, in case it's impossible for the input value to conform
+                // TODO type-check this for:
+                // a) if it's impossible for the input value to conform
+                // b) if `conform` is not necessary and `from` can be used.
+
+                return option(structType).Option;
               })
               .otherwise(() => {
                 throw new Error(
@@ -502,7 +509,7 @@ const typeCheckExp = (node: KExp): Type =>
         .with({ __ktype__: "type" }, () => {
           // All members on a type-value are methods and must be called.
           // Calls to type-value methods are handled with call expressions.
-          // If parsing has reached this point, a member on a type has been accessed without a call.
+          // If parsing has reached this point, then a member on a type has been accessed without a call.
           throw new Error(`Type methods must be called.`);
         })
         .otherwise(() => {

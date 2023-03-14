@@ -3,4 +3,3 @@ node_modules/
 scratch.js
 
 dist/*
-!dist/stdlib/
