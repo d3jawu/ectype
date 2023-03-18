@@ -24,7 +24,7 @@ export function structs() {
   });
 
   assert.doesNotThrow(() => {
-    analyze(`
+    const scope = analyze(`
     const Point2D = struct({
       x: Num,
       y: Num,
@@ -33,5 +33,11 @@ export function structs() {
     const myPoint = Point2D.conform({
       x: 10,
     });`);
+
+    const Point2DType = scope.get("Point2D");
+    assert.ok(Point2DType !== null);
+    assert.ok(Point2DType.__ktype__ === "type");
+    const Point2D = Point2DType.type();
+    assert.ok(Point2D.__ktype__ === "struct");
   });
 }

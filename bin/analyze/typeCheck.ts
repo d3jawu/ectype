@@ -31,7 +31,7 @@ const typeValFrom = (t: Type): Type => {
   };
 };
 
-class SymbolTable {
+export class SymbolTable {
   parent: SymbolTable | null;
   values: Record<string, Type>;
 
@@ -59,7 +59,8 @@ class SymbolTable {
   }
 }
 
-export const typeCheck = (body: KNode[]) => {
+// typeCheck returns the global symbol table for debugging purposes.
+export const typeCheck = (body: KNode[]): SymbolTable => {
   let currentScope = new SymbolTable(null);
   // Seed root scope with existing types.
   currentScope.set("Void", typeValFrom(Void));
@@ -594,5 +595,7 @@ export const typeCheck = (body: KNode[]) => {
         throw new Error(`Cannot resolve ${node} to a type.`);
       });
 
-  return body.forEach((node) => typeCheckNode(node));
+  body.forEach((node) => typeCheckNode(node));
+
+  return currentScope;
 };

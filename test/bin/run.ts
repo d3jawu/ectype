@@ -1,6 +1,6 @@
-import * as typeCheck from "./tests/typeCheck.js";
+import * as typeCheckTests from "./tests/typeCheck.js";
 
-const imports = { typeCheck };
+const imports = { typeCheckTests };
 
 import type { Test } from "../run.js";
 
@@ -13,11 +13,14 @@ const tests: Test[] = Object.entries(imports).flatMap(([module, tests]) =>
 );
 
 import { parseSync } from "@swc/core";
-import { analyze as analyzeAST } from "../../bin/analyze/analyze.js";
+import { SymbolTable } from "../../bin/analyze/typeCheck.js";
+import { lower } from "../../bin/analyze/lower.js";
+import { typeCheck } from "../../bin/analyze/typeCheck.js";
 
-const analyze = (src: string) => {
+const analyze = (src: string): SymbolTable => {
   const { body: ast } = parseSync(src);
-  analyzeAST(ast);
+  const lowered = lower(ast);
+  return typeCheck(lowered);
 };
 
 export { tests, analyze };
