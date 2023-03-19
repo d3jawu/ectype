@@ -11,6 +11,7 @@ import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 import { match } from "ts-pattern";
 import { struct } from "../../core/struct.js";
 import { variant } from "../../core/variant.js";
+import { array } from "../../core/array.js";
 
 import { option } from "../../lib/option.js";
 
@@ -294,7 +295,27 @@ export const typeCheck = (body: KNode[]): SymbolTable => {
               throw new Error("Not yet implemented");
             })
             .with("array", () => {
-              throw new Error("Not yet implemented");
+              if (node.arguments.length !== 1) {
+                throw new Error(
+                  `Expected exactly 1 argument to array() but got ${node.arguments.length}`
+                );
+              }
+
+              const arg = node.arguments[0];
+
+              if (arg.spread) {
+                throw new Error(`Spread arguments are not allowed in array().`);
+              }
+
+              const argType = typeCheckExp(arg.expression);
+
+              if (argType.__ktype__ !== "type") {
+                throw new Error(`array() parameter must be a type.`);
+              }
+
+              const resolvedType = resolveTypeExp(arg.expression);
+
+              return typeValFrom(array(resolvedType));
             })
             .with("variant", () => {
               if (node.arguments.length !== 1) {

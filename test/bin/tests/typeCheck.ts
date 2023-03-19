@@ -52,3 +52,16 @@ export function variants() {
     `);
   });
 }
+
+export function arrays() {
+  const scope = analyze(`
+  const StrArray = array(Str);
+  `);
+
+  const StrArrayType = scope.get("StrArray");
+  assert.ok(StrArrayType !== null);
+  assert.ok(StrArrayType.__ktype__ === "type");
+  const StrArray = StrArrayType.type();
+  assert.ok(StrArray.__ktype__ === "array");
+  assert.ok(StrArray.contains().__ktype__ === "str");
+}
