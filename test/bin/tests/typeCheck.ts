@@ -41,3 +41,14 @@ export function structs() {
     assert.ok(Point2D.__ktype__ === "struct");
   });
 }
+
+export function variants() {
+  assert.doesNotThrow(() => {
+    analyze(`
+      const IPAddr = variant({
+        V4: Str,
+        V6: Str,
+      })
+    `);
+  });
+}

@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { variant } from "../../../core/variant.js";
 import { Str, Void } from "../../../core/primitives.js";
+import type { Option } from "../../../core/types.js";
 
 export function variants() {
   const MaybeStr = variant({
@@ -8,7 +9,7 @@ export function variants() {
     None: Void,
   });
 
-  const someStr = MaybeStr.of({ Some: "abc" });
+  const someStr = MaybeStr.of({ Some: "abc" }) as Option<string>;
 
   assert.ok(someStr.isSome());
   assert.ok(someStr.isNone() === false);

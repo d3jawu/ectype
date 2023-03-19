@@ -297,7 +297,48 @@ export const typeCheck = (body: KNode[]): SymbolTable => {
               throw new Error("Not yet implemented");
             })
             .with("variant", () => {
-              throw new Error("Not yet implemented");
+              if (node.arguments.length !== 1) {
+                throw new Error(
+                  `Expected exactly 1 argument to variant() but got ${node.arguments.length}`
+                );
+              }
+
+              const optionsNode = node.arguments[0].expression;
+
+              if (optionsNode.type !== "KObjectExpression") {
+                throw new Error(
+                  `struct() parameter must be an object literal.`
+                );
+              }
+
+              const options = optionsNode.properties.reduce(
+                (acc: Record<string, Type>, prop) => {
+                  if (prop.type !== "KKeyValueProperty") {
+                    throw new Error(
+                      `${prop.type} in variant options is not yet supported.`
+                    );
+                  }
+
+                  if (prop.key.type !== "Identifier") {
+                    throw new Error(
+                      `Cannot use ${prop.key.type} as key in variant options.`
+                    );
+                  }
+
+                  if (prop.key.value[0] !== prop.key.value[0].toUpperCase()) {
+                    throw new Error(
+                      `variant option ${prop.key.value} must begin with an uppercase letter.`
+                    );
+                  }
+
+                  acc[prop.key.value] = resolveTypeExp(prop.value);
+
+                  return acc;
+                },
+                {}
+              );
+
+              return typeValFrom(variant(options));
             })
             .with("struct", () => {
               if (node.arguments.length !== 1) {
