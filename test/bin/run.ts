@@ -13,11 +13,11 @@ const tests: Test[] = Object.entries(imports).flatMap(([module, tests]) =>
 );
 
 import { parseSync } from "@swc/core";
-import { SymbolTable } from "../../bin/analyze/typeCheck.js";
 import { lower } from "../../bin/analyze/lower.js";
 import { typeCheck } from "../../bin/analyze/typeCheck.js";
+import { Type } from "../../core/types.js";
 
-const analyze = (src: string): SymbolTable => {
+const analyze = (src: string): Record<string, Type> => {
   const { body: ast } = parseSync(src);
   const lowered = lower(ast);
   return typeCheck(lowered);

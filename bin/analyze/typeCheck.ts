@@ -61,7 +61,9 @@ export class SymbolTable {
 }
 
 // typeCheck returns the global symbol table for debugging purposes.
-export const typeCheck = (body: KNode[]): SymbolTable => {
+export const typeCheck = (body: KNode[]): Record<string, Type> => {
+  const exports: Record<string, Type> = {};
+
   let currentScope = new SymbolTable(null);
   // Seed root scope with existing types.
   currentScope.set("Void", typeValFrom(Void));
@@ -77,10 +79,37 @@ export const typeCheck = (body: KNode[]): SymbolTable => {
         { type: "ContinueStatement" },
         { type: "DebuggerStatement" },
         { type: "EmptyStatement" },
-        { type: "ExportNamedDeclaration" },
         { type: "ImportDeclaration" },
         () => {}
       )
+      .with({ type: "ExportNamedDeclaration" }, (node) => {
+        if (node.source !== null) {
+          throw new Error(`Re-exports are not yet supported.`);
+        }
+
+        node.specifiers.forEach((specifier) => {
+          if (specifier.type === "ExportDefaultSpecifier") {
+            throw new Error(`Default exports are forbidden in Kythera.`);
+          }
+
+          if (specifier.type === "ExportNamespaceSpecifier") {
+            throw new Error(`Namespace exports are not yet implemented.`);
+          }
+
+          const exportedType = currentScope.get(specifier.orig.value);
+          if (exportedType === null) {
+            throw new Error(
+              `Could not export ${specifier.orig.value} because it is not defined.`
+            );
+          }
+
+          const exportedName = specifier.exported
+            ? specifier.exported.value
+            : specifier.orig.value;
+
+          exports[exportedName] = exportedType;
+        });
+      })
       .with({ type: "KBlockStatement" }, (node) => {
         node.statements.forEach((st) => typeCheckNode(st));
       })
@@ -659,5 +688,5 @@ export const typeCheck = (body: KNode[]): SymbolTable => {
 
   body.forEach((node) => typeCheckNode(node));
 
-  return currentScope;
+  return exports;
 };

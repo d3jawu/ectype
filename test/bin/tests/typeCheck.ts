@@ -24,7 +24,7 @@ export function structs() {
   });
 
   assert.doesNotThrow(() => {
-    const scope = analyze(`
+    const exports = analyze(`
     const Point2D = struct({
       x: Num,
       y: Num,
@@ -32,9 +32,12 @@ export function structs() {
     
     const myPoint = Point2D.conform({
       x: 10,
-    });`);
+    });
+    
+    export { Point2D }
+    `);
 
-    const Point2DType = scope.get("Point2D");
+    const Point2DType = exports["Point2D"];
     assert.ok(Point2DType !== null);
     assert.ok(Point2DType.__ktype__ === "type");
     const Point2D = Point2DType.type();
@@ -54,14 +57,18 @@ export function variants() {
 }
 
 export function arrays() {
-  const scope = analyze(`
+  const exports = analyze(`
   const StrArray = array(Str);
+
+  export { StrArray }
   `);
 
-  const StrArrayType = scope.get("StrArray");
+  const StrArrayType = exports["StrArray"];
+
+  // use .ok so TypeScript's flow-sensitive typing can work.
   assert.ok(StrArrayType !== null);
   assert.ok(StrArrayType.__ktype__ === "type");
   const StrArray = StrArrayType.type();
   assert.ok(StrArray.__ktype__ === "array");
-  assert.ok(StrArray.contains().__ktype__ === "str");
+  assert.equal(StrArray.contains().__ktype__, "str");
 }
