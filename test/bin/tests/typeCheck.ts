@@ -72,3 +72,11 @@ export function arrays() {
   assert.ok(StrArray.__ktype__ === "array");
   assert.equal(StrArray.contains().__ktype__, "str");
 }
+
+export function tuples() {
+  const exports = analyze(`
+  const MyTuple = tuple([Str, Num])
+  
+  export { MyTuple }
+  `);
+}

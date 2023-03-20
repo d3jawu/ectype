@@ -12,6 +12,7 @@ import { match } from "ts-pattern";
 import { struct } from "../../core/struct.js";
 import { variant } from "../../core/variant.js";
 import { array } from "../../core/array.js";
+import { tuple } from "../../core/tuple.js";
 
 import { option } from "../../lib/option.js";
 
@@ -321,7 +322,25 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
               throw new Error("Not yet implemented");
             })
             .with("tuple", () => {
-              throw new Error("Not yet implemented");
+              if (node.arguments.length !== 1) {
+                throw new Error(
+                  `Expected exactly 1 argument to tuple() but got ${node.arguments.length}`
+                );
+              }
+
+              const entriesNode = node.arguments[0].expression;
+
+              if (entriesNode.type !== "KArrayExpression") {
+                throw new Error(
+                  `Argument to tuple() must be an array literal.`
+                );
+              }
+
+              const entryTypes = entriesNode.elements
+                .filter((el) => !!el)
+                .map((el) => resolveTypeExp(el.expression));
+
+              return typeValFrom(tuple(entryTypes));
             })
             .with("array", () => {
               if (node.arguments.length !== 1) {
@@ -330,19 +349,19 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
                 );
               }
 
-              const arg = node.arguments[0];
+              const containsNode = node.arguments[0];
 
-              if (arg.spread) {
+              if (containsNode.spread) {
                 throw new Error(`Spread arguments are not allowed in array().`);
               }
 
-              const argType = typeCheckExp(arg.expression);
+              const argType = typeCheckExp(containsNode.expression);
 
               if (argType.__ktype__ !== "type") {
                 throw new Error(`array() parameter must be a type.`);
               }
 
-              const resolvedType = resolveTypeExp(arg.expression);
+              const resolvedType = resolveTypeExp(containsNode.expression);
 
               return typeValFrom(array(resolvedType));
             })
@@ -357,7 +376,7 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
 
               if (optionsNode.type !== "KObjectExpression") {
                 throw new Error(
-                  `struct() parameter must be an object literal.`
+                  `Argument to struct() must be an object literal.`
                 );
               }
 
@@ -601,7 +620,10 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
             throw new Error(`Unreachable (node.property has type never)`);
           })
           .with({ __ktype__: "variant" }, () => {
-            throw new Error(`Not yet implemented`);
+            // Variant types do not have instances (their instances are structs).
+            throw new Error(
+              `Variant types do not have instances (this should have been impossible).`
+            );
           })
           .with({ __ktype__: "type" }, () => {
             // All members on a type-value are methods and must be called.
