@@ -1,7 +1,17 @@
+import { tuple } from "./tuple.js";
 import { Type, FnType } from "./types.js";
 import { None, someOf } from "./util.js";
 
-const fn = (param: Type, returns: Type): FnType => {
+// true if a <: b, false otherwise.
+const paramsSub = (a: Type[], b: Type[]): boolean => {
+  // Reuse tuple subtyping logic.
+  const aTuple = tuple(a);
+  const bTuple = tuple(b);
+
+  return aTuple.sub(bTuple);
+};
+
+const fn = (params: Type[], returns: Type): FnType => {
   const valid = (val: unknown): boolean => {
     if (typeof val !== "function") {
       return false;
@@ -10,7 +20,9 @@ const fn = (param: Type, returns: Type): FnType => {
     // Functions without param and return type tags are assumed to not match the fn type.
     // contravariant on the parameter type, covariant on the return type
     return Boolean(
-      val?.__kparam__?.sub(param) && returns.sub(val?.__kreturns__)
+      val.__kparams__ &&
+        paramsSub(val.__kparams__, params) &&
+        returns.sub(val?.__kreturns__)
     );
   };
 
@@ -18,13 +30,13 @@ const fn = (param: Type, returns: Type): FnType => {
     // Because the param and return types of a function cannot be deduced at runtime
     // we attach parameter and return types to the function value.
     from: (val) => {
-      val.__kparam__ = param;
+      val.__kparams__ = params;
       val.__kreturns__ = returns;
       return val;
     },
     conform: (val) => (valid(val) ? someOf(val as Function) : None),
     valid,
-    param: () => param,
+    params: () => params,
     returns: () => returns,
     sub: (other) => {
       if (other.__ktype__ !== "fn") {
@@ -32,9 +44,9 @@ const fn = (param: Type, returns: Type): FnType => {
       }
 
       // contravariant on the parameter type, covariant on the return type
-      return other.param().sub(param) && returns.sub(other.returns());
+      return paramsSub(other.params(), params) && returns.sub(other.returns());
     },
-    toString: () => `fn(${param} => ${returns})`,
+    toString: () => `fn((${params.join(",")}) => ${returns})`,
     __ktype__: "fn",
   };
 };

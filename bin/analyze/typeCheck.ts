@@ -542,26 +542,25 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
           throw new Error(`Callee is not a function.`);
         }
 
-        if (node.arguments.length === 0) {
-          if (fnType.param().__ktype__ !== "void") {
-            throw new Error(
-              `Function called with no arguments but expected ${fnType.param()}`
-            );
-          }
-        } else {
-          if (fnType.param().__ktype__ === "void") {
-            throw new Error(
-              `Expected no arguments to be passed to void function, but got ${node.arguments.length}`
-            );
-          }
+        const fnTypeParams = fnType.params();
 
-          const argType = typeCheckExp(node.arguments[0].expression);
-          if (!argType.sub(fnType.param())) {
+        if (node.arguments.length !== fnTypeParams.length) {
+          throw new Error(
+            `Expected ${fnType.params().length} arguments but got ${
+              node.arguments.length
+            }`
+          );
+        }
+
+        node.arguments.forEach((arg, i) => {
+          const argType = typeCheckExp(arg.expression);
+
+          if (!argType.sub(fnTypeParams[i])) {
             throw new Error(
-              `Expected ${fnType.param()} for parameter but got ${argType}`
+              `Argument ${i} (of type ${argType}) does not match expected type ${fnTypeParams[i]}`
             );
           }
-        }
+        });
 
         return fnType.returns();
       })
