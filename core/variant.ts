@@ -23,7 +23,7 @@ const variant = (options: Record<string, Type>): VariantType => {
 
   // construct the interface that all options under this variant will fulfill.
   const optionType: Record<string, Type> = Object.entries(options).reduce(
-    (acc, [k]) => {
+    (acc: Record<string, Type>, [k]) => {
       acc[`is${k}`] = fn([Void], Bool);
 
       return acc;
@@ -59,13 +59,16 @@ const variant = (options: Record<string, Type>): VariantType => {
       const [name, val] = Object.entries(mappedVal)[0];
 
       // fulfill Option type.
-      const members = Object.entries(options).reduce((acc, [k, v]) => {
-        acc[`is${k}`] = fn([Void], Bool).from(
-          k === name ? () => true : () => false
-        );
+      const members = Object.entries(options).reduce(
+        (acc: Record<string, unknown>, [k, v]) => {
+          acc[`is${k}`] = fn([Void], Bool).from(
+            k === name ? () => true : () => false
+          );
 
-        return acc;
-      }, {});
+          return acc;
+        },
+        {}
+      );
 
       return Option.from({
         [name]: val,

@@ -1,6 +1,7 @@
 import type {
   KBinaryOperator,
   KExp,
+  KExprOrSpread,
   KNode,
   KUnaryOperator,
 } from "../types/KytheraNode";
@@ -170,7 +171,8 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
         if (node.handler) {
           if (node.handler.param) {
             // TODO: this should probably use the same logic as destructuring on function parameters
-            typeCheckPattern(node.handler.param);
+            // typeCheckPattern(node.handler.param);
+            throw new Error(`Not yet implemented`);
           }
 
           typeCheckNode(node.handler.body);
@@ -336,9 +338,9 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
                 );
               }
 
-              const entryTypes = entriesNode.elements
-                .filter((el) => !!el)
-                .map((el) => resolveTypeExp(el.expression));
+              const entryTypes = (<KExprOrSpread[]>(
+                entriesNode.elements.filter((el) => !!el)
+              )).map((el) => resolveTypeExp(el.expression));
 
               return typeValFrom(tuple(entryTypes));
             })
