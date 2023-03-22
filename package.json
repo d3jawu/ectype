@@ -6,7 +6,7 @@
   "scripts": {
     "watch": "tsc --watch",
     "clean": "rm -rf dist/",
-    "test": "node dist/test/run.js"
+    "test": "node dist/test/test.js"
   },
   "author": "",
   "license": "ISC",
