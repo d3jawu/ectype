@@ -14,6 +14,7 @@ import { struct } from "../../core/struct.js";
 import { variant } from "../../core/variant.js";
 import { array } from "../../core/array.js";
 import { tuple } from "../../core/tuple.js";
+import { fn } from "../../core/fn.js";
 
 import { option } from "../../lib/option.js";
 
@@ -321,7 +322,28 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
         ) {
           return match(node.callee.value)
             .with("fn", () => {
-              throw new Error("Not yet implemented");
+              if (node.arguments.length !== 2) {
+                throw new Error(
+                  `Expected exactly 2 arguments to fn() but got ${node.arguments.length}`
+                );
+              }
+
+              const paramsNode = node.arguments[0].expression;
+
+              if (paramsNode.type !== "KArrayExpression") {
+                throw new Error(
+                  `First argument to fn() must be an array literal.`
+                );
+              }
+
+              const returnsNode = node.arguments[1].expression;
+
+              const paramTypes = (<KExprOrSpread[]>(
+                paramsNode.elements.filter((el) => !!el)
+              )).map((el) => resolveTypeExp(el.expression));
+              const returnType = resolveTypeExp(returnsNode);
+
+              return typeValFrom(fn(paramTypes, returnType));
             })
             .with("tuple", () => {
               if (node.arguments.length !== 1) {
