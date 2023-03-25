@@ -1,3 +1,4 @@
+"ectype:variant";
 import { Type, VariantType } from "./types.js";
 import { Void, Bool } from "./primitives.js";
 import { struct } from "./struct.js";

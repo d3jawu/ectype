@@ -1,3 +1,4 @@
+"ectype:struct";
 import type { Type, StructType } from "./types.js";
 import { someOf, None } from "./util.js";
 

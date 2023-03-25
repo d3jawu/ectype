@@ -1,5 +1,3 @@
-// Something has to import variant, or TypeScript won't compile it for some reason. >:(
-import { variant } from "./variant.js";
 import type { Option } from "./types.js";
 
 // Creates a Some() option instance wrapping the given value. For internal use only (not type-safe).

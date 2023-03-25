@@ -1,3 +1,4 @@
+"ectype:fn";
 import { tuple } from "./tuple.js";
 import { Type, FnType } from "./types.js";
 import { None, someOf } from "./util.js";

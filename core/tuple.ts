@@ -1,3 +1,4 @@
+"ectype:tuple";
 import type { Type, TupleType } from "./types.js";
 
 import { someOf, None } from "./util.js";

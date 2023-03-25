@@ -18,11 +18,15 @@ import { fn } from "../../core/fn.js";
 
 import { option } from "../../lib/option.js";
 
+import { analyzeFile } from "./analyzeFile.js";
+
+import { dirname, join as joinPaths } from "path";
+
 // TODO: type this more strongly?
 const isTypeName = (name: string): boolean =>
   ["fn", "tuple", "array", "variant", "struct"].includes(name);
 
-const typeValFrom = (t: Type): Type => {
+export const typeValFrom = (t: Type): Type => {
   if (t.__ktype__ === "type") {
     throw new Error("A type-value cannot contain a type-value.");
   }
@@ -64,16 +68,13 @@ export class SymbolTable {
 }
 
 // typeCheck returns the global symbol table for debugging purposes.
-export const typeCheck = (body: KNode[]): Record<string, Type> => {
+export const typeCheck = (
+  body: KNode[],
+  path: string
+): Record<string, Type> => {
   const exports: Record<string, Type> = {};
 
   let currentScope = new SymbolTable(null);
-  // Seed root scope with existing types.
-  currentScope.set("Void", typeValFrom(Void));
-  currentScope.set("Null", typeValFrom(Null));
-  currentScope.set("Bool", typeValFrom(Bool));
-  currentScope.set("Num", typeValFrom(Num));
-  currentScope.set("Str", typeValFrom(Str));
 
   const typeCheckNode = (node: KNode) =>
     match<KNode, void>(node)
@@ -82,9 +83,37 @@ export const typeCheck = (body: KNode[]): Record<string, Type> => {
         { type: "ContinueStatement" },
         { type: "DebuggerStatement" },
         { type: "EmptyStatement" },
-        { type: "ImportDeclaration" },
         () => {}
       )
+      .with({ type: "ImportDeclaration" }, (node) => {
+        // TODO handle modules in addition to raw paths
+        const importedTypes = analyzeFile(
+          joinPaths(dirname(path), node.source.value)
+        );
+
+        node.specifiers.forEach((specifier) => {
+          if (specifier.type === "ImportDefaultSpecifier") {
+            throw new Error(`Default imports are not yet implemented.`);
+          }
+
+          if (specifier.type === "ImportNamespaceSpecifier") {
+            throw new Error(`Namespace imports are not yet implemented.`);
+          }
+
+          const remoteName = specifier.imported
+            ? specifier.imported.value
+            : specifier.local.value;
+          const localName = specifier.local.value;
+
+          if (!importedTypes[remoteName]) {
+            throw new Error(
+              `${remoteName} is not exported by ${node.source.value}.`
+            );
+          }
+
+          currentScope.set(localName, importedTypes[remoteName]);
+        });
+      })
       .with({ type: "ExportNamedDeclaration" }, (node) => {
         if (node.source !== null) {
           throw new Error(`Re-exports are not yet supported.`);
