@@ -1,3 +1,4 @@
+"ectype:array";
 import type { Type, ArrayType } from "./types.js";
 import { someOf, None } from "./util.js";
 

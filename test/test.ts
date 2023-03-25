@@ -1,5 +1,4 @@
 import { readdirSync, existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import chalk from "chalk";
@@ -32,19 +31,9 @@ const lineLength =
     }
   }, 0) + 2;
 
-import { parseSync } from "@swc/core";
-import { lower } from "../bin/analyze/lower.js";
-import { typeCheck } from "../bin/analyze/typeCheck.js";
-import { Type } from "../core/types.js";
-import { StaticTest } from "./static/StaticTest.js";
+import { analyzeFile } from "../bin/analyze/analyzeFile.js";
 
 import { strict as assert } from "node:assert";
-
-const analyzeFile = (src: string): Record<string, Type> => {
-  const { body: ast } = parseSync(src);
-  const lowered = lower(ast);
-  return typeCheck(lowered);
-};
 
 let failed = false;
 
@@ -68,14 +57,12 @@ await (async () => {
       }
 
       if (!!staticTest || throws) {
-        const contents = await readFile(runtimePath);
-
         if (throws) {
           assert.throws(() => {
-            analyzeFile(contents.toString());
+            analyzeFile(runtimePath);
           });
         } else {
-          const staticExports = analyzeFile(contents.toString());
+          const staticExports = analyzeFile(runtimePath);
           staticTest(staticExports);
         }
       }
