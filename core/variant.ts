@@ -39,7 +39,6 @@ const variant = (options: Record<string, Type>): VariantType => {
     conform: (val) =>
       valid(val) ? someOf(val as { [key: string]: any }) : None,
     valid,
-    // match: () => {},
     has: (name) => options.hasOwnProperty(name),
     get: (name) => options[name],
     sub: (other) => {
@@ -54,7 +53,7 @@ const variant = (options: Record<string, Type>): VariantType => {
       });
     },
     match: (val) => {},
-    Option,
+    option: () => Option,
     of: (mappedVal: Record<string, unknown>) => {
       // assume analyzer has ensured record has exactly one entry.
       const [name, val] = Object.entries(mappedVal)[0];

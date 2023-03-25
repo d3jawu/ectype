@@ -13,10 +13,10 @@ assert.ok(someStr.isSome());
 assert.ok(someStr.isNone() === false);
 assert.ok(someStr.Some === "abc");
 
-assert.ok(MaybeStr.Option.valid(someStr));
+assert.ok(MaybeStr.option().valid(someStr));
 
 const none = MaybeStr.of({ None: undefined });
 assert.ok(none.isNone());
 assert.ok(none.isSome() === false);
 
-assert.ok(MaybeStr.Option.valid(none));
+assert.ok(MaybeStr.option().valid(none));

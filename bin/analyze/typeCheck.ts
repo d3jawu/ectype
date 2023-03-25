@@ -570,7 +570,7 @@ export const typeCheck = (
                   // a) if it's impossible for the input value to conform
                   // b) if `conform` is not necessary and `from` can be used.
 
-                  return option(structType).Option;
+                  return option(structType).option();
                 })
                 .otherwise(() => {
                   throw new Error(

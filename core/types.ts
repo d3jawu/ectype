@@ -104,7 +104,7 @@ export type VariantType = {
   of: (val: Record<string, unknown>) => unknown;
   sub: (other: Type) => boolean;
   toString: () => string;
-  Option: Type;
+  option: () => Type;
   __ktype__: "variant";
 };
 
