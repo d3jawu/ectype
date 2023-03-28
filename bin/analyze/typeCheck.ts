@@ -1,10 +1,10 @@
 import type {
-  KBinaryOperator,
-  KExp,
-  KExprOrSpread,
-  KNode,
-  KUnaryOperator,
-} from "../types/KytheraNode";
+  ECBinaryOperator,
+  ECExp,
+  ECExprOrSpread,
+  ECNode,
+  ECUnaryOperator,
+} from "../types/ECNode";
 
 import { Type, TypeType } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
@@ -69,15 +69,15 @@ export class SymbolTable {
 
 // typeCheck returns the global symbol table for debugging purposes.
 export const typeCheck = (
-  body: KNode[],
+  body: ECNode[],
   path: string
 ): Record<string, Type> => {
   const exports: Record<string, Type> = {};
 
   let currentScope = new SymbolTable(null);
 
-  const typeCheckNode = (node: KNode) =>
-    match<KNode, void>(node)
+  const typeCheckNode = (node: ECNode) =>
+    match<ECNode, void>(node)
       .with(
         { type: "BreakStatement" },
         { type: "ContinueStatement" },
@@ -121,7 +121,7 @@ export const typeCheck = (
 
         node.specifiers.forEach((specifier) => {
           if (specifier.type === "ExportDefaultSpecifier") {
-            throw new Error(`Default exports are forbidden in Kythera.`);
+            throw new Error(`Default exports are forbidden in Ectype.`);
           }
 
           if (specifier.type === "ExportNamespaceSpecifier") {
@@ -142,11 +142,11 @@ export const typeCheck = (
           exports[exportedName] = exportedType;
         });
       })
-      .with({ type: "KBlockStatement" }, (node) => {
+      .with({ type: "ECBlockStatement" }, (node) => {
         node.statements.forEach((st) => typeCheckNode(st));
       })
-      .with({ type: "KForStatement" }, (node) => {
-        if (node.init && node.init.type !== "KVariableDeclaration") {
+      .with({ type: "ECForStatement" }, (node) => {
+        if (node.init && node.init.type !== "ECVariableDeclaration") {
           typeCheckExp(node.init);
         }
 
@@ -164,7 +164,7 @@ export const typeCheck = (
 
         typeCheckNode(node.body);
       })
-      .with({ type: "KIfStatement" }, (node) => {
+      .with({ type: "ECIfStatement" }, (node) => {
         const testType = typeCheckExp(node.test);
         if (!testType.sub(Bool)) {
           throw new Error(`Condition for if-statement must be a Bool.`);
@@ -176,15 +176,15 @@ export const typeCheck = (
           typeCheckNode(node.alternate);
         }
       })
-      .with({ type: "KLabeledStatement" }, (node) => {
+      .with({ type: "ECLabeledStatement" }, (node) => {
         typeCheckNode(node.body);
       })
-      .with({ type: "KReturnStatement" }, (node) => {
+      .with({ type: "ECReturnStatement" }, (node) => {
         if (node.argument) {
           typeCheckExp(node.argument);
         }
       })
-      .with({ type: "KSwitchStatement" }, (node) => {
+      .with({ type: "ECSwitchStatement" }, (node) => {
         typeCheckExp(node.discriminant);
 
         node.cases.forEach((c) => {
@@ -195,7 +195,7 @@ export const typeCheck = (
           c.consequent.forEach((n) => typeCheckNode(n));
         });
       })
-      .with({ type: "KTryStatement" }, (node) => {
+      .with({ type: "ECTryStatement" }, (node) => {
         typeCheckNode(node.block);
 
         if (node.handler) {
@@ -212,7 +212,7 @@ export const typeCheck = (
           typeCheckNode(node.finalizer);
         }
       })
-      .with({ type: "KVariableDeclaration" }, (node) => {
+      .with({ type: "ECVariableDeclaration" }, (node) => {
         node.declarations.forEach((decl) => {
           if (!decl.init) {
             throw new Error(`Variable ${decl.id} must be initialized.`);
@@ -229,7 +229,7 @@ export const typeCheck = (
           currentScope.set(ident, typeCheckExp(decl.init));
         });
       })
-      .with({ type: "KWhileStatement" }, (node) => {
+      .with({ type: "ECWhileStatement" }, (node) => {
         const testType = typeCheckExp(node.test);
         if (!testType.sub(Bool)) {
           throw new Error(`Condition for while-statement must be a Bool.`);
@@ -237,10 +237,10 @@ export const typeCheck = (
 
         typeCheckNode(node.body);
       })
-      .otherwise((node) => typeCheckExp(node as KExp));
+      .otherwise((node) => typeCheckExp(node as ECExp));
 
-  const typeCheckExp = (node: KExp): Type =>
-    match<KExp, Type>(node)
+  const typeCheckExp = (node: ECExp): Type =>
+    match<ECExp, Type>(node)
       // TODO BigInt needs its own type.
       .with({ type: "BigIntLiteral" }, (node) => Num)
       .with({ type: "BooleanLiteral" }, (node) => Bool)
@@ -255,7 +255,7 @@ export const typeCheck = (
 
         return maybeType;
       })
-      .with({ type: "KAssignmentExpression" }, (node) => {
+      .with({ type: "ECAssignmentExpression" }, (node) => {
         const leftType: Type = match(node.left)
           .with(
             { type: "Identifier" },
@@ -283,11 +283,11 @@ export const typeCheck = (
 
         return rightType;
       })
-      .with({ type: "KAwaitExpression" }, () => {
+      .with({ type: "ECAwaitExpression" }, () => {
         throw new Error(`await is not yet implemented.`);
       })
-      .with({ type: "KBinaryExpression" }, (node) =>
-        match<KBinaryOperator, Type>(node.operator)
+      .with({ type: "ECBinaryExpression" }, (node) =>
+        match<ECBinaryOperator, Type>(node.operator)
           .with("===", "!==", "&&", "||", () => {
             const left = typeCheckExp(node.left);
             const right = typeCheckExp(node.right);
@@ -337,12 +337,12 @@ export const typeCheck = (
             }
           )
           .with("??", () => {
-            throw new Error("`??` is forbidden in Kythera.");
+            throw new Error("`??` is forbidden in Ectype.");
           })
           .exhaustive()
       )
-      .with({ type: "KCallExpression" }, (node) => {
-        // Because Kythera "keywords" are implemented as functions, the Call Expression handler has extra logic for handling these special cases.
+      .with({ type: "ECCallExpression" }, (node) => {
+        // Because Ectype "keywords" are implemented as functions, the Call Expression handler has extra logic for handling these special cases.
 
         // Check to see if call was a type declaration, e.g. struct({})
         if (
@@ -359,7 +359,7 @@ export const typeCheck = (
 
               const paramsNode = node.arguments[0].expression;
 
-              if (paramsNode.type !== "KArrayExpression") {
+              if (paramsNode.type !== "ECArrayExpression") {
                 throw new Error(
                   `First argument to fn() must be an array literal.`
                 );
@@ -367,7 +367,7 @@ export const typeCheck = (
 
               const returnsNode = node.arguments[1].expression;
 
-              const paramTypes = (<KExprOrSpread[]>(
+              const paramTypes = (<ECExprOrSpread[]>(
                 paramsNode.elements.filter((el) => !!el)
               )).map((el) => resolveTypeExp(el.expression));
               const returnType = resolveTypeExp(returnsNode);
@@ -383,13 +383,13 @@ export const typeCheck = (
 
               const entriesNode = node.arguments[0].expression;
 
-              if (entriesNode.type !== "KArrayExpression") {
+              if (entriesNode.type !== "ECArrayExpression") {
                 throw new Error(
                   `Argument to tuple() must be an array literal.`
                 );
               }
 
-              const entryTypes = (<KExprOrSpread[]>(
+              const entryTypes = (<ECExprOrSpread[]>(
                 entriesNode.elements.filter((el) => !!el)
               )).map((el) => resolveTypeExp(el.expression));
 
@@ -427,7 +427,7 @@ export const typeCheck = (
 
               const optionsNode = node.arguments[0].expression;
 
-              if (optionsNode.type !== "KObjectExpression") {
+              if (optionsNode.type !== "ECObjectExpression") {
                 throw new Error(
                   `Argument to struct() must be an object literal.`
                 );
@@ -435,7 +435,7 @@ export const typeCheck = (
 
               const options = optionsNode.properties.reduce(
                 (acc: Record<string, Type>, prop) => {
-                  if (prop.type !== "KKeyValueProperty") {
+                  if (prop.type !== "ECKeyValueProperty") {
                     throw new Error(
                       `${prop.type} in variant options is not yet supported.`
                     );
@@ -471,7 +471,7 @@ export const typeCheck = (
 
               const shapeNode = node.arguments[0].expression;
 
-              if (shapeNode.type !== "KObjectExpression") {
+              if (shapeNode.type !== "ECObjectExpression") {
                 throw new Error(
                   `struct() parameter must be an object literal.`
                 );
@@ -479,7 +479,7 @@ export const typeCheck = (
 
               const shape = shapeNode.properties.reduce(
                 (acc: Record<string, Type>, prop) => {
-                  if (prop.type !== "KKeyValueProperty") {
+                  if (prop.type !== "ECKeyValueProperty") {
                     throw new Error(
                       `${prop.type} in struct shapes is not yet supported.`
                     );
@@ -508,12 +508,12 @@ export const typeCheck = (
         // Check if call was a type method, e.g. MyType.from()
         // TODO find a way to avoid type-checking node.callee.object twice
         if (
-          node.callee.type === "KMemberExpression" &&
+          node.callee.type === "ECMemberExpression" &&
           typeCheckExp(node.callee.object).__ktype__ === "type"
         ) {
           const memberExp = node.callee;
 
-          if (memberExp.property.type === "KComputed") {
+          if (memberExp.property.type === "ECComputed") {
             throw new Error(`Computed property calls on types are forbidden.`);
           }
 
@@ -527,7 +527,7 @@ export const typeCheck = (
                 .with("from", () => {
                   const shapeNode = node.arguments[0].expression;
 
-                  if (shapeNode.type !== "KObjectExpression") {
+                  if (shapeNode.type !== "ECObjectExpression") {
                     throw new Error(
                       `struct() parameter must be an object literal.`
                     );
@@ -535,7 +535,7 @@ export const typeCheck = (
 
                   const shape = shapeNode.properties.reduce(
                     (acc: Record<string, Type>, prop) => {
-                      if (prop.type !== "KKeyValueProperty") {
+                      if (prop.type !== "ECKeyValueProperty") {
                         throw new Error(
                           `${prop.type} in struct shapes are not yet supported.`
                         );
@@ -617,7 +617,7 @@ export const typeCheck = (
 
         return fnType.returns();
       })
-      .with({ type: "KConditionalExpression" }, (node) => {
+      .with({ type: "ECConditionalExpression" }, (node) => {
         const testType = typeCheckExp(node.test);
         if (!testType.sub(Bool)) {
           throw new Error(`Condition for ternary expression must be a Bool.`);
@@ -635,13 +635,13 @@ export const typeCheck = (
 
         return alternateType;
       })
-      .with({ type: "KMemberExpression" }, (node) => {
+      .with({ type: "ECMemberExpression" }, (node) => {
         const targetType = typeCheckExp(node.object);
 
         return match<Type, Type>(targetType)
           .with({ __ktype__: "struct" }, (structType) => {
             // Read on a struct value.
-            if (node.property.type === "KComputed") {
+            if (node.property.type === "ECComputed") {
               throw new Error("Bracket accesses on a struct are forbidden.");
             }
 
@@ -658,7 +658,7 @@ export const typeCheck = (
               // must be an array member like length, map, etc.
 
               throw new Error(`Array functions are not yet implemented.`);
-            } else if (node.property.type === "KComputed") {
+            } else if (node.property.type === "ECComputed") {
               // field access; must be a number.
 
               if (!typeCheckExp(node.property.expression).sub(Num)) {
@@ -689,36 +689,36 @@ export const typeCheck = (
             );
           });
       })
-      .with({ type: "KArrayExpression" }, () => {
+      .with({ type: "ECArrayExpression" }, () => {
         throw new Error(
           `Bare array expressions are forbidden; they must be attached to an array type.`
         );
       })
-      .with({ type: "KArrowFunctionExpression" }, () => {
+      .with({ type: "ECArrowFunctionExpression" }, () => {
         throw new Error(
           `Bare function expressions are forbidden; they must be attached to a function type.`
         );
       })
-      .with({ type: "KObjectExpression" }, () => {
+      .with({ type: "ECObjectExpression" }, () => {
         throw new Error(
-          `Bare object expressions are not permitted in Kythera; they must be attached to a struct or variant type.`
+          `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`
         );
       })
-      .with({ type: "KSequenceExpression" }, (node) => {
+      .with({ type: "ECSequenceExpression" }, (node) => {
         node.expressions.forEach((exp) => typeCheckExp(exp));
 
         return typeCheckExp(node.expressions[node.expressions.length - 1]);
       })
-      .with({ type: "KTaggedTemplateExpression" }, () => {
+      .with({ type: "ECTaggedTemplateExpression" }, () => {
         throw new Error(`Tagged templates are not yet implemented.`);
       })
-      .with({ type: "KTemplateLiteral" }, (node) => {
+      .with({ type: "ECTemplateLiteral" }, (node) => {
         node.expressions.forEach((exp) => typeCheckExp(exp));
 
         return Str;
       })
-      .with({ type: "KUnaryExpression" }, (node) =>
-        match<KUnaryOperator, Type>(node.operator)
+      .with({ type: "ECUnaryExpression" }, (node) =>
+        match<ECUnaryOperator, Type>(node.operator)
           .with("!", () => Bool)
           .with("+", () => Num)
           .with("-", () => Num)
@@ -732,8 +732,8 @@ export const typeCheck = (
   // of that expression - but only for type values. (This will not resolve other values, such as numbers).
   // Example: typeCheckExp(Num) => Type // resolveType(Num) => Num
   // Example: typeCheckExp(2) => Num // resolveType(2) => (invalid)
-  const resolveTypeExp = (node: KExp): Type =>
-    match<KExp, Type>(node)
+  const resolveTypeExp = (node: ECExp): Type =>
+    match<ECExp, Type>(node)
       .with({ type: "Identifier" }, (node) =>
         match(node.value)
           .with("Void", () => Void)
