@@ -344,6 +344,11 @@ export const typeCheck = (
       .with({ type: "ECCallExpression" }, (node) => {
         // Because Ectype "keywords" are implemented as functions, the Call Expression handler has extra logic for handling these special cases.
 
+        // Check if call was to the special js() function
+        if (node.callee.type === "Identifier" && node.callee.value === "js") {
+          return resolveTypeExp(node.arguments[1].expression);
+        }
+
         // Check to see if call was a type declaration, e.g. struct({})
         if (
           node.callee.type === "Identifier" &&

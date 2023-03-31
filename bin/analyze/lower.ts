@@ -248,6 +248,47 @@ const lowerExpression = (exp: Expression): ECExp =>
         throw new Error("`super` is forbidden in Ectype.");
       }
 
+      // js() special function
+      if (exp.callee.type === "Identifier" && exp.callee.value === "js") {
+        if (exp.arguments.length !== 2) {
+          throw new Error(
+            `Expected exactly 2 arguments to js() but got ${exp.arguments.length}`
+          );
+        }
+
+        if (exp.arguments[0].expression.type !== "ArrowFunctionExpression") {
+          throw new Error(`First parameter to js() must be an arrow function.`);
+        }
+
+        // Keep the call expression node the same, but don't lower the function body.
+
+        return {
+          span: exp.span,
+          type: "ECCallExpression",
+          callee: exp.callee,
+          arguments: [
+            {
+              spread: exp.arguments[0].spread,
+              expression: {
+                ...exp.arguments[0].expression,
+                params: [],
+                // Replace body with a null literal node so it can be valid to TypeScript.
+                // The function body is not read by the type-checker anyway.
+                body: {
+                  type: "NullLiteral",
+                  span: exp.arguments[0].expression.span,
+                },
+                type: "ECArrowFunctionExpression",
+              },
+            },
+            {
+              spread: exp.arguments[1].spread,
+              expression: lowerExpression(exp.arguments[1].expression),
+            },
+          ],
+        };
+      }
+
       return {
         span: exp.span,
         type: "ECCallExpression",
