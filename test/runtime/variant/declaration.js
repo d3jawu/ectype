@@ -1,3 +1,4 @@
+"use ectype";
 import { strict as assert } from "node:assert";
 import { variant } from "../../../core/variant.js";
 import { Str, Void } from "../../../core/primitives.js";

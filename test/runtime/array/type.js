@@ -1,3 +1,4 @@
+"use ectype";
 import { array } from "../../../core/array.js";
 import { Str } from "../../../core/primitives.js";
 

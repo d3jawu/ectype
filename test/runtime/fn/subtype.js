@@ -1,3 +1,4 @@
+"use ectype";
 import { fn } from "../../../core/fn.js";
 
 import { struct } from "../../../core/struct.js";

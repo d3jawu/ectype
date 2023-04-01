@@ -1,3 +1,4 @@
+"use ectype";
 import { struct } from "../../../core/struct.js";
 import { Num } from "../../../core/primitives.js";
 

@@ -1,3 +1,4 @@
+"use ectype";
 import { Str } from "../../../core/primitives.js";
 import { js } from "../../../core/js.js";
 

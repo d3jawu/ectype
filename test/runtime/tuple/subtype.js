@@ -1,3 +1,4 @@
+"use ectype";
 import { tuple } from "../../../core/tuple.js";
 import { struct } from "../../../core/struct.js";
 
