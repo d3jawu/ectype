@@ -351,7 +351,9 @@ export const typeCheck = (
 
         // Check if call was to the special js() function
         if (node.callee.type === "Identifier" && node.callee.value === "js") {
-          return resolveTypeExp(node.arguments[1].expression);
+          return node.arguments[1]
+            ? resolveTypeExp(node.arguments[1].expression)
+            : Void;
         }
 
         // Check to see if call was a type declaration, e.g. struct({})

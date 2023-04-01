@@ -250,9 +250,9 @@ const lowerExpression = (exp: Expression): ECExp =>
 
       // js() special function
       if (exp.callee.type === "Identifier" && exp.callee.value === "js") {
-        if (exp.arguments.length !== 2) {
+        if (exp.arguments.length !== 1 && exp.arguments.length !== 2) {
           throw new Error(
-            `Expected exactly 2 arguments to js() but got ${exp.arguments.length}`
+            `Expected 1 or 2 arguments to js() but got ${exp.arguments.length}`
           );
         }
 
@@ -281,10 +281,14 @@ const lowerExpression = (exp: Expression): ECExp =>
                 type: "ECArrowFunctionExpression",
               },
             },
-            {
-              spread: exp.arguments[1].spread,
-              expression: lowerExpression(exp.arguments[1].expression),
-            },
+            ...(exp.arguments[1]
+              ? [
+                  {
+                    spread: exp.arguments[1].spread,
+                    expression: lowerExpression(exp.arguments[1].expression),
+                  },
+                ]
+              : []),
           ],
         };
       }

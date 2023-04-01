@@ -49,7 +49,6 @@ await (async () => {
     try {
       let config: StaticTest = {
         exec: true,
-        execThrows: false,
         analysisThrows: false,
       };
 

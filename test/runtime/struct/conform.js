@@ -29,7 +29,7 @@ js(() => {
       })
     )
   );
-}, Void);
+});
 
 const Vector = struct({
   start: Point,
@@ -63,7 +63,7 @@ js(() => {
       })
     )
   );
-}, Void);
+});
 
 maybeVector = Vector.conform({
   start: {
@@ -78,4 +78,4 @@ maybeVector = Vector.conform({
 
 js(() => {
   assert.deepEqual(JSON.stringify(maybeVector), JSON.stringify(None));
-}, Void);
+});

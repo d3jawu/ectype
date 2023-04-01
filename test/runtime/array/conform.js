@@ -14,6 +14,6 @@ const numArray = NumArray.conform([1, 2, 3]);
 
 js(() => {
   assert.deepEqual(JSON.stringify(numArray), JSON.stringify(someOf([1, 2, 3])));
-}, Void);
+});
 
 export { NumArray };
