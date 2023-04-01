@@ -3,7 +3,7 @@ import { array } from "../../../core/array.js";
 import { struct } from "../../../core/struct.js";
 import { Num } from "../../../core/primitives.js";
 
-import { strict as assert } from "node:assert";
+import { ok } from "../../lib/assert.js";
 
 const Point2D = struct({
   x: Num,
@@ -19,5 +19,5 @@ const Point3D = struct({
 const Point2DArray = array(Point2D);
 const Point3DArray = array(Point3D);
 
-assert.ok(Point3DArray.sub(Point2DArray));
-assert.ok(!Point2DArray.sub(Point3DArray));
+ok(Point3DArray.sub(Point2DArray));
+ok(!Point2DArray.sub(Point3DArray));

@@ -2,7 +2,7 @@ import { StaticTest } from "../StaticTest";
 
 import { strict as assert } from "node:assert";
 
-export const test: StaticTest = {
+export const config: StaticTest = {
   staticTest: (exports) => {
     const StrArrayType = exports["StrArray"];
 

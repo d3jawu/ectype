@@ -1,5 +1,5 @@
 import { StaticTest } from "../StaticTest";
 
-export const test: StaticTest = {
-  throws: true,
+export const config: StaticTest = {
+  analysisThrows: true,
 };

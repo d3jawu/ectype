@@ -14,19 +14,14 @@ const primitiveTypeVals = Object.entries(primitives).reduce(
   {}
 );
 
-const readStringNode = (node: ModuleItem): string => {
-  if (
-    node.type === "ExpressionStatement" &&
-    node.expression.type === "StringLiteral"
-  ) {
-    return node.expression.value;
+// If the file at path is an Ectype file, analyzeFile parses, lowers, and type-checks it, returning a record of the types of its exports.
+// If it is not, null is returned.
+export const analyzeFile = (path: string): Record<string, Type> | null => {
+  // Don't analyze Node built-in modules.
+  if (path.includes("node:")) {
+    return null;
   }
 
-  return "";
-};
-
-// Parses, lowers, and type-checks a file and returns a map of its exports.
-export const analyzeFile = (path: string): Record<string, Type> => {
   const { body: ast } = parseFileSync(path);
 
   if (
@@ -34,7 +29,7 @@ export const analyzeFile = (path: string): Record<string, Type> => {
     ast[0].type !== "ExpressionStatement" ||
     ast[0].expression.type !== "StringLiteral"
   ) {
-    return {};
+    return null;
   }
 
   let initialString: string;
@@ -47,7 +42,7 @@ export const analyzeFile = (path: string): Record<string, Type> => {
       ast[1].type !== "ExpressionStatement" ||
       ast[1].expression.type !== "StringLiteral"
     ) {
-      return {};
+      return null;
     }
 
     initialString = ast[1].expression.value;

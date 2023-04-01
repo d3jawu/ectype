@@ -34,43 +34,58 @@ const lineLength =
 import { analyzeFile } from "../bin/analyze/analyzeFile.js";
 
 import { strict as assert } from "node:assert";
+import type { StaticTest } from "./static/StaticTest.js";
 
 let failed = false;
+
+type Stage = "setup" | "exec" | "analysis" | "static test";
 
 // Run
 await (async () => {
   for (const { name, runtimePath, staticPath } of tests) {
     process.stdout.write(`${name}:`.padEnd(lineLength));
 
+    let stage: Stage = "setup";
     try {
-      let exec = true;
-      let throws = false;
-      let staticTest;
+      let config: StaticTest = {
+        exec: true,
+        execThrows: false,
+        analysisThrows: false,
+      };
+
       if (existsSync(staticPath)) {
-        ({
-          test: { exec = true, throws = false, staticTest },
-        } = await import(staticPath));
+        const { config: overrideConfig } = await import(staticPath);
+        config = {
+          ...config,
+          ...overrideConfig,
+        };
       }
 
-      if (exec) {
+      if (config.exec) {
+        stage = "exec";
         await import(runtimePath);
       }
 
-      if (!!staticTest || throws) {
-        if (throws) {
-          assert.throws(() => {
-            analyzeFile(runtimePath);
-          });
-        } else {
-          const staticExports = analyzeFile(runtimePath);
-          staticTest(staticExports);
+      stage = "analysis";
+      if (config.analysisThrows) {
+        assert.throws(() => {
+          analyzeFile(runtimePath);
+        });
+      } else {
+        const staticExports = analyzeFile(runtimePath);
+
+        if (!!config.staticTest && staticExports !== null) {
+          stage = "static test";
+          config.staticTest(staticExports);
         }
       }
 
       process.stdout.write(chalk.black.bgGreenBright("PASS") + "\n");
     } catch (e) {
       failed = true;
-      process.stdout.write(chalk.black.bgRedBright("FAIL") + "\n");
+      process.stdout.write(
+        `${chalk.black.bgRedBright("FAIL")} (${chalk.bold.redBright(stage)})\n`
+      );
       console.log(e);
     }
   }

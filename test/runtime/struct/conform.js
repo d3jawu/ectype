@@ -1,9 +1,11 @@
 "use ectype";
 
 import { struct } from "../../../core/struct.js";
-import { Num } from "../../../core/primitives.js";
+import { Num, Void } from "../../../core/primitives.js";
 
 import { someOf, None } from "../../../core/util.js";
+
+import { js } from "../../../core/js.js";
 
 import { strict as assert } from "node:assert";
 
@@ -17,15 +19,17 @@ const maybePoint = Point.conform({
   y: 30,
 });
 
-assert.deepEqual(
-  JSON.stringify(maybePoint),
-  JSON.stringify(
-    someOf({
-      x: 20,
-      y: 30,
-    })
-  )
-);
+js(() => {
+  assert.deepEqual(
+    JSON.stringify(maybePoint),
+    JSON.stringify(
+      someOf({
+        x: 20,
+        y: 30,
+      })
+    )
+  );
+}, Void);
 
 const Vector = struct({
   start: Point,
@@ -43,21 +47,23 @@ let maybeVector = Vector.conform({
   },
 });
 
-assert.deepEqual(
-  JSON.stringify(maybeVector),
-  JSON.stringify(
-    someOf({
-      start: {
-        x: 10,
-        y: 15,
-      },
-      end: {
-        x: 20,
-        y: 40,
-      },
-    })
-  )
-);
+js(() => {
+  assert.deepEqual(
+    JSON.stringify(maybeVector),
+    JSON.stringify(
+      someOf({
+        start: {
+          x: 10,
+          y: 15,
+        },
+        end: {
+          x: 20,
+          y: 40,
+        },
+      })
+    )
+  );
+}, Void);
 
 maybeVector = Vector.conform({
   start: {
@@ -70,4 +76,6 @@ maybeVector = Vector.conform({
   },
 });
 
-assert.deepEqual(JSON.stringify(maybeVector), JSON.stringify(None));
+js(() => {
+  assert.deepEqual(JSON.stringify(maybeVector), JSON.stringify(None));
+}, Void);

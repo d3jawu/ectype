@@ -91,6 +91,11 @@ export const typeCheck = (
           joinPaths(dirname(path), node.source.value)
         );
 
+        if (importedTypes === null) {
+          // File was not an Ectype file; do nothing.
+          return;
+        }
+
         node.specifiers.forEach((specifier) => {
           if (specifier.type === "ImportDefaultSpecifier") {
             throw new Error(`Default imports are not yet implemented.`);
@@ -527,8 +532,64 @@ export const typeCheck = (
           const targetType = typeCheckExp(memberExp.object) as TypeType;
 
           return match(targetType.type())
-            .with({ __ktype__: "struct" }, (structType) => {
-              return match(methodName)
+            .with({ __ktype__: "fn" }, (fnType) =>
+              match(methodName)
+                .with("sub", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to fn.sub but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
+                .otherwise(() => {
+                  throw new Error(`${methodName} is not a valid fn operation.`);
+                })
+            )
+            .with({ __ktype__: "tuple" }, (fnType) =>
+              match(methodName)
+                .with("sub", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to tuple.sub but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
+                .otherwise(() => {
+                  throw new Error(
+                    `'${methodName}' is not a valid tuple operation.`
+                  );
+                })
+            )
+            .with({ __ktype__: "array" }, (arrayType) =>
+              match(methodName)
+                .with("conform", () => {
+                  // TODO type-check this for:
+                  // a) if it's impossible for the input value to conform
+                  // b) if `conform` is not necessary and `from` can be used.
+
+                  return option(arrayType).option();
+                })
+                .with("sub", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to array.sub but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
+                .otherwise(() => {
+                  throw new Error(
+                    `'${methodName}' is not a valid array operation.`
+                  );
+                })
+            )
+            .with({ __ktype__: "struct" }, (structType) =>
+              match(methodName)
                 .with("from", () => {
                   const shapeNode = node.arguments[0].expression;
 
@@ -571,21 +632,93 @@ export const typeCheck = (
                   return structType;
                 })
                 .with("conform", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to struct.conform but got ${node.arguments.length}`
+                    );
+                  }
                   // TODO type-check this for:
                   // a) if it's impossible for the input value to conform
                   // b) if `conform` is not necessary and `from` can be used.
 
                   return option(structType).option();
                 })
+                .with("valid", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to struct.valid but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
+                .with("has", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to struct.has but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
+                .with("has", () => {
+                  throw new Error(`Not yet implemented.`);
+
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to struct.has but got ${node.arguments.length}`
+                    );
+                  }
+
+                  // The return type here is tricky. I think we need a deferred type here.
+                  // It's not possible to know for sure what the parameter (and therefore the returned type) is.
+                  return Void;
+                })
+                .with("fields", () => {
+                  throw new Error(`Not yet implemented.`);
+
+                  // map type needs to be implemented first
+                })
+                .with("sub", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to struct.sub but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
                 .otherwise(() => {
                   throw new Error(
-                    `${methodName} is not a valid struct operation.`
+                    `'${methodName}' is not a valid struct operation.`
                   );
-                });
-            })
+                })
+            )
+            .with({ __ktype__: "variant" }, (fnType) =>
+              match(methodName)
+                .with("sub", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to variant.sub but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
+                .with("of", () => {
+                  throw new Error(`Not yet implemented.`);
+                })
+                .otherwise(() => {
+                  throw new Error(
+                    `'${methodName}' is not a valid variant operation.`
+                  );
+                })
+            )
             .otherwise(() => {
               throw new Error(
-                `Type methods on ${targetType.__ktype__} are not yet implemented.`
+                `Type methods on ${
+                  targetType.type().__ktype__
+                } are not yet implemented. (Tried to call '${methodName}')`
               );
             });
         }
@@ -747,6 +880,7 @@ export const typeCheck = (
           .with("Num", () => Num)
           .with("Str", () => Str)
           .otherwise(() => {
+            // Try resolving the identifier as a type variable.
             const maybeType = currentScope.get(node.value);
 
             if (maybeType === null) {
@@ -761,8 +895,17 @@ export const typeCheck = (
           })
       )
       .otherwise(() => {
-        // TODO return Deferred here instead of throwing.
-        throw new Error(`Cannot resolve ${node} to a type.`);
+        // Try getting the type of the expression.
+        const expType = typeCheckExp(node);
+        if (expType.__ktype__ !== "type") {
+          throw new Error(
+            `Expected a type-value but got ${expType.toString()}`
+          );
+        }
+
+        return expType.type();
+
+        // TODO maybe return Deferred here?
       });
 
   body.forEach((node) => typeCheckNode(node));
