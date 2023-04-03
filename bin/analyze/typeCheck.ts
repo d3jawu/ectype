@@ -643,6 +643,37 @@ export const typeCheck = (
             )
             .with({ __ktype__: "array" }, (arrayType) =>
               match(methodName)
+                .with("from", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to array.from but got ${node.arguments.length}`
+                    );
+                  }
+
+                  const literalNode = node.arguments[0].expression;
+
+                  if (literalNode.type !== "ECArrayExpression") {
+                    throw new Error(
+                      `array.from() argument must be an array literal.`
+                    );
+                  }
+
+                  literalNode.elements.forEach((el, i) => {
+                    if (!el) {
+                      return;
+                    }
+
+                    const elType = typeCheckExp(el.expression);
+
+                    if (!elType.sub(arrayType.contains())) {
+                      throw new Error(
+                        `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`
+                      );
+                    }
+                  });
+
+                  return arrayType;
+                })
                 .with("conform", () => {
                   // TODO type-check this for:
                   // a) if it's impossible for the input value to conform
@@ -736,15 +767,6 @@ export const typeCheck = (
                   if (node.arguments.length !== 1) {
                     throw new Error(
                       `Expected exactly 1 argument to struct.valid but got ${node.arguments.length}`
-                    );
-                  }
-
-                  return Bool;
-                })
-                .with("has", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to struct.has but got ${node.arguments.length}`
                     );
                   }
 
@@ -928,21 +950,6 @@ export const typeCheck = (
             );
           });
       })
-      .with({ type: "ECArrayExpression" }, () => {
-        throw new Error(
-          `Bare array expressions are forbidden; they must be attached to an array type.`
-        );
-      })
-      .with({ type: "ECArrowFunctionExpression" }, () => {
-        throw new Error(
-          `Bare function expressions are forbidden; they must be attached to a function type.`
-        );
-      })
-      .with({ type: "ECObjectExpression" }, () => {
-        throw new Error(
-          `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`
-        );
-      })
       .with({ type: "ECSequenceExpression" }, (node) => {
         node.expressions.forEach((exp) => typeCheckExp(exp));
 
@@ -964,6 +971,21 @@ export const typeCheck = (
           .with("~", () => Num)
           .exhaustive()
       )
+      .with({ type: "ECArrayExpression" }, () => {
+        throw new Error(
+          `Bare array expressions are forbidden; they must be attached to an array type.`
+        );
+      })
+      .with({ type: "ECArrowFunctionExpression" }, () => {
+        throw new Error(
+          `Bare function expressions are forbidden; they must be attached to a function type.`
+        );
+      })
+      .with({ type: "ECObjectExpression" }, () => {
+        throw new Error(
+          `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`
+        );
+      })
       .exhaustive();
 
   // Resolves the value of a type-expression.

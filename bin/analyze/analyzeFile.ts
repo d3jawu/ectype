@@ -35,7 +35,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
   let initialString: string;
 
   // If the file opens with "use strict", check just the next statement.
-  // Ectype will not check the whole file for an 'ectype' directive.
+  // Ectype will not check the whole file for a directive.
   if (ast[0].expression.value === "use strict") {
     if (
       ast.length === 1 ||
@@ -50,6 +50,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
     initialString = ast[0].expression.value;
   }
 
+  // Ectype library file
   if (initialString.startsWith("ectype")) {
     const suffix = ast[0].expression.value.split(":")[1];
 
@@ -69,5 +70,5 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
   }
 
   // If we get here, the file had some other unused string literal sitting in top-level scope for some reason
-  return {};
+  return null;
 };
