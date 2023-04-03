@@ -244,6 +244,7 @@ export const typeCheck = (
       })
       .otherwise((node) => typeCheckExp(node as ECExp));
 
+  // TODO typeCheckExp is not pure, which may cause issues if the same node is checked twice (e.g. something that alters the symbol table). Audit for this.
   const typeCheckExp = (node: ECExp): Type =>
     match<ECExp, Type>(node)
       // TODO BigInt needs its own type.
@@ -351,6 +352,7 @@ export const typeCheck = (
 
         // Check if call was to the special js() function
         if (node.callee.type === "Identifier" && node.callee.value === "js") {
+          // The second argument to js() is optional, defaulting to Void if absent.
           return node.arguments[1]
             ? resolveTypeExp(node.arguments[1].expression)
             : Void;
@@ -536,11 +538,35 @@ export const typeCheck = (
           return match(targetType.type())
             .with({ __ktype__: "fn" }, (fnType) =>
               match(methodName)
+                .with("from", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to fn.from but got ${node.arguments.length}`
+                    );
+                  }
+
+                  const literalNode = node.arguments[0].expression;
+
+                  if (literalNode.type !== "ECArrowFunctionExpression") {
+                    throw new Error(
+                      `fn.from() must be an arrow function literal.`
+                    );
+                  }
+
+                  // TODO function type introspection
+                  throw new Error(`fn.from() is not yet implemented.`);
+                })
                 .with("sub", () => {
                   if (node.arguments.length !== 1) {
                     throw new Error(
                       `Expected exactly 1 argument to fn.sub but got ${node.arguments.length}`
                     );
+                  }
+
+                  const argType = typeCheckExp(node.arguments[0].expression);
+
+                  if (argType.__ktype__ !== "type") {
+                    throw new Error(`Argument to sub() must be a type.`);
                   }
 
                   return Bool;
@@ -549,13 +575,62 @@ export const typeCheck = (
                   throw new Error(`${methodName} is not a valid fn operation.`);
                 })
             )
-            .with({ __ktype__: "tuple" }, (fnType) =>
+            .with({ __ktype__: "tuple" }, (tupleType) =>
               match(methodName)
+                .with("from", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to tuple.from but got ${node.arguments.length}`
+                    );
+                  }
+
+                  const literalNode = node.arguments[0].expression;
+
+                  if (literalNode.type !== "ECArrayExpression") {
+                    throw new Error(`tuple.from() must be an array literal.`);
+                  }
+
+                  const shape = literalNode.elements.reduce(
+                    (acc: Type[], el) => {
+                      if (!el) {
+                        return acc;
+                      }
+
+                      return [...acc, typeCheckExp(el.expression)];
+                    },
+                    []
+                  );
+
+                  const inputType = tuple(shape);
+
+                  if (!inputType.sub(tupleType)) {
+                    throw new Error(
+                      `Invalid cast to tuple type: ${inputType} vs ${tupleType}`
+                    );
+                  }
+
+                  return tupleType;
+                })
+                .with("valid", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(
+                      `Expected exactly 1 argument to tuple.valid but got ${node.arguments.length}`
+                    );
+                  }
+
+                  return Bool;
+                })
                 .with("sub", () => {
                   if (node.arguments.length !== 1) {
                     throw new Error(
                       `Expected exactly 1 argument to tuple.sub but got ${node.arguments.length}`
                     );
+                  }
+
+                  const argType = typeCheckExp(node.arguments[0].expression);
+
+                  if (argType.__ktype__ !== "type") {
+                    throw new Error(`Argument to sub() must be a type.`);
                   }
 
                   return Bool;
@@ -582,6 +657,12 @@ export const typeCheck = (
                     );
                   }
 
+                  const argType = typeCheckExp(node.arguments[0].expression);
+
+                  if (argType.__ktype__ !== "type") {
+                    throw new Error(`Argument to sub() must be a type.`);
+                  }
+
                   return Bool;
                 })
                 .otherwise(() => {
@@ -593,15 +674,21 @@ export const typeCheck = (
             .with({ __ktype__: "struct" }, (structType) =>
               match(methodName)
                 .with("from", () => {
-                  const shapeNode = node.arguments[0].expression;
-
-                  if (shapeNode.type !== "ECObjectExpression") {
+                  if (node.arguments.length !== 1) {
                     throw new Error(
-                      `struct() parameter must be an object literal.`
+                      `Expected exactly 1 argument to struct.from but got ${node.arguments.length}`
                     );
                   }
 
-                  const shape = shapeNode.properties.reduce(
+                  const literalNode = node.arguments[0].expression;
+
+                  if (literalNode.type !== "ECObjectExpression") {
+                    throw new Error(
+                      `struct.from() parameter must be an object literal.`
+                    );
+                  }
+
+                  const shape = literalNode.properties.reduce(
                     (acc: Record<string, Type>, prop) => {
                       if (prop.type !== "ECKeyValueProperty") {
                         throw new Error(
@@ -688,6 +775,12 @@ export const typeCheck = (
                     );
                   }
 
+                  const argType = typeCheckExp(node.arguments[0].expression);
+
+                  if (argType.__ktype__ !== "type") {
+                    throw new Error(`Argument to sub() must be a type.`);
+                  }
+
                   return Bool;
                 })
                 .otherwise(() => {
@@ -703,6 +796,12 @@ export const typeCheck = (
                     throw new Error(
                       `Expected exactly 1 argument to variant.sub but got ${node.arguments.length}`
                     );
+                  }
+
+                  const argType = typeCheckExp(node.arguments[0].expression);
+
+                  if (argType.__ktype__ !== "type") {
+                    throw new Error(`Argument to sub() must be a type.`);
                   }
 
                   return Bool;
