@@ -22,18 +22,6 @@ const variant = (options: Record<string, Type>): VariantType => {
     return options[key].valid(val[key as keyof typeof val]);
   };
 
-  // construct the interface that all options under this variant will fulfill.
-  const optionType: Record<string, Type> = Object.entries(options).reduce(
-    (acc: Record<string, Type>, [k]) => {
-      acc[`is${k}`] = fn([Void], Bool);
-
-      return acc;
-    },
-    {}
-  );
-
-  const Option = struct(optionType);
-
   return {
     from: (val) => val,
     conform: (val) =>
@@ -52,14 +40,11 @@ const variant = (options: Record<string, Type>): VariantType => {
         other.has(key) && options[key].sub(other.get(key));
       });
     },
-    match: (val) => {},
-    option: () => Option,
     of: (mappedVal: Record<string, unknown>) => {
-      // assume analyzer has ensured record has exactly one entry.
+      // assume static analyzer has ensured mappedVal has exactly one entry.
       const [name, val] = Object.entries(mappedVal)[0];
 
-      // fulfill Option type.
-      const members = Object.entries(options).reduce(
+      const option = Object.entries(options).reduce(
         (acc: Record<string, unknown>, [k, v]) => {
           acc[`is${k}`] = fn([Void], Bool).from(
             k === name ? () => true : () => false
@@ -70,10 +55,14 @@ const variant = (options: Record<string, Type>): VariantType => {
         {}
       );
 
-      return Option.from({
-        [name]: val,
-        ...members,
-      });
+      // Allow read of wrapped value (assume static analyzer has checked this first).
+      option[name] = val;
+
+      option.match = (
+        handlers: Record<string, (unwrappedVal: unknown) => void>
+      ) => handlers[name](val);
+
+      return option;
     },
     toString: () =>
       `variant{\n${Object.entries(options).reduce(
