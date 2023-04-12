@@ -4,11 +4,17 @@ export type Option<T> =
       Some: T;
       isSome: () => true;
       isNone: () => false;
+      when: (
+        handlers: Record<string, (unwrapped?: unknown) => unknown>
+      ) => unknown;
     }
   | {
       None: undefined;
       isSome: () => false;
       isNone: () => true;
+      when: (
+        handlers: Record<string, (unwrapped?: unknown) => unknown>
+      ) => unknown;
     };
 
 export type Type =
@@ -100,11 +106,9 @@ export type VariantType = {
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
   get: (name: string) => Type; // gets the type held in that option. name TBD
-  match: (val: unknown) => unknown;
   of: (val: Record<string, unknown>) => unknown;
   sub: (other: Type) => boolean;
   toString: () => string;
-  option: () => Type;
   __ktype__: "variant";
 };
 

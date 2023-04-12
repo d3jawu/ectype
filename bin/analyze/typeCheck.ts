@@ -679,7 +679,7 @@ export const typeCheck = (
                   // a) if it's impossible for the input value to conform
                   // b) if `conform` is not necessary and `from` can be used.
 
-                  return option(arrayType).option();
+                  return option(arrayType);
                 })
                 .with("sub", () => {
                   if (node.arguments.length !== 1) {
@@ -761,7 +761,7 @@ export const typeCheck = (
                   // a) if it's impossible for the input value to conform
                   // b) if `conform` is not necessary and `from` can be used.
 
-                  return option(structType).option();
+                  return option(structType);
                 })
                 .with("valid", () => {
                   if (node.arguments.length !== 1) {
