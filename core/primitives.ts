@@ -22,7 +22,7 @@ const Null: NullType = {
   conform: (val) => (val === null ? someOf(null) : None),
   valid: (val) => val === null,
   sub: (other) => other.__ktype__ === "null",
-  toString: () => "Num",
+  toString: () => "Null",
   __ktype__: "null",
 };
 

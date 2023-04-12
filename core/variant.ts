@@ -36,9 +36,9 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       // to be a subtype of `other`, this variant must not have components that `other` does not,
       // and each component must be a subtype of that same component on `other`.
-      return Object.keys(options).every((key) => {
-        other.has(key) && options[key].sub(other.get(key));
-      });
+      return Object.keys(options).every(
+        (key) => other.has(key) && options[key].sub(other.get(key))
+      );
     },
     of: (mappedVal: Record<string, unknown>) => {
       // assume static analyzer has ensured mappedVal has exactly one entry.
@@ -58,7 +58,7 @@ const variant = (options: Record<string, Type>): VariantType => {
       // Allow read of wrapped value (assume static analyzer has checked this first).
       option[name] = val;
 
-      option.match = (
+      option.when = (
         handlers: Record<string, (unwrappedVal: unknown) => void>
       ) => handlers[name](val);
 
