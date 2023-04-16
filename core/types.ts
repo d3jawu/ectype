@@ -106,7 +106,9 @@ export type VariantType = {
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
   get: (name: string) => Type; // gets the type held in that option. name TBD
-  of: (val: Record<string, unknown>) => unknown;
+  options: () => Record<string, Type>;
+  tags: () => string[]; // returns a list of tag names.
+  of: (val: Record<string, unknown>) => unknown; // produces an option instance.
   sub: (other: Type) => boolean;
   toString: () => string;
   __ktype__: "variant";

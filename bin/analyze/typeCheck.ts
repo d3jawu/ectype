@@ -294,7 +294,17 @@ export const typeCheck = (
       })
       .with({ type: "ECBinaryExpression" }, (node) =>
         match<ECBinaryOperator, Type>(node.operator)
-          .with("===", "!==", "&&", "||", () => {
+          .with("===", "!==", () => {
+            const left = typeCheckExp(node.left);
+            const right = typeCheckExp(node.right);
+
+            if (!left.sub(right) && !right.sub(left)) {
+              throw new Error(`Types ${left} and ${right} are incompatible.`);
+            }
+
+            return Bool;
+          })
+          .with("&&", "||", () => {
             const left = typeCheckExp(node.left);
             const right = typeCheckExp(node.right);
 
@@ -520,330 +530,483 @@ export const typeCheck = (
         }
 
         // Check if call was a type method, e.g. MyType.from()
-        // TODO find a way to avoid type-checking node.callee.object twice
-        if (
-          node.callee.type === "ECMemberExpression" &&
-          typeCheckExp(node.callee.object).__ktype__ === "type"
-        ) {
-          const memberExp = node.callee;
+        if (node.callee.type === "ECMemberExpression") {
+          const calleeType = typeCheckExp(node.callee.object);
 
-          if (memberExp.property.type === "ECComputed") {
-            throw new Error(`Computed property calls on types are forbidden.`);
-          }
+          if (calleeType.__ktype__ === "type") {
+            const memberExp = node.callee;
 
-          const methodName = memberExp.property.value;
+            if (memberExp.property.type === "ECComputed") {
+              throw new Error(
+                `Computed property calls on types are forbidden.`
+              );
+            }
 
-          const targetType = typeCheckExp(memberExp.object) as TypeType;
+            const methodName = memberExp.property.value;
 
-          return match(targetType.type())
-            .with({ __ktype__: "fn" }, (fnType) =>
-              match(methodName)
-                .with("from", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to fn.from but got ${node.arguments.length}`
-                    );
-                  }
+            const targetType = typeCheckExp(memberExp.object) as TypeType;
 
-                  const literalNode = node.arguments[0].expression;
-
-                  if (literalNode.type !== "ECArrowFunctionExpression") {
-                    throw new Error(
-                      `fn.from() must be an arrow function literal.`
-                    );
-                  }
-
-                  // TODO function type introspection
-                  throw new Error(`fn.from() is not yet implemented.`);
-                })
-                .with("sub", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to fn.sub but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const argType = typeCheckExp(node.arguments[0].expression);
-
-                  if (argType.__ktype__ !== "type") {
-                    throw new Error(`Argument to sub() must be a type.`);
-                  }
-
-                  return Bool;
-                })
-                .otherwise(() => {
-                  throw new Error(`${methodName} is not a valid fn operation.`);
-                })
-            )
-            .with({ __ktype__: "tuple" }, (tupleType) =>
-              match(methodName)
-                .with("from", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to tuple.from but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const literalNode = node.arguments[0].expression;
-
-                  if (literalNode.type !== "ECArrayExpression") {
-                    throw new Error(`tuple.from() must be an array literal.`);
-                  }
-
-                  const shape = literalNode.elements.reduce(
-                    (acc: Type[], el) => {
-                      if (!el) {
-                        return acc;
-                      }
-
-                      return [...acc, typeCheckExp(el.expression)];
-                    },
-                    []
-                  );
-
-                  const inputType = tuple(shape);
-
-                  if (!inputType.sub(tupleType)) {
-                    throw new Error(
-                      `Invalid cast to tuple type: ${inputType} vs ${tupleType}`
-                    );
-                  }
-
-                  return tupleType;
-                })
-                .with("valid", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to tuple.valid but got ${node.arguments.length}`
-                    );
-                  }
-
-                  return Bool;
-                })
-                .with("sub", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to tuple.sub but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const argType = typeCheckExp(node.arguments[0].expression);
-
-                  if (argType.__ktype__ !== "type") {
-                    throw new Error(`Argument to sub() must be a type.`);
-                  }
-
-                  return Bool;
-                })
-                .otherwise(() => {
-                  throw new Error(
-                    `'${methodName}' is not a valid tuple operation.`
-                  );
-                })
-            )
-            .with({ __ktype__: "array" }, (arrayType) =>
-              match(methodName)
-                .with("from", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to array.from but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const literalNode = node.arguments[0].expression;
-
-                  if (literalNode.type !== "ECArrayExpression") {
-                    throw new Error(
-                      `array.from() argument must be an array literal.`
-                    );
-                  }
-
-                  literalNode.elements.forEach((el, i) => {
-                    if (!el) {
-                      return;
-                    }
-
-                    const elType = typeCheckExp(el.expression);
-
-                    if (!elType.sub(arrayType.contains())) {
+            return match(targetType.type())
+              .with({ __ktype__: "fn" }, (fnType) =>
+                match(methodName)
+                  .with("from", () => {
+                    if (node.arguments.length !== 1) {
                       throw new Error(
-                        `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`
+                        `Expected exactly 1 argument to fn.from but got ${node.arguments.length}`
                       );
                     }
+
+                    const literalNode = node.arguments[0].expression;
+
+                    if (literalNode.type !== "ECArrowFunctionExpression") {
+                      throw new Error(
+                        `fn.from() must be an arrow function literal.`
+                      );
+                    }
+
+                    // TODO function type introspection
+
+                    return fnType;
+                  })
+                  .with("sub", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to fn.sub but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const argType = typeCheckExp(node.arguments[0].expression);
+
+                    if (argType.__ktype__ !== "type") {
+                      throw new Error(`Argument to sub() must be a type.`);
+                    }
+
+                    return Bool;
+                  })
+                  .otherwise(() => {
+                    throw new Error(
+                      `${methodName} is not a valid fn operation.`
+                    );
+                  })
+              )
+              .with({ __ktype__: "tuple" }, (tupleType) =>
+                match(methodName)
+                  .with("from", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to tuple.from but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const literalNode = node.arguments[0].expression;
+
+                    if (literalNode.type !== "ECArrayExpression") {
+                      throw new Error(`tuple.from() must be an array literal.`);
+                    }
+
+                    const shape = literalNode.elements.reduce(
+                      (acc: Type[], el) => {
+                        if (!el) {
+                          return acc;
+                        }
+
+                        return [...acc, typeCheckExp(el.expression)];
+                      },
+                      []
+                    );
+
+                    const inputType = tuple(shape);
+
+                    if (!inputType.sub(tupleType)) {
+                      throw new Error(
+                        `Invalid cast to tuple type: ${inputType} vs ${tupleType}`
+                      );
+                    }
+
+                    return tupleType;
+                  })
+                  .with("valid", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to tuple.valid but got ${node.arguments.length}`
+                      );
+                    }
+
+                    return Bool;
+                  })
+                  .with("sub", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to tuple.sub but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const argType = typeCheckExp(node.arguments[0].expression);
+
+                    if (argType.__ktype__ !== "type") {
+                      throw new Error(`Argument to sub() must be a type.`);
+                    }
+
+                    return Bool;
+                  })
+                  .otherwise(() => {
+                    throw new Error(
+                      `'${methodName}' is not a valid tuple operation.`
+                    );
+                  })
+              )
+              .with({ __ktype__: "array" }, (arrayType) =>
+                match(methodName)
+                  .with("from", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to array.from but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const literalNode = node.arguments[0].expression;
+
+                    if (literalNode.type !== "ECArrayExpression") {
+                      throw new Error(
+                        `array.from() argument must be an array literal.`
+                      );
+                    }
+
+                    literalNode.elements.forEach((el, i) => {
+                      if (!el) {
+                        return;
+                      }
+
+                      const elType = typeCheckExp(el.expression);
+
+                      if (!elType.sub(arrayType.contains())) {
+                        throw new Error(
+                          `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`
+                        );
+                      }
+                    });
+
+                    return arrayType;
+                  })
+                  .with("conform", () => {
+                    // TODO type-check this for:
+                    // a) if it's impossible for the input value to conform
+                    // b) if `conform` is not necessary and `from` can be used.
+
+                    return option(arrayType);
+                  })
+                  .with("sub", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to array.sub but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const argType = typeCheckExp(node.arguments[0].expression);
+
+                    if (argType.__ktype__ !== "type") {
+                      throw new Error(`Argument to sub() must be a type.`);
+                    }
+
+                    return Bool;
+                  })
+                  .otherwise(() => {
+                    throw new Error(
+                      `'${methodName}' is not a valid array operation.`
+                    );
+                  })
+              )
+              .with({ __ktype__: "struct" }, (structType) =>
+                match(methodName)
+                  .with("from", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to struct.from but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const literalNode = node.arguments[0].expression;
+
+                    if (literalNode.type !== "ECObjectExpression") {
+                      throw new Error(
+                        `struct.from() parameter must be an object literal.`
+                      );
+                    }
+
+                    const shape = literalNode.properties.reduce(
+                      (acc: Record<string, Type>, prop) => {
+                        if (prop.type !== "ECKeyValueProperty") {
+                          throw new Error(
+                            `${prop.type} in struct shapes are not yet supported.`
+                          );
+                        }
+
+                        if (prop.key.type !== "Identifier") {
+                          throw new Error(
+                            `Cannot use ${prop.key.type} key in struct shape.`
+                          );
+                        }
+
+                        acc[prop.key.value] = typeCheckExp(prop.value);
+
+                        return acc;
+                      },
+                      {}
+                    );
+
+                    const inputType = struct(shape);
+
+                    if (!inputType.sub(structType)) {
+                      // TODO explain incompatibility in error message
+                      throw new Error(
+                        `Invalid cast to struct type: ${inputType} vs ${structType}`
+                      );
+                    }
+
+                    return structType;
+                  })
+                  .with("conform", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to struct.conform but got ${node.arguments.length}`
+                      );
+                    }
+                    // TODO type-check this for:
+                    // a) if it's impossible for the input value to conform
+                    // b) if `conform` is not necessary and `from` can be used.
+
+                    return option(structType);
+                  })
+                  .with("valid", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to struct.valid but got ${node.arguments.length}`
+                      );
+                    }
+
+                    return Bool;
+                  })
+                  .with("has", () => {
+                    throw new Error(`Not yet implemented.`);
+
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to struct.has but got ${node.arguments.length}`
+                      );
+                    }
+
+                    // The return type here is tricky. I think we need a deferred type here.
+                    // It's not possible to know for sure what the parameter (and therefore the returned type) is.
+                    return Void;
+                  })
+                  .with("fields", () => {
+                    throw new Error(`Not yet implemented.`);
+
+                    // map type needs to be implemented first
+                  })
+                  .with("sub", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to struct.sub but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const argType = typeCheckExp(node.arguments[0].expression);
+
+                    if (argType.__ktype__ !== "type") {
+                      throw new Error(`Argument to sub() must be a type.`);
+                    }
+
+                    return Bool;
+                  })
+                  .otherwise(() => {
+                    throw new Error(
+                      `'${methodName}' is not a valid struct operation.`
+                    );
+                  })
+              )
+              .with({ __ktype__: "variant" }, (variantType) =>
+                match(methodName)
+                  .with("sub", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to variant.sub but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const argType = typeCheckExp(node.arguments[0].expression);
+
+                    if (argType.__ktype__ !== "type") {
+                      throw new Error(`Argument to sub() must be a type.`);
+                    }
+
+                    return Bool;
+                  })
+                  .with("of", () => {
+                    if (node.arguments.length !== 1) {
+                      throw new Error(
+                        `Expected exactly 1 argument to variant.sub but got ${node.arguments.length}`
+                      );
+                    }
+
+                    const arg = node.arguments[0];
+                    if (arg.expression.type !== "ECObjectExpression") {
+                      throw new Error(
+                        `Argument to variant.of must be an object literal.`
+                      );
+                    }
+
+                    if (arg.expression.properties.length !== 1) {
+                      throw new Error(
+                        `Argument to variant.of must have exactly one key set.`
+                      );
+                    }
+
+                    if (
+                      arg.expression.properties[0].type !== "ECKeyValueProperty"
+                    ) {
+                      throw new Error(
+                        `Argument to variant.of must use literal key.`
+                      );
+                    }
+
+                    const { key, value } = arg.expression.properties[0];
+
+                    if (
+                      key.type !== "Identifier" &&
+                      key.type !== "StringLiteral"
+                    ) {
+                      throw new Error(`variant.of key must be a string.`);
+                    }
+
+                    if (!variantType.has(key.value)) {
+                      throw new Error(
+                        `${
+                          key.value
+                        } is not a valid option in variant ${variantType.toString()}`
+                      );
+                    }
+
+                    const valueType = typeCheckExp(value);
+
+                    if (!valueType.sub(variantType.get(key.value))) {
+                      throw new Error(
+                        `Expected type ${variantType.get(
+                          key.value
+                        )} for variant option ${key.value} but got ${valueType}`
+                      );
+                    }
+
+                    return variantType;
+                  })
+                  .otherwise(() => {
+                    throw new Error(
+                      `'${methodName}' is not a valid variant operation.`
+                    );
+                  })
+              )
+              .otherwise(() => {
+                throw new Error(
+                  `Type methods on ${
+                    targetType.type().__ktype__
+                  } are not yet implemented. (Tried to call '${methodName}')`
+                );
+              });
+          }
+
+          if (calleeType.__ktype__ === "variant") {
+            const memberExp = node.callee;
+
+            if (memberExp.property.type === "Identifier") {
+              return match(memberExp.property.value)
+                .with("when", () => {
+                  if (node.arguments.length !== 1) {
+                    throw new Error(`Expected exactly `);
+                  }
+
+                  const handlersMap = node.arguments[0].expression;
+                  if (handlersMap.type !== "ECObjectExpression") {
+                    throw new Error(
+                      `Expected call to variant when to be an object literal.`
+                    );
+                  }
+
+                  // Ensure all handlers return the same type.
+                  let seenReturnType: Type;
+                  let seenProps: string[] = [];
+                  // TODO: this will have to be refactored (maybe to .find()) when we start returning error objects instead of throwing.
+                  handlersMap.properties.forEach((prop, i) => {
+                    if (prop.type === "ECSpreadElement") {
+                      throw new Error(
+                        `Spread ... expressions in "when" are not yet implemented.`
+                      );
+                    }
+
+                    if (prop.type !== "ECKeyValueProperty") {
+                      throw new Error(
+                        `Expected a key-value property in "when".`
+                      );
+                    }
+
+                    if (
+                      prop.key.type !== "Identifier" &&
+                      prop.key.type !== "StringLiteral"
+                    ) {
+                      throw new Error(
+                        `Handler key in "when" must be an identifier or string literal.`
+                      );
+                    }
+
+                    seenProps.push(prop.key.value);
+
+                    const handlerType = typeCheckExp(prop.value);
+                    if (handlerType.__ktype__ !== "fn") {
+                      throw new Error(`Handler for "when" must be a function.`);
+                    }
+
+                    const handlerReturnType = handlerType.returns();
+
+                    // Note: this logic does mean that the first handler gets to determine the return type of the other handlers
+                    // (the other handlers' return types must be a subtype of the first return type.)
+                    // TODO: find the broadest type possible across all types and type the return to that type.
+                    if (i === 0) {
+                      seenReturnType = handlerReturnType;
+                    } else if (!handlerReturnType.sub(seenReturnType)) {
+                      throw new Error(
+                        `Expected type ${seenReturnType} but got ${handlerReturnType}`
+                      );
+                    }
+
+                    return true;
                   });
 
-                  return arrayType;
-                })
-                .with("conform", () => {
-                  // TODO type-check this for:
-                  // a) if it's impossible for the input value to conform
-                  // b) if `conform` is not necessary and `from` can be used.
-
-                  return option(arrayType);
-                })
-                .with("sub", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to array.sub but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const argType = typeCheckExp(node.arguments[0].expression);
-
-                  if (argType.__ktype__ !== "type") {
-                    throw new Error(`Argument to sub() must be a type.`);
-                  }
-
-                  return Bool;
-                })
-                .otherwise(() => {
-                  throw new Error(
-                    `'${methodName}' is not a valid array operation.`
-                  );
-                })
-            )
-            .with({ __ktype__: "struct" }, (structType) =>
-              match(methodName)
-                .with("from", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to struct.from but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const literalNode = node.arguments[0].expression;
-
-                  if (literalNode.type !== "ECObjectExpression") {
-                    throw new Error(
-                      `struct.from() parameter must be an object literal.`
-                    );
-                  }
-
-                  const shape = literalNode.properties.reduce(
-                    (acc: Record<string, Type>, prop) => {
-                      if (prop.type !== "ECKeyValueProperty") {
+                  // Ensure that match coverage is exhaustive or uses
+                  const tags = calleeType.tags();
+                  if (!seenProps.includes("*")) {
+                    // Skip if wildcard handler used
+                    tags.forEach((expectedTag) => {
+                      if (!seenProps.includes(expectedTag)) {
                         throw new Error(
-                          `${prop.type} in struct shapes are not yet supported.`
+                          `"when" handlers are not exhaustive (missing ${expectedTag})`
                         );
                       }
+                    });
 
-                      if (prop.key.type !== "Identifier") {
-                        throw new Error(
-                          `Cannot use ${prop.key.type} key in struct shape.`
-                        );
-                      }
-
-                      acc[prop.key.value] = typeCheckExp(prop.value);
-
-                      return acc;
-                    },
-                    {}
-                  );
-
-                  const inputType = struct(shape);
-
-                  if (!inputType.sub(structType)) {
-                    // TODO explain incompatibility in error message
-                    throw new Error(
-                      `Invalid cast to struct type: ${inputType} vs ${structType}`
-                    );
+                    // TODO warn if handler set includes handler for tag that does not exist (and will therefore never be run)
                   }
 
-                  return structType;
+                  return seenReturnType;
                 })
-                .with("conform", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to struct.conform but got ${node.arguments.length}`
-                    );
-                  }
-                  // TODO type-check this for:
-                  // a) if it's impossible for the input value to conform
-                  // b) if `conform` is not necessary and `from` can be used.
+                .otherwise((prop) => {
+                  throw new Error(`${prop} is not a valid variant method.`);
+                });
+            } else if (memberExp.property.type === "ECComputed") {
+              throw new Error(`Bracket accesses on a variant are forbidden.`);
+            }
 
-                  return option(structType);
-                })
-                .with("valid", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to struct.valid but got ${node.arguments.length}`
-                    );
-                  }
-
-                  return Bool;
-                })
-                .with("has", () => {
-                  throw new Error(`Not yet implemented.`);
-
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to struct.has but got ${node.arguments.length}`
-                    );
-                  }
-
-                  // The return type here is tricky. I think we need a deferred type here.
-                  // It's not possible to know for sure what the parameter (and therefore the returned type) is.
-                  return Void;
-                })
-                .with("fields", () => {
-                  throw new Error(`Not yet implemented.`);
-
-                  // map type needs to be implemented first
-                })
-                .with("sub", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to struct.sub but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const argType = typeCheckExp(node.arguments[0].expression);
-
-                  if (argType.__ktype__ !== "type") {
-                    throw new Error(`Argument to sub() must be a type.`);
-                  }
-
-                  return Bool;
-                })
-                .otherwise(() => {
-                  throw new Error(
-                    `'${methodName}' is not a valid struct operation.`
-                  );
-                })
-            )
-            .with({ __ktype__: "variant" }, (fnType) =>
-              match(methodName)
-                .with("sub", () => {
-                  if (node.arguments.length !== 1) {
-                    throw new Error(
-                      `Expected exactly 1 argument to variant.sub but got ${node.arguments.length}`
-                    );
-                  }
-
-                  const argType = typeCheckExp(node.arguments[0].expression);
-
-                  if (argType.__ktype__ !== "type") {
-                    throw new Error(`Argument to sub() must be a type.`);
-                  }
-
-                  return Bool;
-                })
-                .with("of", () => {
-                  throw new Error(`Not yet implemented.`);
-                })
-                .otherwise(() => {
-                  throw new Error(
-                    `'${methodName}' is not a valid variant operation.`
-                  );
-                })
-            )
-            .otherwise(() => {
-              throw new Error(
-                `Type methods on ${
-                  targetType.type().__ktype__
-                } are not yet implemented. (Tried to call '${methodName}')`
-              );
-            });
+            memberExp.property;
+            throw new Error(`Unreachable (node.property has type never)`);
+          }
         }
 
         if (node.callee.type === "Import") {
@@ -932,10 +1095,9 @@ export const typeCheck = (
             node.property;
             throw new Error(`Unreachable (node.property has type never)`);
           })
-          .with({ __ktype__: "variant" }, () => {
-            // Variant types do not have instances (their instances are structs).
+          .with({ __ktype__: "variant" }, (variantType) => {
             throw new Error(
-              `Variant types do not have instances (this should have been impossible).`
+              `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`
             );
           })
           .with({ __ktype__: "type" }, () => {

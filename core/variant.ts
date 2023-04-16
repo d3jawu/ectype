@@ -29,6 +29,8 @@ const variant = (options: Record<string, Type>): VariantType => {
     valid,
     has: (name) => options.hasOwnProperty(name),
     get: (name) => options[name],
+    options: () => options,
+    tags: () => Object.keys(options),
     sub: (other) => {
       if (other.__ktype__ !== "variant") {
         return false;
@@ -60,7 +62,7 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       option.when = (
         handlers: Record<string, (unwrappedVal: unknown) => void>
-      ) => handlers[name](val);
+      ) => (handlers[name] || handlers["*"])(val);
 
       return option;
     },
