@@ -4,9 +4,10 @@ import type {
   ECExprOrSpread,
   ECNode,
   ECUnaryOperator,
+  ECArrowFunctionExpression,
 } from "../types/ECNode";
 
-import { Type, TypeType } from "../../core/types.js";
+import { FnType, Type, TypeType } from "../../core/types.js";
 import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
@@ -42,10 +43,12 @@ export const typeValFrom = (t: Type): Type => {
 export class SymbolTable {
   parent: SymbolTable | null;
   values: Record<string, Type>;
+  returnType: Type | null; // null if not a function scope.
 
-  constructor(parent: SymbolTable | null) {
+  constructor(parent: SymbolTable | null, returnType: Type | null = null) {
     this.parent = parent;
     this.values = {};
+    this.returnType = returnType;
   }
 
   get(name: string): Type | null {
@@ -185,8 +188,17 @@ export const typeCheck = (
         typeCheckNode(node.body);
       })
       .with({ type: "ECReturnStatement" }, (node) => {
-        if (node.argument) {
-          typeCheckExp(node.argument);
+        if (!node.argument) {
+          throw new Error(`A value must be returned.`);
+        }
+        const returnedType = typeCheckExp(node.argument);
+
+        if (!!currentScope.returnType) {
+          if (!returnedType.sub(currentScope.returnType)) {
+            throw new Error(
+              `Expected return type of ${currentScope.returnType} but got ${returnedType}`
+            );
+          }
         }
       })
       .with({ type: "ECSwitchStatement" }, (node) => {
@@ -243,6 +255,55 @@ export const typeCheck = (
         typeCheckNode(node.body);
       })
       .otherwise((node) => typeCheckExp(node as ECExp));
+
+  // Checks a bare function's parameter and return types against an expected function type.
+  // Handles its own scope creation.
+  const typeCheckFn = (
+    fnNode: ECArrowFunctionExpression,
+    expectedType: FnType
+  ) => {
+    const originalScope = currentScope;
+    currentScope = new SymbolTable(currentScope, expectedType.returns());
+
+    const expectedParams = expectedType.params();
+
+    if (expectedParams.length !== fnNode.params.length) {
+      throw new Error(
+        `Expected ${expectedParams.length} parameters but implementation has ${fnNode.params.length}.`
+      );
+    }
+
+    fnNode.params.forEach((param, i) => {
+      if (param.type !== "Identifier") {
+        throw new Error(
+          `Function parameters other than identifiers are not yet implemented (got ${param.type})`
+        );
+      }
+
+      currentScope.set(param.value, expectedParams[i]);
+    });
+
+    if (fnNode.body.type === "ECBlockStatement") {
+      typeCheckNode(fnNode.body);
+
+      const statements = fnNode.body.statements;
+      if (statements.length === 0) {
+        throw new Error(
+          `Function body cannot be empty (it must return a value).`
+        );
+      }
+
+      // Check for missing return
+      const lastNode = statements[statements.length - 1];
+      if (lastNode.type !== "ECReturnStatement") {
+        throw new Error(`Function must explicitly return.`);
+      }
+    } else {
+      typeCheckExp(fnNode.body);
+    }
+
+    currentScope = originalScope;
+  };
 
   // TODO typeCheckExp is not pure, which may cause issues if the same node is checked twice (e.g. something that alters the symbol table). Audit for this.
   const typeCheckExp = (node: ECExp): Type =>
@@ -565,6 +626,7 @@ export const typeCheck = (
                     }
 
                     // TODO function type introspection
+                    typeCheckFn(literalNode, fnType);
 
                     return fnType;
                   })
