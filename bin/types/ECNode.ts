@@ -20,6 +20,26 @@ import type {
 } from "@swc/core";
 
 import type { ECPattern } from "./ECPattern";
+import { Type } from "../../core/types";
+
+export type Typed<N extends ECNode> = {
+  [K in keyof N]: N[K] extends ECNode ? Typed<N[K]> : N[K];
+};
+
+export type TypedExp = ToTyped<ECExp>;
+
+export type ToTyped<T> = //
+  T extends ECExp
+    ? {
+        [K in keyof T]: ToTyped<T[K]>;
+      } & { ectype: Type }
+    : T extends ECExp[]
+    ? ToTyped<T[0]>[]
+    : T extends object // includes ECStatement
+    ? {
+        [K in keyof T]: ToTyped<T[K]>;
+      }
+    : T;
 
 export type ECNode = ECExp | ECStatement;
 
