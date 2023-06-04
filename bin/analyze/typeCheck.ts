@@ -314,7 +314,7 @@ export const typeCheck = (
       .with({ type: "NullLiteral" }, (node) => Null)
       .with({ type: "NumericLiteral" }, (node) => Num)
       .with({ type: "StringLiteral" }, (node) => Str)
-      .with({ type: "Identifier" }, (node) => {
+      .with({ type: "ECIdentifier" }, (node) => {
         const maybeType = currentScope.get(node.value);
         if (!maybeType) {
           throw new Error(`${node.value} is undeclared.`);
@@ -422,7 +422,7 @@ export const typeCheck = (
         // Because Ectype "keywords" are implemented as functions, the Call Expression handler has extra logic for handling these special cases.
 
         // Check if call was to the special js() function
-        if (node.callee.type === "Identifier" && node.callee.value === "js") {
+        if (node.callee.type === "ECIdentifier" && node.callee.value === "js") {
           // The second argument to js() is optional, defaulting to Void if absent.
           return node.arguments[1]
             ? resolveTypeExp(node.arguments[1].expression)
@@ -431,7 +431,7 @@ export const typeCheck = (
 
         // Check to see if call was a type declaration, e.g. struct({})
         if (
-          node.callee.type === "Identifier" &&
+          node.callee.type === "ECIdentifier" &&
           isTypeName(node.callee.value)
         ) {
           return match(node.callee.value)
@@ -1219,7 +1219,7 @@ export const typeCheck = (
   // Example: typeCheckExp(2) => Num // resolveType(2) => (invalid)
   const resolveTypeExp = (node: ECExp): Type =>
     match<ECExp, Type>(node)
-      .with({ type: "Identifier" }, (node) =>
+      .with({ type: "ECIdentifier" }, (node) =>
         match(node.value)
           .with("Void", () => Void)
           .with("Null", () => Null)

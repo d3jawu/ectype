@@ -150,7 +150,7 @@ export type ECExp =
   | NumericLiteral
   | BigIntLiteral
   | StringLiteral
-  | Identifier
+  | ECIdentifier
   | ECArrayExpression
   | ECArrowFunctionExpression
   | ECAssignmentExpression
@@ -164,6 +164,13 @@ export type ECExp =
   | ECTaggedTemplateExpression
   | ECTemplateLiteral
   | ECUnaryExpression;
+
+// Used to distinguish from swc Identifiers, which are sometimes used in situations where they do not have a type.
+export interface ECIdentifier extends Node, HasSpan {
+  type: "ECIdentifier";
+  value: string;
+  optional: boolean;
+}
 
 export interface ECArrayExpression extends Node {
   type: "ECArrayExpression";

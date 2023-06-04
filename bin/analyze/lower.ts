@@ -265,7 +265,7 @@ const lowerExpression = (exp: Expression): ECExp =>
         return {
           span: exp.span,
           type: "ECCallExpression",
-          callee: exp.callee,
+          callee: { ...exp.callee, type: "ECIdentifier" },
           arguments: [
             {
               spread: exp.arguments[0].spread,
@@ -313,7 +313,10 @@ const lowerExpression = (exp: Expression): ECExp =>
       consequent: lowerExpression(exp.consequent),
       alternate: lowerExpression(exp.alternate),
     }))
-    .with({ type: "Identifier" }, (exp) => exp)
+    .with({ type: "Identifier" }, (exp) => ({
+      ...exp,
+      type: "ECIdentifier",
+    }))
     .with({ type: "MemberExpression" }, (exp) => {
       // Computed properties are valid for arrays but not structs, so
       // they are weeded out later when type-checking information is availble.
