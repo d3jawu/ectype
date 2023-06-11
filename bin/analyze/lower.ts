@@ -3,6 +3,7 @@ import type {
   ECBlockStatement,
   ECExp,
   ECNode,
+  ECObjectExpression,
   ECProperty,
   ECTemplateLiteral,
   ECVariableDeclaration,
@@ -118,7 +119,13 @@ const lowerNode = (node: ModuleItem): ECNode =>
     // TODO: check against naming an export "default"?
     .with({ type: "ExportNamedDeclaration" }, (node) => node)
     // TODO: check for default imports
-    .with({ type: "ImportDeclaration" }, (node) => node)
+    .with({ type: "ImportDeclaration" }, (node) => ({
+      ...node,
+      type: "ECImportDeclaration",
+      source: node.source.value,
+      asserts:
+        node.asserts && (lowerExpression(node.asserts) as ECObjectExpression),
+    }))
 
     // unpack expression
     .with({ type: "ExpressionStatement" }, (val) =>
@@ -170,7 +177,10 @@ const lowerExpression = (exp: Expression): ECExp =>
     .with({ type: "BooleanLiteral" }, (exp) => exp)
     .with({ type: "NumericLiteral" }, (exp) => exp)
     .with({ type: "BigIntLiteral" }, (exp) => exp)
-    .with({ type: "StringLiteral" }, (exp) => exp)
+    .with({ type: "StringLiteral" }, (exp) => ({
+      ...exp,
+      type: "ECStringLiteral",
+    }))
     .with({ type: "TaggedTemplateExpression" }, (exp) => ({
       span: exp.span,
       type: "ECTaggedTemplateExpression",

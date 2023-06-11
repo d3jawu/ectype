@@ -12,7 +12,7 @@ import type {
   BreakStatement,
   ContinueStatement,
   ExportNamedDeclaration,
-  ImportDeclaration,
+  ImportSpecifier,
   Import,
   TemplateElement,
   Identifier,
@@ -48,7 +48,7 @@ export type ECStatement =
   | BreakStatement
   | ContinueStatement
   | ExportNamedDeclaration
-  | ImportDeclaration
+  | ECImportDeclaration
   | ECVariableDeclaration
   | ECForStatement
   | ECSwitchStatement
@@ -85,6 +85,14 @@ export interface ECLabeledStatement extends Node, HasSpan {
   type: "ECLabeledStatement";
   label: Identifier;
   body: ECNode;
+}
+
+export interface ECImportDeclaration extends Node, HasSpan {
+  type: "ECImportDeclaration";
+  specifiers: ImportSpecifier[];
+  source: string;
+  typeOnly: boolean;
+  asserts?: ECObjectExpression;
 }
 
 export interface ECVariableDeclaration extends Node, HasSpan {
@@ -147,7 +155,7 @@ export type ECExp =
   | BooleanLiteral
   | NumericLiteral
   | BigIntLiteral
-  | StringLiteral
+  | ECStringLiteral
   | ECIdentifier
   | ECArrayExpression
   | ECArrowFunctionExpression
@@ -168,6 +176,12 @@ export interface ECIdentifier extends Node, HasSpan {
   type: "ECIdentifier";
   value: string;
   optional: boolean;
+}
+
+export interface ECStringLiteral extends Node, HasSpan {
+  type: "ECStringLiteral";
+  value: string;
+  raw?: string;
 }
 
 export interface ECArrayExpression extends Node {
