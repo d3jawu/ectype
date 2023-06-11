@@ -22,22 +22,20 @@ import type {
 import type { ECPattern } from "./ECPattern";
 import { Type } from "../../core/types";
 
-export type Typed<N extends ECNode> = {
-  [K in keyof N]: N[K] extends ECNode ? Typed<N[K]> : N[K];
-};
+export type TypedNode = Typed<ECNode>;
 
-export type TypedExp = ToTyped<ECExp>;
+export type TypedExp = Typed<ECExp>;
 
-export type ToTyped<T> = //
+export type Typed<T> = //
   T extends ECExp
     ? {
-        [K in keyof T]: ToTyped<T[K]>;
+        [K in keyof T]: Typed<T[K]>;
       } & { ectype: Type }
     : T extends ECExp[]
-    ? ToTyped<T[0]>[]
+    ? Typed<T[0]>[]
     : T extends object // includes ECStatement
     ? {
-        [K in keyof T]: ToTyped<T[K]>;
+        [K in keyof T]: Typed<T[K]>;
       }
     : T;
 
