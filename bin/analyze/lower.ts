@@ -119,13 +119,7 @@ const lowerNode = (node: ModuleItem): ECNode =>
     // TODO: check against naming an export "default"?
     .with({ type: "ExportNamedDeclaration" }, (node) => node)
     // TODO: check for default imports
-    .with({ type: "ImportDeclaration" }, (node) => ({
-      ...node,
-      type: "ECImportDeclaration",
-      source: node.source.value,
-      asserts:
-        node.asserts && (lowerExpression(node.asserts) as ECObjectExpression),
-    }))
+    .with({ type: "ImportDeclaration" }, (node) => node)
 
     // unpack expression
     .with({ type: "ExpressionStatement" }, (val) =>
