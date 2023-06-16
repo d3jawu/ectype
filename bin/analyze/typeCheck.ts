@@ -1,34 +1,32 @@
 import type {
+  ECArgument,
+  ECArrowFunctionExpression,
+  ECAssignmentExpression,
   ECBinaryOperator,
+  ECCallExpression,
   ECExp,
   ECExprOrSpread,
   ECNode,
   ECUnaryOperator,
-  ECArrowFunctionExpression,
-  TypedExp,
-  ECAssignmentExpression,
   Typed,
-  ECCallExpression,
-  ECArgument,
+  TypedExp,
 } from "../types/ECNode";
 
+import { Bool, Null, Num, Str, Void } from "../../core/primitives.js";
 import { FnType, Type, TypeType } from "../../core/types.js";
-import { Void, Null, Bool, Num, Str } from "../../core/primitives.js";
 
 import { match } from "ts-pattern";
-import { struct } from "../../core/struct.js";
-import { variant } from "../../core/variant.js";
 import { array } from "../../core/array.js";
-import { tuple } from "../../core/tuple.js";
 import { fn } from "../../core/fn.js";
+import { struct } from "../../core/struct.js";
+import { tuple } from "../../core/tuple.js";
+import { variant } from "../../core/variant.js";
 
 import { option } from "../../lib/option.js";
 
 import { analyzeFile } from "./analyzeFile.js";
 
 import { dirname, join as joinPaths } from "path";
-import { ECPattern } from "../types/ECPattern";
-import { Identifier } from "typescript";
 
 // TODO: type this more strongly?
 const isTypeName = (name: string): boolean =>
@@ -77,7 +75,7 @@ export class SymbolTable {
   }
 }
 
-// typeCheck returns the global symbol table for debugging purposes.
+// typeCheck returns a map of exports and their types.
 export const typeCheck = (
   body: ECNode[],
   path: string

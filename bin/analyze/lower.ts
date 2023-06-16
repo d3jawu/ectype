@@ -1,4 +1,4 @@
-import type { ModuleItem, Expression, Pattern, PropertyName } from "@swc/core";
+import type { Expression, ModuleItem, Pattern, PropertyName } from "@swc/core";
 import type {
   ECBlockStatement,
   ECExp,

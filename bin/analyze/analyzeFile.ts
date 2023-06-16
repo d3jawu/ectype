@@ -1,10 +1,9 @@
 import { parseFileSync } from "@swc/core";
-import type { ModuleItem } from "@swc/core";
 import { lower } from "./lower.js";
 import { typeCheck, typeValFrom } from "./typeCheck.js";
 
-import type { Type } from "../../core/types.js";
 import * as primitives from "../../core/primitives.js";
+import type { Type } from "../../core/types.js";
 
 const primitiveTypeVals = Object.entries(primitives).reduce(
   (acc: Record<string, Type>, [k, v]) => {
@@ -24,6 +23,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
 
   const { body: ast } = parseFileSync(path);
 
+  // If file doesn't begin with a string, it can't be an Ectype file (no directive).
   if (
     ast.length === 0 ||
     ast[0].type !== "ExpressionStatement" ||
@@ -51,7 +51,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
   }
 
   // Ectype library file
-  if (initialString.startsWith("ectype")) {
+  if (initialString.startsWith("ectype:")) {
     const suffix = ast[0].expression.value.split(":")[1];
 
     if (suffix === "primitives") {

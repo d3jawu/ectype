@@ -1,12 +1,12 @@
 import type {
-  Node,
-  HasSpan,
-  Span,
-  BindingIdentifier,
-  StringLiteral,
-  NumericLiteral,
   BigIntLiteral,
+  BindingIdentifier,
+  HasSpan,
   Identifier,
+  Node,
+  NumericLiteral,
+  Span,
+  StringLiteral,
 } from "@swc/core";
 
 import type { ECExp } from "./ECNode";

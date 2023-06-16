@@ -1,27 +1,27 @@
 import type {
-  Node,
-  HasSpan,
-  Span,
-  NullLiteral,
-  BooleanLiteral,
-  NumericLiteral,
+  AssignmentOperator,
   BigIntLiteral,
-  StringLiteral,
-  DebuggerStatement,
-  EmptyStatement,
+  BooleanLiteral,
   BreakStatement,
   ContinueStatement,
+  DebuggerStatement,
+  EmptyStatement,
   ExportNamedDeclaration,
+  HasSpan,
+  Identifier,
+  Import,
   ImportDeclaration,
   ImportSpecifier,
-  Import,
+  Node,
+  NullLiteral,
+  NumericLiteral,
+  Span,
+  StringLiteral,
   TemplateElement,
-  Identifier,
-  AssignmentOperator,
 } from "@swc/core";
 
-import type { ECPattern } from "./ECPattern";
 import { Type } from "../../core/types";
+import type { ECPattern } from "./ECPattern";
 
 export type TypedNode = Typed<ECNode>;
 

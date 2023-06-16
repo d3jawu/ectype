@@ -40,7 +40,6 @@ let failed = false;
 
 type Stage = "setup" | "exec" | "analysis" | "static test";
 
-// Run
 await (async () => {
   for (const { name, runtimePath, staticPath } of tests) {
     process.stdout.write(`${name}:`.padEnd(lineLength));
