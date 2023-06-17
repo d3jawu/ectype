@@ -1,6 +1,6 @@
 "use ectype";
-import { Str } from "../../../core/primitives.js";
 import { js } from "../../../core/js.js";
+import { Str } from "../../../core/primitives.js";
 
 let x = "asdf";
 
