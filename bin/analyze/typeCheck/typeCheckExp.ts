@@ -10,265 +10,43 @@ import type {
   ECUnaryOperator,
   Typed,
   TypedExp,
-} from "../types/ECNode";
+} from "../../types/ECNode";
 
-import { Bool, Null, Num, Str, Void } from "../../core/primitives.js";
-import { FnType, Type, TypeType } from "../../core/types.js";
+import { Bool, Null, Num, Str, Void } from "../../../core/primitives.js";
+import { FnType, Type, TypeType } from "../../../core/types.js";
 
 import { match } from "ts-pattern";
-import { array } from "../../core/array.js";
-import { fn } from "../../core/fn.js";
-import { struct } from "../../core/struct.js";
-import { tuple } from "../../core/tuple.js";
-import { variant } from "../../core/variant.js";
+import { array } from "../../../core/array.js";
+import { fn } from "../../../core/fn.js";
+import { struct } from "../../../core/struct.js";
+import { tuple } from "../../../core/tuple.js";
+import { variant } from "../../../core/variant.js";
 
-import { option } from "../../lib/option.js";
+import { option } from "../../../lib/option.js";
 
-import { analyzeFile } from "./analyzeFile.js";
+import { SymbolTable } from "../SymbolTable.js";
 
-import { dirname, join as joinPaths } from "path";
+import { typeValFrom } from "../typeValFrom.js";
 
 // TODO: type this more strongly?
 const isTypeName = (name: string): boolean =>
   ["fn", "tuple", "array", "variant", "struct"].includes(name);
 
-export const typeValFrom = (t: Type): Type => {
-  if (t.__ktype__ === "type") {
-    throw new Error("A type-value cannot contain a type-value.");
-  }
-
-  return {
-    __ktype__: "type",
-    sub: () => false,
-    valid: (other: unknown) => false,
-    type: () => t,
-  };
-};
-
-export class SymbolTable {
-  parent: SymbolTable | null;
-  values: Record<string, Type>;
-  returnType: Type | null; // null if not a function scope.
-
-  constructor(parent: SymbolTable | null, returnType: Type | null = null) {
-    this.parent = parent;
-    this.values = {};
-    this.returnType = returnType;
-  }
-
-  get(name: string): Type | null {
-    if (name in this.values) {
-      return this.values[name];
-    } else if (this.parent !== null) {
-      return this.parent.get(name);
-    } else {
-      return null;
-    }
-  }
-
-  set(name: string, type: Type) {
-    if (name in this.values) {
-      throw new Error(`${name} is already defined in this immediate scope.`);
-    }
-
-    this.values[name] = type;
-  }
-}
-
-// typeCheck returns a map of exports and their types.
-export const typeCheck = (
-  body: ECNode[],
-  path: string
-): Record<string, Type> => {
-  const exports: Record<string, Type> = {};
-
-  let currentScope = new SymbolTable(null);
-
-  const typeCheckNode = (node: ECNode) =>
-    match<ECNode, void>(node)
-      .with(
-        { type: "BreakStatement" },
-        { type: "ContinueStatement" },
-        { type: "DebuggerStatement" },
-        { type: "EmptyStatement" },
-        () => {}
-      )
-      .with({ type: "ImportDeclaration" }, (node) => {
-        // TODO handle modules in addition to raw paths
-        const importedTypes = analyzeFile(
-          joinPaths(dirname(path), node.source.value)
-        );
-
-        if (importedTypes === null) {
-          // File was not an Ectype file; do nothing.
-          return;
-        }
-
-        node.specifiers.forEach((specifier) => {
-          if (specifier.type === "ImportDefaultSpecifier") {
-            throw new Error(`Default imports are not yet implemented.`);
-          }
-
-          if (specifier.type === "ImportNamespaceSpecifier") {
-            throw new Error(`Namespace imports are not yet implemented.`);
-          }
-
-          const remoteName = specifier.imported
-            ? specifier.imported.value
-            : specifier.local.value;
-          const localName = specifier.local.value;
-
-          if (!importedTypes[remoteName]) {
-            throw new Error(
-              `${remoteName} is not exported by ${node.source.value}.`
-            );
-          }
-
-          currentScope.set(localName, importedTypes[remoteName]);
-        });
-      })
-      .with({ type: "ExportNamedDeclaration" }, (node) => {
-        if (node.source !== null) {
-          throw new Error(`Re-exports are not yet supported.`);
-        }
-
-        node.specifiers.forEach((specifier) => {
-          if (specifier.type === "ExportDefaultSpecifier") {
-            throw new Error(`Default exports are forbidden in Ectype.`);
-          }
-
-          if (specifier.type === "ExportNamespaceSpecifier") {
-            throw new Error(`Namespace exports are not yet implemented.`);
-          }
-
-          const exportedType = currentScope.get(specifier.orig.value);
-          if (exportedType === null) {
-            throw new Error(
-              `Could not export ${specifier.orig.value} because it is not defined.`
-            );
-          }
-
-          const exportedName = specifier.exported
-            ? specifier.exported.value
-            : specifier.orig.value;
-
-          exports[exportedName] = exportedType;
-        });
-      })
-      .with({ type: "ECBlockStatement" }, (node) => {
-        node.statements.forEach((st) => typeCheckNode(st));
-      })
-      .with({ type: "ECForStatement" }, (node) => {
-        if (node.init && node.init.type !== "ECVariableDeclaration") {
-          typeCheckExp(node.init);
-        }
-
-        if (node.test) {
-          const testType = typeCheckExp(node.test).ectype;
-
-          if (!testType.sub(Bool)) {
-            throw new Error(`Condition for for-loop must be a Bool.`);
-          }
-        }
-
-        if (node.update) {
-          typeCheckExp(node.update);
-        }
-
-        typeCheckNode(node.body);
-      })
-      .with({ type: "ECIfStatement" }, (node) => {
-        const testType = typeCheckExp(node.test).ectype;
-        if (!testType.sub(Bool)) {
-          throw new Error(`Condition for if-statement must be a Bool.`);
-        }
-
-        typeCheckNode(node.consequent);
-
-        if (node.alternate) {
-          typeCheckNode(node.alternate);
-        }
-      })
-      .with({ type: "ECLabeledStatement" }, (node) => {
-        typeCheckNode(node.body);
-      })
-      .with({ type: "ECReturnStatement" }, (node) => {
-        if (!node.argument) {
-          throw new Error(`A value must be returned.`);
-        }
-        const returnedType = typeCheckExp(node.argument).ectype;
-
-        if (!!currentScope.returnType) {
-          if (!returnedType.sub(currentScope.returnType)) {
-            throw new Error(
-              `Expected return type of ${currentScope.returnType} but got ${returnedType}`
-            );
-          }
-        }
-      })
-      .with({ type: "ECSwitchStatement" }, (node) => {
-        typeCheckExp(node.discriminant);
-
-        node.cases.forEach((c) => {
-          if (c.test) {
-            typeCheckExp(c.test);
-          }
-
-          c.consequent.forEach((n) => typeCheckNode(n));
-        });
-      })
-      .with({ type: "ECTryStatement" }, (node) => {
-        typeCheckNode(node.block);
-
-        if (node.handler) {
-          if (node.handler.param) {
-            // TODO: this should probably use the same logic as destructuring on function parameters
-            // typeCheckPattern(node.handler.param);
-            throw new Error(`Not yet implemented`);
-          }
-
-          typeCheckNode(node.handler.body);
-        }
-
-        if (node.finalizer) {
-          typeCheckNode(node.finalizer);
-        }
-      })
-      .with({ type: "ECVariableDeclaration" }, (node) => {
-        node.declarations.forEach((decl) => {
-          if (!decl.init) {
-            throw new Error(`Variable ${decl.id} must be initialized.`);
-          }
-
-          const ident: string = match(decl.id)
-            .with({ type: "Identifier" }, (id) => id.value)
-            .otherwise(() => {
-              throw new Error(
-                `Declarations with ${decl.id.type} are not yet supported.`
-              );
-            });
-
-          currentScope.set(ident, typeCheckExp(decl.init).ectype);
-        });
-      })
-      .with({ type: "ECWhileStatement" }, (node) => {
-        const testType = typeCheckExp(node.test).ectype;
-        if (!testType.sub(Bool)) {
-          throw new Error(`Condition for while-statement must be a Bool.`);
-        }
-
-        typeCheckNode(node.body);
-      })
-      .otherwise((node) => typeCheckExp(node as ECExp));
-
+export const bindTypeCheckExp = ({
+  scope,
+  typeCheckNode,
+}: {
+  scope: { current: SymbolTable };
+  typeCheckNode: (node: ECNode) => void; // typeCheckExp expects typeCheckNode to be bound to the same scope.
+}) => {
   // Checks a bare function's parameter and return types against an expected function type.
   // Handles its own scope creation.
   const typeCheckFn = (
     fnNode: ECArrowFunctionExpression,
     expectedType: FnType
   ) => {
-    const originalScope = currentScope;
-    currentScope = new SymbolTable(currentScope, expectedType.returns());
+    const originalScope = scope.current;
+    scope.current = new SymbolTable(scope.current, expectedType.returns());
 
     const expectedParams = expectedType.params();
 
@@ -285,7 +63,7 @@ export const typeCheck = (
         );
       }
 
-      currentScope.set(param.value, expectedParams[i]);
+      scope.current.set(param.value, expectedParams[i]);
     });
 
     if (fnNode.body.type === "ECBlockStatement") {
@@ -307,7 +85,7 @@ export const typeCheck = (
       typeCheckExp(fnNode.body);
     }
 
-    currentScope = originalScope;
+    scope.current = originalScope;
   };
 
   const typeCheckExp = (node: ECExp): TypedExp =>
@@ -319,7 +97,7 @@ export const typeCheck = (
       .with({ type: "NumericLiteral" }, (node) => ({ ...node, ectype: Num }))
       .with({ type: "ECStringLiteral" }, (node) => ({ ...node, ectype: Str }))
       .with({ type: "ECIdentifier" }, (node) => {
-        const type = currentScope.get(node.value);
+        const type = scope.current.get(node.value);
         if (!type) {
           throw new Error(`${node.value} is undeclared.`);
         }
@@ -338,7 +116,7 @@ export const typeCheck = (
             );
           }
 
-          const leftType = currentScope.get(node.left.value);
+          const leftType = scope.current.get(node.left.value);
           if (leftType === null) {
             throw new Error(
               `Attempted to assign to undefined variable ${node.left.value}`
@@ -1338,7 +1116,7 @@ export const typeCheck = (
           .with("Str", () => Str)
           .otherwise(() => {
             // Try resolving the identifier as a type variable.
-            const maybeType = currentScope.get(node.value);
+            const maybeType = scope.current.get(node.value);
 
             if (maybeType === null) {
               throw new Error(`${node.value} is not defined.`);
@@ -1365,7 +1143,5 @@ export const typeCheck = (
         // TODO maybe return Deferred here?
       });
 
-  body.forEach((node) => typeCheckNode(node));
-
-  return exports;
+  return typeCheckExp;
 };

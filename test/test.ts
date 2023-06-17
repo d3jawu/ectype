@@ -1,4 +1,4 @@
-import { readdirSync, existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 import chalk from "chalk";

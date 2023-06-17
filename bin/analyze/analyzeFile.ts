@@ -1,6 +1,7 @@
 import { parseFileSync } from "@swc/core";
 import { lower } from "./lower.js";
-import { typeCheck, typeValFrom } from "./typeCheck.js";
+import { typeCheck } from "./typeCheck/typeCheck.js";
+import { typeValFrom } from "./typeValFrom.js";
 
 import * as primitives from "../../core/primitives.js";
 import type { Type } from "../../core/types.js";
