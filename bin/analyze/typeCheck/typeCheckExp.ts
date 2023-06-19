@@ -8,9 +8,9 @@ import type {
   ECExprOrSpread,
   ECNode,
   ECUnaryOperator,
-  Typed,
-  TypedExp,
 } from "../../types/ECNode";
+
+import type { Typed, TypedExp } from "../../types/Typed";
 
 import { Bool, Null, Num, Str, Void } from "../../../core/primitives.js";
 import { FnType, Type, TypeType } from "../../../core/types.js";
@@ -39,55 +39,6 @@ export const bindTypeCheckExp = ({
   scope: { current: SymbolTable };
   typeCheckNode: (node: ECNode) => void; // typeCheckExp expects typeCheckNode to be bound to the same scope.
 }) => {
-  // Checks a bare function's parameter and return types against an expected function type.
-  // Handles its own scope creation.
-  const typeCheckFn = (
-    fnNode: ECArrowFunctionExpression,
-    expectedType: FnType
-  ) => {
-    const originalScope = scope.current;
-    scope.current = new SymbolTable(scope.current, expectedType.returns());
-
-    const expectedParams = expectedType.params();
-
-    if (expectedParams.length !== fnNode.params.length) {
-      throw new Error(
-        `Expected ${expectedParams.length} parameters but implementation has ${fnNode.params.length}.`
-      );
-    }
-
-    fnNode.params.forEach((param, i) => {
-      if (param.type !== "Identifier") {
-        throw new Error(
-          `Function parameters other than identifiers are not yet implemented (got ${param.type})`
-        );
-      }
-
-      scope.current.set(param.value, expectedParams[i]);
-    });
-
-    if (fnNode.body.type === "ECBlockStatement") {
-      typeCheckNode(fnNode.body);
-
-      const statements = fnNode.body.statements;
-      if (statements.length === 0) {
-        throw new Error(
-          `Function body cannot be empty (it must return a value).`
-        );
-      }
-
-      // Check for missing return
-      const lastNode = statements[statements.length - 1];
-      if (lastNode.type !== "ECReturnStatement") {
-        throw new Error(`Function must explicitly return.`);
-      }
-    } else {
-      typeCheckExp(fnNode.body);
-    }
-
-    scope.current = originalScope;
-  };
-
   const typeCheckExp = (node: ECExp): TypedExp =>
     match<ECExp, TypedExp>(node)
       // TODO BigInt needs its own type.
@@ -1098,6 +1049,11 @@ export const bindTypeCheckExp = ({
           `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`
         );
       })
+      .with({ type: "ECTypeMethod" }, () => {
+        throw new Error(
+          `ECTypeMethod can only occur after type checking; this means something has gone wrong internally.`
+        );
+      })
       .exhaustive();
 
   // Resolves the value of a type-expression.
@@ -1142,6 +1098,55 @@ export const bindTypeCheckExp = ({
 
         // TODO maybe return Deferred here?
       });
+
+  // Checks a bare function's parameter and return types against an expected function type.
+  // Handles its own scope creation.
+  const typeCheckFn = (
+    fnNode: ECArrowFunctionExpression,
+    expectedType: FnType
+  ) => {
+    const originalScope = scope.current;
+    scope.current = new SymbolTable(scope.current, expectedType.returns());
+
+    const expectedParams = expectedType.params();
+
+    if (expectedParams.length !== fnNode.params.length) {
+      throw new Error(
+        `Expected ${expectedParams.length} parameters but implementation has ${fnNode.params.length}.`
+      );
+    }
+
+    fnNode.params.forEach((param, i) => {
+      if (param.type !== "Identifier") {
+        throw new Error(
+          `Function parameters other than identifiers are not yet implemented (got ${param.type})`
+        );
+      }
+
+      scope.current.set(param.value, expectedParams[i]);
+    });
+
+    if (fnNode.body.type === "ECBlockStatement") {
+      typeCheckNode(fnNode.body);
+
+      const statements = fnNode.body.statements;
+      if (statements.length === 0) {
+        throw new Error(
+          `Function body cannot be empty (it must return a value).`
+        );
+      }
+
+      // Check for missing return
+      const lastNode = statements[statements.length - 1];
+      if (lastNode.type !== "ECReturnStatement") {
+        throw new Error(`Function must explicitly return.`);
+      }
+    } else {
+      typeCheckExp(fnNode.body);
+    }
+
+    scope.current = originalScope;
+  };
 
   return typeCheckExp;
 };

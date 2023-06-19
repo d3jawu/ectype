@@ -20,25 +20,8 @@ import type {
   TemplateElement,
 } from "@swc/core";
 
-import { Type } from "../../core/types";
+import type { Type } from "../../core/types";
 import type { ECPattern } from "./ECPattern";
-
-export type TypedNode = Typed<ECNode>;
-
-export type TypedExp = Typed<ECExp>;
-
-export type Typed<T> = //
-  T extends ECExp
-    ? {
-        [K in keyof T]: Typed<T[K]>;
-      } & { ectype: Type }
-    : T extends ECExp[]
-    ? Typed<T[0]>[]
-    : T extends object // includes ECStatement
-    ? {
-        [K in keyof T]: Typed<T[K]>;
-      }
-    : T;
 
 export type ECNode = ECExp | ECStatement;
 
@@ -58,6 +41,8 @@ export type ECStatement =
   | ECIfStatement
   | ECReturnStatement
   | ECLabeledStatement;
+
+// Ectype versions of SWC statement nodes.
 
 export interface ECBlockStatement extends Node, HasSpan {
   type: "ECBlockStatement";
@@ -157,6 +142,7 @@ export type ECExp =
   | NumericLiteral
   | BigIntLiteral
   | ECStringLiteral
+  | ECTypeMethod
   | ECIdentifier
   | ECArrayExpression
   | ECArrowFunctionExpression
@@ -178,6 +164,16 @@ export interface ECIdentifier extends Node, HasSpan {
   value: string;
   optional: boolean;
 }
+
+// Only appears after type-checking (wrapped in Typed<>).
+export interface ECTypeMethod extends Node, HasSpan {
+  type: "ECTypeMethod";
+  targetType: Type["__ktype__"];
+  method: string; // TODO type this more tightly?
+  arguments: ECExp[];
+}
+
+// Ectype versions of SWC expression nodes.
 
 export interface ECStringLiteral extends Node, HasSpan {
   type: "ECStringLiteral";
