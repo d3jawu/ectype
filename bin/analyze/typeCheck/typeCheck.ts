@@ -6,6 +6,10 @@ import { SymbolTable } from "../SymbolTable.js";
 
 import { bindTypeCheckNode } from "./typeCheckNode.js";
 
+export type Scope = {
+  current: SymbolTable;
+};
+
 // typeCheck returns a map of exports and their types.
 export const typeCheck = (
   body: ECNode[],
@@ -14,7 +18,7 @@ export const typeCheck = (
   const exports: Record<string, Type> = {};
 
   // Scope is used as a makeshift "pointer": it serves as a handle to `current`.
-  const scope = {
+  const scope: Scope = {
     current: new SymbolTable(null),
   };
 

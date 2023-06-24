@@ -143,6 +143,7 @@ export type ECExp =
   | BigIntLiteral
   | ECStringLiteral
   | ECTypeMethod
+  | ECVariantMethodCall
   | ECIdentifier
   | ECArrayExpression
   | ECArrowFunctionExpression
@@ -165,10 +166,20 @@ export interface ECIdentifier extends Node, HasSpan {
   optional: boolean;
 }
 
-// Only appears after type-checking (wrapped in Typed<>).
+// Nodes that only appear after type-checking (wrapped in Typed<>).
+
+// Represents a call to a type method (e.g. MyStruct.from).
 export interface ECTypeMethod extends Node, HasSpan {
   type: "ECTypeMethod";
   targetType: Type["__ktype__"];
+  method: string; // TODO type this more tightly?
+  arguments: ECExp[];
+}
+
+// Represents a call to a variant method.
+export interface ECVariantMethodCall extends Node, HasSpan {
+  type: "ECVariantMethod";
+  variant: ECExp; // The variant this method is being called on.
   method: string; // TODO type this more tightly?
   arguments: ECExp[];
 }

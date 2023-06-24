@@ -1,9 +1,15 @@
 import type { Type } from "../../core/types";
-import type { ECExp, ECTypeMethod } from "./ECNode";
+import type { ECExp, ECTypeMethod, ECVariantMethodCall } from "./ECNode";
 
 export type Typed<T> = //
-  T extends ECTypeMethod // Special exception: don't try to type the expressions within ECTypeMethod (they're meant to remain untyped.)
+  // Exceptions for types that only exist after type-checking
+  T extends ECTypeMethod
     ? ECTypeMethod & {
+        ectype: Type;
+      }
+    : T extends ECVariantMethodCall
+    ? Omit<ECVariantMethodCall, "arguments"> & {
+        arguments: ECExp[];
         ectype: Type;
       }
     : T extends ECExp
