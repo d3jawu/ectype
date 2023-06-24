@@ -13,6 +13,8 @@ import type {
 
 import type { Typed, TypedExp } from "../../types/Typed";
 
+import type { Scope } from "./typeCheck";
+
 import { Bool, Null, Num, Str, Void } from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
 
@@ -22,10 +24,8 @@ import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
 import { variant } from "../../../core/variant.js";
 
-import { SymbolTable } from "../SymbolTable.js";
-
 import { typeValFrom } from "../typeValFrom.js";
-import { bindParseTypeMethod } from "./parseTypeMethod.js";
+import { bindParseTypeMethodCall } from "./parseTypeMethodCall.js";
 import { bindParseVariantMethodCall } from "./parseVariantMethodCall.js";
 
 import { match } from "ts-pattern";
@@ -37,7 +37,7 @@ export const bindTypeCheckExp = ({
   scope,
   typeCheckNode,
 }: {
-  scope: { current: SymbolTable };
+  scope: Scope;
   typeCheckNode: (node: ECNode) => void; // typeCheckExp expects typeCheckNode to be bound to the same scope.
 }) => {
   const typeCheckExp = (node: ECExp): TypedExp =>
@@ -372,7 +372,7 @@ export const bindTypeCheckExp = ({
             };
           }
 
-          const typeMethod = parseTypeMethod(node);
+          const typeMethod = parseTypeMethodCall(node);
           if (typeMethod) {
             return typeMethod;
           }
@@ -611,7 +611,7 @@ export const bindTypeCheckExp = ({
         // TODO maybe return Deferred here?
       });
 
-  const parseTypeMethod = bindParseTypeMethod({
+  const parseTypeMethodCall = bindParseTypeMethodCall({
     scope,
     typeCheckExp,
     typeCheckNode,

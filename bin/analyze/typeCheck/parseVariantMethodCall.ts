@@ -112,11 +112,6 @@ export const bindParseVariantMethodCall = ({
           // TODO warn if handler set includes handler for tag that does not exist (and will therefore never be run)
         }
 
-        // TODO this should already not be the case, but TS isn't picking it up for some reason. Will go away with cleanup.
-        // if (callExp.callee.type === "Import") {
-        //   throw new Error(`import() is not a valid variant method.`);
-        // }
-
         return {
           type: "ECVariantMethod",
           span: callExp.span,

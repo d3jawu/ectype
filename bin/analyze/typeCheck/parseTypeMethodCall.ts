@@ -1,38 +1,39 @@
 import type {
   ECArrowFunctionExpression,
   ECCallExpression,
-  ECExp,
-  ECNode,
   ECTypeMethod,
 } from "../../types/ECNode";
-import type { Typed, TypedExp } from "../../types/Typed";
+import type { Typed } from "../../types/Typed";
 
 import type { FnType } from "../../../core/types";
+
+import type { bindTypeCheckExp } from "./typeCheckExp";
+import type { bindTypeCheckNode } from "./typeCheckNode";
 
 import { SymbolTable } from "../SymbolTable.js";
 
 import { Bool, Void } from "../../../core/primitives.js";
-import { Type } from "../../../core/types.js";
-
 import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
+import { Type } from "../../../core/types.js";
 
 import { option } from "../../../lib/option.js";
 
 import { match } from "ts-pattern";
+import { Scope } from "./typeCheck";
 
-export const bindParseTypeMethod = ({
+export const bindParseTypeMethodCall = ({
   typeCheckExp,
   typeCheckNode,
   scope,
 }: {
-  scope: { current: SymbolTable };
+  scope: Scope;
   // These methods should also be bound to `scope`.
-  typeCheckExp: (node: ECExp) => TypedExp;
-  typeCheckNode: (node: ECNode) => void;
+  typeCheckExp: ReturnType<typeof bindTypeCheckExp>;
+  typeCheckNode: ReturnType<typeof bindTypeCheckNode>;
 }) => {
   // Returns an ECTypeMethod if the incoming call expression matches, null otherwise.
-  const parseTypeMethod = (
+  const parseTypeMethodCall = (
     callExp: ECCallExpression
   ): Typed<ECTypeMethod> | null => {
     if (callExp.callee.type !== "ECMemberExpression") {
@@ -460,5 +461,5 @@ export const bindParseTypeMethod = ({
     scope.current = originalScope;
   };
 
-  return parseTypeMethod;
+  return parseTypeMethodCall;
 };

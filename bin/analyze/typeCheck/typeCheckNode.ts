@@ -1,3 +1,5 @@
+import type { Scope } from "./typeCheck.js";
+
 import { ECExp, ECNode } from "../../types/ECNode.js";
 
 import { analyzeFile } from "../analyzeFile.js";
@@ -6,12 +8,9 @@ import { match } from "ts-pattern";
 
 import { dirname, join as joinPaths } from "path";
 
-import { SymbolTable } from "../SymbolTable.js";
-
-import { bindTypeCheckExp } from "./typeCheckExp.js";
-
 import { Bool } from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
+import { bindTypeCheckExp } from "./typeCheckExp.js";
 
 export const bindTypeCheckNode = ({
   path,
@@ -19,7 +18,7 @@ export const bindTypeCheckNode = ({
   exports,
 }: {
   path: string;
-  scope: { current: SymbolTable };
+  scope: Scope;
   exports: Record<string, Type>;
 }) => {
   const typeCheckNode = (node: ECNode) =>
