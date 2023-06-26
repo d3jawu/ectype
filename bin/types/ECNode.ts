@@ -144,6 +144,7 @@ export type ECExp =
   | ECStringLiteral
   | ECTypeMethod
   | ECVariantMethodCall
+  | ECJSCall
   | ECIdentifier
   | ECArrayExpression
   | ECArrowFunctionExpression
@@ -182,6 +183,12 @@ export interface ECVariantMethodCall extends Node, HasSpan {
   variant: ECExp; // The variant this method is being called on.
   method: string; // TODO type this more tightly?
   arguments: ECExp[];
+}
+
+// Represents a call to the special js() function.
+export interface ECJSCall extends Node, HasSpan {
+  type: "ECJSCall";
+  fn: ECArrowFunctionExpression;
 }
 
 // Ectype versions of SWC expression nodes.

@@ -5,6 +5,7 @@ import type {
   ECCallExpression,
   ECExp,
   ECExprOrSpread,
+  ECJSCall,
   ECNode,
   ECTypeMethod,
   ECUnaryOperator,
@@ -170,7 +171,8 @@ export const bindTypeCheckExp = ({
         ):
           | Typed<ECCallExpression>
           | Typed<ECTypeMethod>
-          | Typed<ECVariantMethodCall> => {
+          | Typed<ECVariantMethodCall>
+          | Typed<ECJSCall> => {
           // There's a lot going on here. Because Ectype "keywords" are implemented as functions,
           // the Call Expression handler has extra logic for handling calls to these special cases.
 
@@ -183,15 +185,22 @@ export const bindTypeCheckExp = ({
             node.callee.type === "ECIdentifier" &&
             node.callee.value === "js"
           ) {
-            // The second argument to js() is optional, defaulting to Null if absent.
+            if (node.arguments.length <= 0 || node.arguments.length > 2) {
+              throw new Error(`js() expects one or two arguments.`);
+            }
+
+            if (
+              node.arguments[0].expression.type !== "ECArrowFunctionExpression"
+            ) {
+              throw new Error(
+                `First js() argument must be an arrow function literal.`
+              );
+            }
+
             return {
-              ...node,
-              callee: {
-                // Callee type does not matter (`js()` should be treated as a keyword, not a function).
-                ...node.callee,
-                ectype: Void,
-              },
-              arguments: [], // Argument types don't matter.
+              span: node.span,
+              type: "ECJSCall",
+              fn: node.arguments[0].expression,
               ectype: node.arguments[1]
                 ? resolveTypeExp(node.arguments[1].expression)
                 : Null,
@@ -560,6 +569,7 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECTypeMethod" },
         { type: "ECVariantMethod" },
+        { type: "ECJSCall" },
         ({ type }) => {
           throw new Error(
             `${type} can only occur after type checking; this means something has gone wrong internally.`

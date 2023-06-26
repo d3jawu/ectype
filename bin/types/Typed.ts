@@ -1,5 +1,10 @@
 import type { Type } from "../../core/types";
-import type { ECExp, ECTypeMethod, ECVariantMethodCall } from "./ECNode";
+import type {
+  ECExp,
+  ECJSCall,
+  ECTypeMethod,
+  ECVariantMethodCall,
+} from "./ECNode";
 
 export type Typed<T> = //
   // Exceptions for types that only exist after type-checking
@@ -7,9 +12,13 @@ export type Typed<T> = //
     ? ECTypeMethod & {
         ectype: Type;
       }
+    : T extends ECJSCall
+    ? ECJSCall & {
+        ectype: Type;
+      }
     : T extends ECVariantMethodCall
-    ? Omit<ECVariantMethodCall, "arguments"> & {
-        arguments: ECExp[];
+    ? Omit<ECVariantMethodCall, "variant"> & {
+        variant: Typed<ECExp>;
         ectype: Type;
       }
     : T extends ECExp
