@@ -1,9 +1,8 @@
 "ectype:variant";
-import { Type, VariantType } from "./types.js";
-import { Void, Bool } from "./primitives.js";
-import { struct } from "./struct.js";
 import { fn } from "./fn.js";
-import { someOf, None } from "./util.js";
+import { Bool } from "./primitives.js";
+import { Type, VariantType } from "./types.js";
+import { None, someOf } from "./util.js";
 
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
@@ -48,7 +47,7 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       const option = Object.entries(options).reduce(
         (acc: Record<string, unknown>, [k, v]) => {
-          acc[`is${k}`] = fn([Void], Bool).from(
+          acc[`is${k}`] = fn([], Bool).from(
             k === name ? () => true : () => false
           );
 

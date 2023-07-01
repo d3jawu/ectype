@@ -1,6 +1,6 @@
 "use ectype";
 import { array } from "../../../core/array.js";
-import { Num, Void } from "../../../core/primitives.js";
+import { Num } from "../../../core/primitives.js";
 
 import { someOf } from "../../../core/util.js";
 

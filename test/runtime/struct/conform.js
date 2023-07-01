@@ -1,9 +1,9 @@
 "use ectype";
 
+import { Num } from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
-import { Num, Void } from "../../../core/primitives.js";
 
-import { someOf, None } from "../../../core/util.js";
+import { None, someOf } from "../../../core/util.js";
 
 import { js } from "../../../core/js.js";
 
