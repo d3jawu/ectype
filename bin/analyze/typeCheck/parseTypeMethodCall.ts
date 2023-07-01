@@ -1,7 +1,7 @@
 import type {
   ECArrowFunctionExpression,
   ECCallExpression,
-  ECTypeMethod,
+  ECTypeMethodCall,
 } from "../../types/ECNode";
 import type { Typed } from "../../types/Typed";
 
@@ -32,10 +32,10 @@ export const bindParseTypeMethodCall = ({
   typeCheckExp: ReturnType<typeof bindTypeCheckExp>;
   typeCheckNode: ReturnType<typeof bindTypeCheckNode>;
 }) => {
-  // Returns an ECTypeMethod if the incoming call expression matches, null otherwise.
+  // Returns an ECTypeMethodCall if the incoming call expression matches, null otherwise.
   const parseTypeMethodCall = (
     callExp: ECCallExpression
-  ): Typed<ECTypeMethod> | null => {
+  ): Typed<ECTypeMethodCall> | null => {
     if (callExp.callee.type !== "ECMemberExpression") {
       return null;
     }
@@ -403,7 +403,7 @@ export const bindParseTypeMethodCall = ({
       });
 
     return {
-      type: "ECTypeMethod",
+      type: "ECTypeMethodCall",
       targetType: targetType.__ktype__,
       method,
       arguments: callExp.arguments.map((arg) => arg.expression),

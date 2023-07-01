@@ -143,7 +143,7 @@ export type ECExp =
   | BigIntLiteral
   | ECStringLiteral
   | ECTypeDeclaration
-  | ECTypeMethod
+  | ECTypeMethodCall
   | ECVariantMethodCall
   | ECJSCall
   | ECIdentifier
@@ -179,8 +179,8 @@ export interface ECTypeDeclaration extends Node, HasSpan {
 
 // Represents a call to a type method (e.g. MyStruct.from).
 // TODO rename to ECTypeMethodCall
-export interface ECTypeMethod extends Node, HasSpan {
-  type: "ECTypeMethod";
+export interface ECTypeMethodCall extends Node, HasSpan {
+  type: "ECTypeMethodCall";
   targetType: Type["__ktype__"];
   method: string; // TODO type this more tightly?
   arguments: ECExp[];

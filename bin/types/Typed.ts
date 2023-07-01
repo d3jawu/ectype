@@ -3,14 +3,14 @@ import type {
   ECExp,
   ECJSCall,
   ECTypeDeclaration,
-  ECTypeMethod,
+  ECTypeMethodCall,
   ECVariantMethodCall,
 } from "./ECNode";
 
 export type Typed<T> = //
   // Exceptions for types that only exist after type-checking
-  T extends ECTypeMethod
-    ? ECTypeMethod & {
+  T extends ECTypeMethodCall
+    ? ECTypeMethodCall & {
         ectype: Type;
       }
     : T extends ECJSCall

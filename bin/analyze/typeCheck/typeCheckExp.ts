@@ -7,7 +7,7 @@ import type {
   ECJSCall,
   ECNode,
   ECTypeDeclaration,
-  ECTypeMethod,
+  ECTypeMethodCall,
   ECUnaryOperator,
   ECVariantMethodCall,
 } from "../../types/ECNode";
@@ -162,7 +162,7 @@ export const bindTypeCheckExp = ({
         ):
           | Typed<ECCallExpression>
           | Typed<ECTypeDeclaration>
-          | Typed<ECTypeMethod>
+          | Typed<ECTypeMethodCall>
           | Typed<ECVariantMethodCall>
           | Typed<ECJSCall> => {
           // There's a lot going on here. Because Ectype "keywords" are implemented as functions,
@@ -393,7 +393,7 @@ export const bindTypeCheckExp = ({
       })
       .with(
         { type: "ECTypeDeclaration" },
-        { type: "ECTypeMethod" },
+        { type: "ECTypeMethodCall" },
         { type: "ECVariantMethod" },
         { type: "ECJSCall" },
         ({ type }) => {
