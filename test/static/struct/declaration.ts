@@ -6,8 +6,8 @@ export const config: StaticTest = {
   staticTest: (exports) => {
     const Point2DType = exports["Point2D"];
     assert.ok(Point2DType !== null);
-    assert.ok(Point2DType.__ktype__ === "type");
+    assert.ok(Point2DType.baseType === "type");
     const Point2D = Point2DType.type();
-    assert.ok(Point2D.__ktype__ === "struct");
+    assert.ok(Point2D.baseType === "struct");
   },
 };

@@ -7,9 +7,9 @@ export const config: StaticTest = {
     const StrArrayType = exports["StrArray"];
 
     assert.ok(StrArrayType !== null);
-    assert.ok(StrArrayType.__ktype__ === "type");
+    assert.ok(StrArrayType.baseType === "type");
     const StrArray = StrArrayType.type();
-    assert.ok(StrArray.__ktype__ === "array");
-    assert.equal(StrArray.contains().__ktype__, "str");
+    assert.ok(StrArray.baseType === "array");
+    assert.equal(StrArray.contains().baseType, "str");
   },
 };

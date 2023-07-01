@@ -1,6 +1,6 @@
 "ectype:fn";
 import { tuple } from "./tuple.js";
-import { Type, FnType } from "./types.js";
+import { FnType, Type } from "./types.js";
 import { None, someOf } from "./util.js";
 
 // true if a <: b, false otherwise.
@@ -50,7 +50,7 @@ const fn = (params: Type[], returns: Type): FnType => {
     params: () => params,
     returns: () => returns,
     sub: (other) => {
-      if (other.__ktype__ !== "fn") {
+      if (other.baseType !== "fn") {
         return false;
       }
 
@@ -58,7 +58,7 @@ const fn = (params: Type[], returns: Type): FnType => {
       return paramsSub(other.params(), params) && returns.sub(other.returns());
     },
     toString: () => `fn((${params.join(",")}) => ${returns})`,
-    __ktype__: "fn",
+    baseType: "fn",
   };
 };
 

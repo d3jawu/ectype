@@ -173,7 +173,7 @@ export interface ECIdentifier extends Node, HasSpan {
 // Represents a type declaration (e.g. struct({})).
 export interface ECTypeDeclaration extends Node, HasSpan {
   type: "ECTypeDeclaration";
-  targetType: Type["__ktype__"];
+  targetType: Type["baseType"];
   shape: ECExp[];
 }
 
@@ -181,7 +181,7 @@ export interface ECTypeDeclaration extends Node, HasSpan {
 // TODO rename to ECTypeMethodCall
 export interface ECTypeMethodCall extends Node, HasSpan {
   type: "ECTypeMethodCall";
-  targetType: Type["__ktype__"];
+  targetType: Type["baseType"];
   method: string; // TODO type this more tightly?
   arguments: ECExp[];
 }

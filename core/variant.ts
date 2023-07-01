@@ -31,7 +31,7 @@ const variant = (options: Record<string, Type>): VariantType => {
     options: () => options,
     tags: () => Object.keys(options),
     sub: (other) => {
-      if (other.__ktype__ !== "variant") {
+      if (other.baseType !== "variant") {
         return false;
       }
 
@@ -70,7 +70,7 @@ const variant = (options: Record<string, Type>): VariantType => {
         (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,
         ""
       )}\n}`,
-    __ktype__: "variant",
+    baseType: "variant",
   };
 };
 

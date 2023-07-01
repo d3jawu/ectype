@@ -1,7 +1,7 @@
 "ectype:tuple";
-import type { Type, TupleType } from "./types.js";
+import type { TupleType, Type } from "./types.js";
 
-import { someOf, None } from "./util.js";
+import { None, someOf } from "./util.js";
 
 const tuple = (fields: Type[]): TupleType => {
   const valid = (val: unknown) => {
@@ -21,7 +21,7 @@ const tuple = (fields: Type[]): TupleType => {
     field: (pos) => fields[pos],
     fields: () => fields,
     sub: (other: Type) => {
-      if (other.__ktype__ !== "tuple") {
+      if (other.baseType !== "tuple") {
         return false;
       }
 
@@ -34,7 +34,7 @@ const tuple = (fields: Type[]): TupleType => {
       return other.fields().every((_, i) => fields[i].sub(other.field(i)));
     },
     toString: () => `(${fields.join(",")})`,
-    __ktype__: "tuple",
+    baseType: "tuple",
   };
 };
 

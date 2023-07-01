@@ -22,7 +22,7 @@ export const bindParseVariantMethodCall = ({
     const variantVal = typeCheckExp(callExp.callee.object);
     const variantType = variantVal.ectype;
 
-    if (variantType.__ktype__ !== "variant") {
+    if (variantType.baseType !== "variant") {
       return null;
     }
 
@@ -77,7 +77,7 @@ export const bindParseVariantMethodCall = ({
           seenProps.push(prop.key.value);
 
           const handlerType = typeCheckExp(prop.value).ectype;
-          if (handlerType.__ktype__ !== "fn") {
+          if (handlerType.baseType !== "fn") {
             throw new Error(`Handler for "when" must be a function.`);
           }
 

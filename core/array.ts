@@ -1,6 +1,6 @@
 "ectype:array";
-import type { Type, ArrayType } from "./types.js";
-import { someOf, None } from "./util.js";
+import type { ArrayType, Type } from "./types.js";
+import { None, someOf } from "./util.js";
 
 const array = (contains: Type): ArrayType => {
   const valid = (val: unknown) => {
@@ -17,14 +17,14 @@ const array = (contains: Type): ArrayType => {
     valid,
     contains: () => contains,
     sub: (other) => {
-      if (other.__ktype__ !== "array") {
+      if (other.baseType !== "array") {
         return false;
       }
 
       return contains.sub(other.contains());
     },
     toString: () => `${contains}[]`,
-    __ktype__: "array",
+    baseType: "array",
   };
 };
 

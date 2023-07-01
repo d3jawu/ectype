@@ -43,7 +43,7 @@ export const bindParseTypeMethodCall = ({
     // The node for the type-value this method is being called on.
     const typeVal = typeCheckExp(callExp.callee.object);
     const targetType = typeVal.ectype;
-    if (targetType.__ktype__ !== "type") {
+    if (targetType.baseType !== "type") {
       return null;
     }
 
@@ -57,7 +57,7 @@ export const bindParseTypeMethodCall = ({
     const args = callExp.arguments;
 
     const ectype = match(targetType.type())
-      .with({ __ktype__: "fn" }, (fnType) =>
+      .with({ baseType: "fn" }, (fnType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
@@ -86,7 +86,7 @@ export const bindParseTypeMethodCall = ({
 
             const argType = typeCheckExp(args[0].expression).ectype;
 
-            if (argType.__ktype__ !== "type") {
+            if (argType.baseType !== "type") {
               throw new Error(`Argument to sub() must be a type.`);
             }
 
@@ -96,7 +96,7 @@ export const bindParseTypeMethodCall = ({
             throw new Error(`${method} is not a valid fn operation.`);
           })
       )
-      .with({ __ktype__: "tuple" }, (tupleType) =>
+      .with({ baseType: "tuple" }, (tupleType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
@@ -147,7 +147,7 @@ export const bindParseTypeMethodCall = ({
 
             const argType = typeCheckExp(args[0].expression).ectype;
 
-            if (argType.__ktype__ !== "type") {
+            if (argType.baseType !== "type") {
               throw new Error(`Argument to sub() must be a type.`);
             }
 
@@ -157,7 +157,7 @@ export const bindParseTypeMethodCall = ({
             throw new Error(`'${method}' is not a valid tuple operation.`);
           })
       )
-      .with({ __ktype__: "array" }, (arrayType) =>
+      .with({ baseType: "array" }, (arrayType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
@@ -206,7 +206,7 @@ export const bindParseTypeMethodCall = ({
 
             const argType = typeCheckExp(args[0].expression).ectype;
 
-            if (argType.__ktype__ !== "type") {
+            if (argType.baseType !== "type") {
               throw new Error(`Argument to sub() must be a type.`);
             }
 
@@ -216,7 +216,7 @@ export const bindParseTypeMethodCall = ({
             throw new Error(`'${method}' is not a valid array operation.`);
           })
       )
-      .with({ __ktype__: "struct" }, (structType) =>
+      .with({ baseType: "struct" }, (structType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
@@ -313,7 +313,7 @@ export const bindParseTypeMethodCall = ({
 
             const argType = typeCheckExp(args[0].expression).ectype;
 
-            if (argType.__ktype__ !== "type") {
+            if (argType.baseType !== "type") {
               throw new Error(`Argument to sub() must be a type.`);
             }
 
@@ -323,7 +323,7 @@ export const bindParseTypeMethodCall = ({
             throw new Error(`'${method}' is not a valid struct operation.`);
           })
       )
-      .with({ __ktype__: "variant" }, (variantType) =>
+      .with({ baseType: "variant" }, (variantType) =>
         match(method)
           .with("sub", () => {
             if (args.length !== 1) {
@@ -334,7 +334,7 @@ export const bindParseTypeMethodCall = ({
 
             const argType = typeCheckExp(args[0].expression).ectype;
 
-            if (argType.__ktype__ !== "type") {
+            if (argType.baseType !== "type") {
               throw new Error(`Argument to sub() must be a type.`);
             }
 
@@ -397,14 +397,14 @@ export const bindParseTypeMethodCall = ({
       .otherwise(() => {
         throw new Error(
           `Type methods on ${
-            targetType.type().__ktype__
+            targetType.type().baseType
           } are not yet implemented. (Tried to call '${method}')`
         );
       });
 
     return {
       type: "ECTypeMethodCall",
-      targetType: targetType.__ktype__,
+      targetType: targetType.baseType,
       method,
       arguments: callExp.arguments.map((arg) => arg.expression),
       span: callExp.span,

@@ -101,7 +101,7 @@ export const bindParseTypeDeclaration = ({
 
         const argType = typeCheckExp(containsNode.expression).ectype;
 
-        if (argType.__ktype__ !== "type") {
+        if (argType.baseType !== "type") {
           throw new Error(`array() parameter must be a type.`);
         }
 
@@ -194,7 +194,7 @@ export const bindParseTypeDeclaration = ({
     return {
       span: callExp.span,
       type: "ECTypeDeclaration",
-      targetType: targetType as Type["__ktype__"],
+      targetType: targetType as Type["baseType"],
       shape: args.map((arg) => arg.expression),
       ectype,
     };

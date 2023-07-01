@@ -50,7 +50,7 @@ export type VoidType = {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "void";
+  baseType: "void";
 };
 
 export type NullType = {
@@ -59,7 +59,7 @@ export type NullType = {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "null";
+  baseType: "null";
 };
 
 export type BoolType = {
@@ -68,7 +68,7 @@ export type BoolType = {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "bool";
+  baseType: "bool";
 };
 
 export type NumType = {
@@ -77,7 +77,7 @@ export type NumType = {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "num";
+  baseType: "num";
 };
 
 export type StrType = {
@@ -86,7 +86,7 @@ export type StrType = {
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "str";
+  baseType: "str";
 };
 
 export type FnType = {
@@ -97,7 +97,7 @@ export type FnType = {
   returns: () => Type;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "fn";
+  baseType: "fn";
 };
 
 export type VariantType = {
@@ -111,7 +111,7 @@ export type VariantType = {
   of: (val: Record<string, unknown>) => unknown; // produces an option instance.
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "variant";
+  baseType: "variant";
 };
 
 export type TupleType = {
@@ -122,7 +122,7 @@ export type TupleType = {
   fields: () => Type[];
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "tuple";
+  baseType: "tuple";
 };
 
 export type ArrayType = {
@@ -132,7 +132,7 @@ export type ArrayType = {
   contains: () => Type;
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "array";
+  baseType: "array";
 };
 
 export type StructType = {
@@ -144,7 +144,7 @@ export type StructType = {
   fields: () => [string, Type][];
   sub: (other: Type) => boolean;
   toString: () => string;
-  __ktype__: "struct";
+  baseType: "struct";
 };
 
 // The following types do not appear at runtime, but are used during type-checking.
@@ -152,7 +152,7 @@ export type StructType = {
 
 // "deferred" is the type given to values whose type cannot be determined statically.
 export type DeferredType = {
-  __ktype__: "deferred";
+  baseType: "deferred";
   sub: () => false;
   valid: (other: unknown) => boolean;
 };
@@ -160,7 +160,7 @@ export type DeferredType = {
 // "type" is the type of type-values. Getting the type of a type-value is not possible at runtime,
 // (and allowing that opens up a giant can of worms) but we need a way to represent type values in the type checker.
 export type TypeType = {
-  __ktype__: "type";
+  baseType: "type";
   sub: () => boolean;
   valid: (other: unknown) => boolean;
   type: () => Type;

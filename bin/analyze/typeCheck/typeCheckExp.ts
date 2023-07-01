@@ -218,9 +218,9 @@ export const bindTypeCheckExp = ({
           // Normal call expression.
           const typedFn = typeCheckExp(node.callee); // Type of the function being called.
           const fnType = typedFn.ectype;
-          if (fnType.__ktype__ !== "fn") {
+          if (fnType.baseType !== "fn") {
             throw new Error(
-              `Callee is not a function (got ${fnType.__ktype__}).`
+              `Callee is not a function (got ${fnType.baseType}).`
             );
           }
 
@@ -299,7 +299,7 @@ export const bindTypeCheckExp = ({
                   expression: typeCheckExp(node.property.expression),
                 },
           ectype: match<Type, Type>(targetType)
-            .with({ __ktype__: "struct" }, (structType) => {
+            .with({ baseType: "struct" }, (structType) => {
               // Read on a struct value.
               if (node.property.type === "ECComputed") {
                 throw new Error("Bracket accesses on a struct are forbidden.");
@@ -313,7 +313,7 @@ export const bindTypeCheckExp = ({
 
               return structType.field(node.property.value);
             })
-            .with({ __ktype__: "array" }, (arrayType) => {
+            .with({ baseType: "array" }, (arrayType) => {
               if (node.property.type === "Identifier") {
                 // must be an array member like length, map, etc.
 
@@ -331,12 +331,12 @@ export const bindTypeCheckExp = ({
               node.property;
               throw new Error(`Unreachable (node.property has type never)`);
             })
-            .with({ __ktype__: "variant" }, (variantType) => {
+            .with({ baseType: "variant" }, (variantType) => {
               throw new Error(
                 `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`
               );
             })
-            .with({ __ktype__: "type" }, () => {
+            .with({ baseType: "type" }, () => {
               // All members on a type-value are methods and must be called.
               // Calls to type-value methods are handled with call expressions.
               // If parsing has reached this point, then a member on a type has been accessed without a call.
@@ -426,7 +426,7 @@ export const bindTypeCheckExp = ({
               throw new Error(`${node.value} is not defined.`);
             }
 
-            if (maybeType.__ktype__ !== "type") {
+            if (maybeType.baseType !== "type") {
               throw new Error(`${node.value} is not a type-value.`);
             }
 
@@ -436,7 +436,7 @@ export const bindTypeCheckExp = ({
       .otherwise(() => {
         // Try getting the type of the expression.
         const expType = typeCheckExp(node).ectype;
-        if (expType.__ktype__ !== "type") {
+        if (expType.baseType !== "type") {
           throw new Error(
             `Expected a type-value but got ${expType.toString()}`
           );

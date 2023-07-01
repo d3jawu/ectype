@@ -1,5 +1,5 @@
 "ectype:primitives";
-import type { NullType, BoolType, NumType, StrType, VoidType } from "./types";
+import type { BoolType, NullType, NumType, StrType, VoidType } from "./types";
 import { None, someOf } from "./util.js";
 
 // Void is a type that has no values.
@@ -11,9 +11,9 @@ const Void: VoidType = {
     throw new Error(`No values with the void type exist.`);
   },
   valid: (val) => false,
-  sub: (other) => other.__ktype__ === "void",
+  sub: (other) => other.baseType === "void",
   toString: () => "Void",
-  __ktype__: "void",
+  baseType: "void",
 };
 
 // Null is a type that only has one value, `null`.
@@ -21,36 +21,36 @@ const Null: NullType = {
   from: (val) => val,
   conform: (val) => (val === null ? someOf(null) : None),
   valid: (val) => val === null,
-  sub: (other) => other.__ktype__ === "null",
+  sub: (other) => other.baseType === "null",
   toString: () => "Null",
-  __ktype__: "null",
+  baseType: "null",
 };
 
 const Bool: BoolType = {
   from: (val) => val,
   conform: (val) => (typeof val === "boolean" ? someOf(val) : None),
   valid: (val) => typeof val === "boolean",
-  sub: (other) => other["__ktype__" as keyof typeof other] === "bool",
+  sub: (other) => other["baseType" as keyof typeof other] === "bool",
   toString: () => "Bool",
-  __ktype__: "bool",
+  baseType: "bool",
 };
 
 const Num: NumType = {
   from: (val) => val,
   conform: (val) => (typeof val === "number" ? someOf(val) : None),
   valid: (val) => typeof val === "number",
-  sub: (other) => other["__ktype__" as keyof typeof other] === "num",
+  sub: (other) => other["baseType" as keyof typeof other] === "num",
   toString: () => "Num",
-  __ktype__: "num",
+  baseType: "num",
 };
 
 const Str: StrType = {
   from: (val) => val,
   conform: (val) => (typeof val === "string" ? someOf(val) : None),
   valid: (val) => typeof val === "string",
-  sub: (other) => other.__ktype__ === "str",
+  sub: (other) => other.baseType === "str",
   toString: () => "Str",
-  __ktype__: "str",
+  baseType: "str",
 };
 
-export { Void, Null, Bool, Num, Str };
+export { Bool, Null, Num, Str, Void };

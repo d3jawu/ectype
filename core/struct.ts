@@ -1,6 +1,6 @@
 "ectype:struct";
-import type { Type, StructType } from "./types.js";
-import { someOf, None } from "./util.js";
+import type { StructType, Type } from "./types.js";
+import { None, someOf } from "./util.js";
 
 const struct = (shape: Record<string, Type>): StructType => {
   const valid = (val: unknown) => {
@@ -21,7 +21,7 @@ const struct = (shape: Record<string, Type>): StructType => {
     field: (field) => shape[field],
     fields: () => Object.entries(shape),
     sub: (other) => {
-      if (other.__ktype__ !== "struct") {
+      if (other.baseType !== "struct") {
         return false;
       }
 
@@ -36,7 +36,7 @@ const struct = (shape: Record<string, Type>): StructType => {
         (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,
         ""
       )}\n}`,
-    __ktype__: "struct",
+    baseType: "struct",
   };
 };
 
