@@ -2,6 +2,7 @@ import type { Type } from "../../core/types";
 import type {
   ECExp,
   ECJSCall,
+  ECTypeDeclaration,
   ECTypeMethod,
   ECVariantMethodCall,
 } from "./ECNode";
@@ -21,13 +22,20 @@ export type Typed<T> = //
         variant: Typed<ECExp>;
         ectype: Type;
       }
-    : T extends ECExp
+    : T extends ECTypeDeclaration
+    ? ECTypeDeclaration & {
+        ectype: Type;
+      }
+    : // Normal expression
+    T extends ECExp
     ? {
         [K in keyof T]: Typed<T[K]>;
       } & { ectype: Type }
-    : T extends ECExp[]
+    : // Array of expressions
+    T extends ECExp[]
     ? Typed<T[0]>[]
-    : T extends object // includes ECStatement
+    : // Any object (which might contain expressions within it), e.g. ECStatement
+    T extends object
     ? {
         [K in keyof T]: Typed<T[K]>;
       }
