@@ -12,7 +12,7 @@ import type { bindTypeCheckNode } from "./typeCheckNode";
 
 import { SymbolTable } from "../SymbolTable.js";
 
-import { Bool, Void } from "../../../core/primitives.js";
+import { Any, Bool, Str } from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
 import { Type } from "../../../core/types.js";
@@ -297,7 +297,7 @@ export const bindParseTypeMethodCall = ({
 
             // The return type here is tricky. I think we need a deferred type here.
             // It's not possible to know for sure what the parameter (and therefore the returned type) is.
-            return Void;
+            return Any;
           })
           .with("fields", () => {
             throw new Error(`Not yet implemented.`);
@@ -318,6 +318,15 @@ export const bindParseTypeMethodCall = ({
             }
 
             return Bool;
+          })
+          .with("toString", () => {
+            if (args.length !== 0) {
+              throw new Error(
+                `Expected exactly no arguments to struct.toString but got ${args.length}`
+              );
+            }
+
+            return Str;
           })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid struct operation.`);

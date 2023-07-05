@@ -60,7 +60,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
     }
 
     return {
-      [suffix]: primitives.Void,
+      [suffix]: primitives.Any,
     };
   }
 

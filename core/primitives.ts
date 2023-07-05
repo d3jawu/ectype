@@ -1,19 +1,21 @@
 "ectype:primitives";
-import type { BoolType, NullType, NumType, StrType, VoidType } from "./types";
+import type {
+  AnyType,
+  BoolType,
+  NullType,
+  NumType,
+  StrType,
+  Type,
+} from "./types";
 import { None, someOf } from "./util.js";
 
-// Void is a type that has no values.
-const Void: VoidType = {
-  from: (val) => {
-    throw new Error(`No values can be created under the void type.`);
-  },
-  conform: (val) => {
-    throw new Error(`No values with the void type exist.`);
-  },
-  valid: (val) => false,
-  sub: (other) => other.baseType === "void",
-  toString: () => "Void",
-  baseType: "void",
+// Any is the top type. It is analogous to `unknown` in TypeScript (not `any`).
+const Any: AnyType = {
+  baseType: "any",
+  from: (val) => val,
+  conform: (val: unknown) => someOf(val), // All values conform to Any.
+  valid: (val: unknown) => true, // All values are valid instances of Any.
+  sub: (other: Type): boolean => other.baseType === "any", // Only Any is a subtype of Any.
 };
 
 // Null is a type that only has one value, `null`.
@@ -53,4 +55,4 @@ const Str: StrType = {
   baseType: "str",
 };
 
-export { Bool, Null, Num, Str, Void };
+export { Any, Bool, Null, Num, Str };

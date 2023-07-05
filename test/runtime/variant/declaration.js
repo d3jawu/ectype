@@ -1,11 +1,10 @@
 "use ectype";
-import { strict as assert } from "node:assert";
+import { Null, Str } from "../../../core/primitives.js";
 import { variant } from "../../../core/variant.js";
-import { Str, Void } from "../../../core/primitives.js";
 
 const MaybeStr = variant({
   Some: Str,
-  None: Void,
+  None: Null,
 });
 
 // Re-enable this test once type-checking on variant.of is implemented.

@@ -18,7 +18,7 @@ export type Option<T> =
     };
 
 export type Type =
-  | VoidType
+  | AnyType
   | NullType
   | BoolType
   | NumType
@@ -44,13 +44,12 @@ export type Type =
 // `sub` returns true if the type is a subtype of `other` - that is, values of
 // the type can be safely substituted in anywhere a value of `other` is present.
 
-export type VoidType = {
-  from: (val: null) => never;
-  conform: (val: unknown) => never;
-  valid: (val: unknown) => boolean;
+export type AnyType = {
+  from: (val: unknown) => unknown;
+  conform: (val: unknown) => Option<unknown>;
+  valid: (val: unknown) => true;
   sub: (other: Type) => boolean;
-  toString: () => string;
-  baseType: "void";
+  baseType: "any";
 };
 
 export type NullType = {
