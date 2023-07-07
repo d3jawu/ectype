@@ -1,13 +1,19 @@
 {
   "name": "ectype",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prepare": "npm run clean && npm run build",
+    "build": "tsc",
     "watch": "tsc --watch",
     "clean": "rm -rf dist/",
     "test": "node dist/test/test.js",
-    "analyze": "node dist/bin/analyze.js"
+    "check": "node dist/bin/check.js"
+  },
+  "files": ["dist/**/*", "!dist/test"],
+  "bin": {
+    "ec-check": "dist/bin/check.js"
   },
   "author": "",
   "license": "ISC",
