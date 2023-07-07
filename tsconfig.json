@@ -8,7 +8,7 @@
     "outDir": "dist",
     "strict": true,
     "allowJs": true,
-    "removeComments": false
+    "removeComments": true
   },
-  "include": ["core/**/*", "bin/**/*", "test/**/*", "lib/**/*"]
+  "include": ["core/**/*", "bin/**/*", "test/**/*", "lib/**/*", "index.ts"]
 }

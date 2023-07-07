@@ -51,7 +51,8 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
     initialString = ast[0].expression.value;
   }
 
-  // Ectype library file
+  // Ectype library file, imported directly
+  // (This is an edge case, usually the user will import the "ectype" package instead of importing directly from a file within the package)
   if (initialString.startsWith("ectype:")) {
     const suffix = ast[0].expression.value.split(":")[1];
 

@@ -8,7 +8,7 @@ import { match } from "ts-pattern";
 
 import { dirname, join as joinPaths } from "path";
 
-import { Bool } from "../../../core/primitives.js";
+import { Any, Bool } from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
 import { bindTypeCheckExp } from "./typeCheckExp.js";
 
@@ -31,6 +31,16 @@ export const bindTypeCheckNode = ({
         () => {}
       )
       .with({ type: "ImportDeclaration" }, (node) => {
+        // Bypass imports from ectype itself
+        if (node.source.value === "ectype") {
+          node.specifiers.forEach((specifier) => {
+            // TODO make sure these are actually valid specifiers
+            scope.current.set(specifier.local.value, Any);
+          });
+
+          return;
+        }
+
         // TODO handle modules in addition to raw paths
         const importedTypes = analyzeFile(
           joinPaths(dirname(path), node.source.value)
