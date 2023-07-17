@@ -5,7 +5,7 @@ import type { bindTypeCheckExp } from "./typeCheckExp";
 
 import { match } from "ts-pattern";
 
-import { Any } from "../../../core/primitives.js";
+import { Unknown } from "../../../core/primitives.js";
 
 export const bindParseVariantMethodCall = ({
   typeCheckExp,
@@ -51,7 +51,7 @@ export const bindParseVariantMethodCall = ({
         }
 
         // Ensure all handlers return the same type.
-        let seenReturnType: Type = Any; // Set to Any initially so TypeScript knows it's always initialized.
+        let seenReturnType: Type = Unknown; // Set to Unknown initially so TypeScript knows it's always initialized.
         let seenProps: string[] = [];
         // TODO: this will have to be refactored (maybe to .find()) when we start returning error objects instead of throwing.
         handlersMap.properties.forEach((prop, i) => {

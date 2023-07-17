@@ -1,21 +1,21 @@
 "ectype:primitives";
 import type {
-  AnyType,
   BoolType,
   NullType,
   NumType,
   StrType,
   Type,
+  UnknownType,
 } from "./types";
 import { None, someOf } from "./util.js";
 
-// Any is the top type. It is analogous to `unknown` in TypeScript (not `any`).
-const Any: AnyType = {
-  baseType: "any",
+// Unknown is the top type. It is analogous to `unknown` in TypeScript (not `any`).
+const Unknown: UnknownType = {
+  baseType: "unknown",
   from: (val) => val,
-  conform: (val: unknown) => someOf(val), // All values conform to Any.
-  valid: (val: unknown) => true, // All values are valid instances of Any.
-  sub: (other: Type): boolean => other.baseType === "any", // Only Any is a subtype of Any.
+  conform: (val: unknown) => someOf(val), // All values conform to Unknown.
+  valid: (val: unknown) => true, // All values are valid instances of Unknown.
+  sub: (other: Type): boolean => other.baseType === "unknown", // Only Unknown is a subtype of Unknown.
 };
 
 // Null is a type that only has one value, `null`.
@@ -55,4 +55,4 @@ const Str: StrType = {
   baseType: "str",
 };
 
-export { Any, Bool, Null, Num, Str };
+export { Bool, Null, Num, Str, Unknown };

@@ -8,7 +8,7 @@ import { match } from "ts-pattern";
 
 import { dirname, join as joinPaths } from "path";
 
-import { Any, Bool } from "../../../core/primitives.js";
+import { Bool, Unknown } from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
 import { bindTypeCheckExp } from "./typeCheckExp.js";
 
@@ -35,7 +35,7 @@ export const bindTypeCheckNode = ({
         if (node.source.value === "ectype") {
           node.specifiers.forEach((specifier) => {
             // TODO make sure these are actually valid specifiers
-            scope.current.set(specifier.local.value, Any);
+            scope.current.set(specifier.local.value, Unknown);
           });
 
           return;

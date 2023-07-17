@@ -16,7 +16,7 @@ import type { Typed, TypedExp } from "../../types/Typed";
 
 import type { Scope } from "./typeCheck";
 
-import { Any, Bool, Null, Num, Str } from "../../../core/primitives.js";
+import { Bool, Null, Num, Str, Unknown } from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
 
 import { bindParseTypeDeclaration } from "./parseTypeDeclaration.js";
@@ -413,7 +413,7 @@ export const bindTypeCheckExp = ({
     match<ECExp, Type>(node)
       .with({ type: "ECIdentifier" }, (node) =>
         match(node.value)
-          .with("Any", () => Any)
+          .with("Unknown", () => Unknown)
           .with("Null", () => Null)
           .with("Bool", () => Bool)
           .with("Num", () => Num)

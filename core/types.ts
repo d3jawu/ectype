@@ -18,7 +18,7 @@ export type Option<T> =
     };
 
 export type Type =
-  | AnyType
+  | UnknownType
   | NullType
   | BoolType
   | NumType
@@ -44,7 +44,7 @@ export type Type =
 // `sub` returns true if the type is a subtype of `other` - that is, values of
 // the type can be safely substituted in anywhere a value of `other` is present.
 
-export type AnyType = {
+export type UnknownType = {
   from: (val: unknown) => unknown;
   conform: (val: unknown) => Option<unknown>;
   valid: (val: unknown) => true;

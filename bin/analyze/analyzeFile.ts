@@ -61,7 +61,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
     }
 
     return {
-      [suffix]: primitives.Any,
+      [suffix]: primitives.Unknown,
     };
   }
 
