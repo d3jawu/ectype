@@ -439,7 +439,7 @@ export const bindParseTypeMethodCall = ({
     }
 
     fnNode.params.forEach((param, i) => {
-      if (param.type !== "Identifier") {
+      if (param.type !== "ECIdentifier") {
         throw new Error(
           `Function parameters other than identifiers are not yet implemented (got ${param.type})`
         );

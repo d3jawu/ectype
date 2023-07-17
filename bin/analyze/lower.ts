@@ -1,10 +1,8 @@
-import type { Expression, ModuleItem, Pattern, PropertyName } from "@swc/core";
+import type { Expression, ModuleItem, Pattern } from "@swc/core";
 import type {
   ECBlockStatement,
   ECExp,
   ECNode,
-  ECObjectExpression,
-  ECProperty,
   ECTemplateLiteral,
   ECVariableDeclaration,
 } from "../types/ECNode";
@@ -466,7 +464,7 @@ const lowerExpression = (exp: Expression): ECExp =>
 
 const lowerPattern = (pattern: Pattern): ECPattern =>
   match<Pattern, ECPattern>(pattern)
-    .with({ type: "Identifier" }, (p) => p)
+    // Identifier is treated as an expression (lowerExpression will turn it into an ECIdentifier).
     .with({ type: "ArrayPattern" }, (p) => ({
       span: p.span,
       type: "ECArrayPattern",

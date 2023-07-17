@@ -188,7 +188,7 @@ export const bindTypeCheckNode = ({
           }
 
           const ident: string = match(decl.id)
-            .with({ type: "Identifier" }, (id) => id.value)
+            .with({ type: "ECIdentifier" }, (id) => id.value)
             .otherwise(() => {
               throw new Error(
                 `Declarations with ${decl.id.type} are not yet supported.`

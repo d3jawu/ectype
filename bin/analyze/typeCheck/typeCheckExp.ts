@@ -4,6 +4,7 @@ import type {
   ECBinaryOperator,
   ECCallExpression,
   ECExp,
+  ECIdentifier,
   ECJSCall,
   ECNode,
   ECTypeDeclaration,
@@ -24,6 +25,7 @@ import { bindParseTypeMethodCall } from "./parseTypeMethodCall.js";
 import { bindParseVariantMethodCall } from "./parseVariantMethodCall.js";
 
 import { match } from "ts-pattern";
+import { ECPattern } from "../../types/ECPattern.js";
 
 export const bindTypeCheckExp = ({
   scope,
@@ -54,34 +56,56 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECAssignmentExpression" },
         (node): Typed<ECAssignmentExpression> => {
-          if (node.left.type !== "Identifier") {
-            throw new Error(
-              `Assignments to non-identifiers (e.g. patterns) are not yet supported.`
-            );
-          }
+          return match<ECPattern, Typed<ECAssignmentExpression>>(node.left)
+            .with({ type: "ECIdentifier" }, (lhs) => {
+              const leftType = scope.current.get(lhs.value);
+              if (leftType === null) {
+                throw new Error(
+                  `Attempted to assign to undefined variable ${lhs.value}`
+                );
+              }
 
-          const leftType = scope.current.get(node.left.value);
-          if (leftType === null) {
-            throw new Error(
-              `Attempted to assign to undefined variable ${node.left.value}`
-            );
-          }
+              const right = typeCheckExp(node.right);
+              const rightType = right.ectype;
 
-          const rightType = typeCheckExp(node.right).ectype;
+              if (!rightType.sub(leftType)) {
+                throw new Error(
+                  `Expected type compatible with ${leftType} but got ${rightType}`
+                );
+              }
 
-          if (!rightType.sub(leftType)) {
-            throw new Error(
-              `Expected type compatible with ${leftType} but got ${rightType}`
-            );
-          }
+              return {
+                ...node,
+                left: typeCheckExp(node.left as ECIdentifier),
+                right,
+                ectype: rightType,
+              };
+            })
+            .with({ type: "ECMemberExpression" }, (lhs) => {
+              const left = typeCheckExp(lhs);
+              const leftType = left.ectype;
 
-          return {
-            ...node,
-            // @ts-ignore I have no clue why it won't take this.
-            left: node.left,
-            right: typeCheckExp(node.right),
-            ectype: rightType,
-          };
+              const right = typeCheckExp(node.right);
+              const rightType = right.ectype;
+
+              if (!rightType.sub(leftType)) {
+                throw new Error(
+                  `Expected type compatible with ${leftType} but got ${rightType}`
+                );
+              }
+
+              return {
+                ...node,
+                left,
+                right,
+                ectype: rightType,
+              };
+            })
+            .otherwise(() => {
+              throw new Error(
+                `Assignments to ${node.left.type} are not allowed.`
+              );
+            });
         }
       )
       .with({ type: "ECAwaitExpression" }, () => {
