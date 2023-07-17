@@ -9,7 +9,7 @@ import type {
 } from "./types";
 import { None, someOf } from "./util.js";
 
-// Unknown is the top type. It is analogous to `unknown` in TypeScript (not `any`).
+// Unknown is the top type. It is analogous to `unknown` in TypeScript.
 const Unknown: UnknownType = {
   baseType: "unknown",
   from: (val) => val,

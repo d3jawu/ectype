@@ -49,7 +49,7 @@ export type UnknownType = {
   conform: (val: unknown) => Option<unknown>;
   valid: (val: unknown) => true;
   sub: (other: Type) => boolean;
-  baseType: "any";
+  baseType: "unknown";
 };
 
 export type NullType = {
