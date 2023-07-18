@@ -1,8 +1,8 @@
 "use ectype";
 
-import { struct } from "../../../dist/core/struct.js";
+import { struct } from "../../../core/struct.js";
 
-import { Num } from "../../../dist/core/primitives.js";
+import { Num } from "../../../core/primitives.js";
 
 const Point2D = struct({
   x: Num,
