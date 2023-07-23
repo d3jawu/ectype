@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 
 import chalk from "chalk";
@@ -34,7 +34,8 @@ const lineLength =
 import { analyzeFile } from "../bin/analyze/analyzeFile.js";
 
 import { strict as assert } from "node:assert";
-import type { StaticTest } from "./static/StaticTest.js";
+import type { Type } from "../core/types.js";
+import { MaybeStaticTest } from "./lib/TestConfig.js";
 
 let failed = false;
 
@@ -46,36 +47,31 @@ await (async () => {
 
     let stage: Stage = "setup";
     try {
-      let config: StaticTest = {
-        exec: true,
-        analysisThrows: false,
-      };
-
-      if (existsSync(staticPath)) {
-        const { config: overrideConfig } = await import(staticPath);
-        config = {
-          ...config,
-          ...overrideConfig,
-        };
-      }
-
-      if (config.exec) {
-        stage = "exec";
-        await import(runtimePath);
-      }
+      stage = "exec";
+      const { config: testConfig } = await import(runtimePath);
+      const config = !!testConfig
+        ? testConfig
+        : {
+            staticTest: MaybeStaticTest.of({ None: null }),
+            analysisThrows: false,
+          };
 
       stage = "analysis";
-      if (config.analysisThrows) {
+      if (config.analysisFails) {
         assert.throws(() => {
           analyzeFile(runtimePath);
         });
       } else {
         const staticExports = analyzeFile(runtimePath);
 
-        if (!!config.staticTest && staticExports !== null) {
-          stage = "static test";
-          config.staticTest(staticExports);
-        }
+        // Yeah, this is cheating. If this were an actual Ectype file, these functions would require types.
+        config.staticTest.when({
+          Some: (testFn: (staticExports: Record<string, Type>) => void) => {
+            stage = "static test";
+            testFn(staticExports || {});
+          },
+          None: () => {},
+        });
       }
 
       process.stdout.write(chalk.black.bgGreenBright("PASS") + "\n");

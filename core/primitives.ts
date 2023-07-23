@@ -16,6 +16,7 @@ const Unknown: UnknownType = {
   conform: (val: unknown) => someOf(val), // All values conform to Unknown.
   valid: (val: unknown) => true, // All values are valid instances of Unknown.
   sub: (other: Type): boolean => other.baseType === "unknown", // Only Unknown is a subtype of Unknown.
+  toString: () => "Unknown",
 };
 
 // Null is a type that only has one value, `null`.

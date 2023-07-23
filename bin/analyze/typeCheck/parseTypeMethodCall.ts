@@ -259,7 +259,7 @@ export const bindParseTypeMethodCall = ({
             if (!inputType.sub(structType)) {
               // TODO explain incompatibility in error message
               throw new Error(
-                `Invalid cast to struct type: ${inputType} vs ${structType}`
+                `Invalid cast to struct type:\nGot:\n${inputType}\nExpected:\n${structType}`
               );
             }
 
