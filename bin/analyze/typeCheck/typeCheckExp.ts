@@ -362,7 +362,8 @@ export const bindTypeCheckExp = ({
               );
             })
             .with({ baseType: "num" }, () => {
-              if (node.property.type !== "Identifier") {
+              const nodeType = node.property.type;
+              if (nodeType !== "Identifier") {
                 throw new Error("Cannot use bracket access on a number.");
               }
 
@@ -370,8 +371,7 @@ export const bindTypeCheckExp = ({
                 .with("toString", () => fn([], Str))
                 .otherwise(() => {
                   throw new Error(
-                    // @ts-ignore bruh whyyy
-                    `"${node.property.value}" is not a valid function on a number.`
+                    `"${nodeType}" is not a valid function on a number.`
                   );
                 });
             })

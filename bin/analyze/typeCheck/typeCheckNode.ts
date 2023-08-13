@@ -41,7 +41,7 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        // For now, just don't check packages (since they won't be using Ectype anyway.)
+        // For now, just don't check packages (since no packages that use Ectype exist.)
         if (
           !node.source.value.startsWith(".") &&
           !node.source.value.startsWith("/")
@@ -49,20 +49,19 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        let importedTypes: Record<string, Type> | null;
-        try {
-          importedTypes = analyzeFile(
-            joinPaths(dirname(path), node.source.value)
-          );
-        } catch (cause) {
-          throw new Error(
-            `Failed to import ${joinPaths(
-              dirname(path),
-              node.source.value
-            )} (as ${node.source.value}) from ${path}`,
-            { cause }
-          );
-        }
+        const importedTypes = (() => {
+          try {
+            return analyzeFile(joinPaths(dirname(path), node.source.value));
+          } catch (cause) {
+            throw new Error(
+              `Failed to import ${joinPaths(
+                dirname(path),
+                node.source.value
+              )} (as ${node.source.value}) from ${path}`,
+              { cause }
+            );
+          }
+        })();
 
         if (importedTypes === null) {
           // File was not an Ectype file; do nothing.
