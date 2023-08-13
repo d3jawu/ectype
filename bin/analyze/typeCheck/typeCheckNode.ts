@@ -41,10 +41,28 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        // TODO handle modules in addition to raw paths
-        const importedTypes = analyzeFile(
-          joinPaths(dirname(path), node.source.value)
-        );
+        // For now, just don't check packages (since they won't be using Ectype anyway.)
+        if (
+          !node.source.value.startsWith(".") &&
+          !node.source.value.startsWith("/")
+        ) {
+          return;
+        }
+
+        let importedTypes: Record<string, Type> | null;
+        try {
+          importedTypes = analyzeFile(
+            joinPaths(dirname(path), node.source.value)
+          );
+        } catch (cause) {
+          throw new Error(
+            `Failed to import ${joinPaths(
+              dirname(path),
+              node.source.value
+            )} (as ${node.source.value}) from ${path}`,
+            { cause }
+          );
+        }
 
         if (importedTypes === null) {
           // File was not an Ectype file; do nothing.

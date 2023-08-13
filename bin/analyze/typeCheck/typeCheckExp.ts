@@ -17,6 +17,7 @@ import type { Typed, TypedExp } from "../../types/Typed";
 
 import type { Scope } from "./typeCheck";
 
+import { fn } from "../../../core/fn.js";
 import { Bool, Null, Num, Str, Unknown } from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
 
@@ -359,6 +360,20 @@ export const bindTypeCheckExp = ({
               throw new Error(
                 `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`
               );
+            })
+            .with({ baseType: "num" }, () => {
+              if (node.property.type !== "Identifier") {
+                throw new Error("Cannot use bracket access on a number.");
+              }
+
+              return match(node.property.value)
+                .with("toString", () => fn([], Str))
+                .otherwise(() => {
+                  throw new Error(
+                    // @ts-ignore bruh whyyy
+                    `"${node.property.value}" is not a valid function on a number.`
+                  );
+                });
             })
             .with({ baseType: "type" }, () => {
               // All members on a type-value are methods and must be called.
