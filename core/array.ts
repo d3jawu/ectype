@@ -17,6 +17,10 @@ const array = (contains: Type): ArrayType => {
     valid,
     contains: () => contains,
     sub: (other) => {
+      if (other.baseType === "unknown") {
+        return true;
+      }
+
       if (other.baseType !== "array") {
         return false;
       }

@@ -21,6 +21,10 @@ const tuple = (fields: Type[]): TupleType => {
     field: (pos) => fields[pos],
     fields: () => fields,
     sub: (other: Type) => {
+      if (other.baseType === "unknown") {
+        return true;
+      }
+
       if (other.baseType !== "tuple") {
         return false;
       }

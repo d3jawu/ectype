@@ -31,6 +31,10 @@ const variant = (options: Record<string, Type>): VariantType => {
     options: () => options,
     tags: () => Object.keys(options),
     sub: (other) => {
+      if (other.baseType === "unknown") {
+        return true;
+      }
+
       if (other.baseType !== "variant") {
         return false;
       }

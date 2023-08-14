@@ -57,6 +57,90 @@ export const bindParseTypeMethodCall = ({
     const args = callExp.arguments;
 
     const ectype = match(targetType.type())
+      .with({ baseType: "null" }, () =>
+        match(method)
+          .with("sub", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to null.sub but got ${args.length}`
+              );
+            }
+
+            const argType = typeCheckExp(args[0].expression).ectype;
+
+            if (argType.baseType !== "type") {
+              throw new Error(`Argument to sub() must be a type.`);
+            }
+
+            return Bool;
+          })
+          .otherwise(() => {
+            throw new Error(`${method} is not a valid method on Null.`);
+          })
+      )
+      .with({ baseType: "bool" }, () =>
+        match(method)
+          .with("sub", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to bool.sub but got ${args.length}`
+              );
+            }
+
+            const argType = typeCheckExp(args[0].expression).ectype;
+
+            if (argType.baseType !== "type") {
+              throw new Error(`Argument to sub() must be a type.`);
+            }
+
+            return Bool;
+          })
+          .otherwise(() => {
+            throw new Error(`${method} is not a valid method on Bool.`);
+          })
+      )
+      .with({ baseType: "num" }, () =>
+        match(method)
+          .with("sub", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to num.sub but got ${args.length}`
+              );
+            }
+
+            const argType = typeCheckExp(args[0].expression).ectype;
+
+            if (argType.baseType !== "type") {
+              throw new Error(`Argument to sub() must be a type.`);
+            }
+
+            return Bool;
+          })
+          .otherwise(() => {
+            throw new Error(`${method} is not a valid method on Num.`);
+          })
+      )
+      .with({ baseType: "str" }, () =>
+        match(method)
+          .with("sub", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to str.sub but got ${args.length}`
+              );
+            }
+
+            const argType = typeCheckExp(args[0].expression).ectype;
+
+            if (argType.baseType !== "type") {
+              throw new Error(`Argument to sub() must be a type.`);
+            }
+
+            return Bool;
+          })
+          .otherwise(() => {
+            throw new Error(`${method} is not a valid method on Str.`);
+          })
+      )
       .with({ baseType: "fn" }, (fnType) =>
         match(method)
           .with("from", () => {

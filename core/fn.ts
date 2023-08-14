@@ -50,6 +50,10 @@ const fn = (params: Type[], returns: Type): FnType => {
     params: () => params,
     returns: () => returns,
     sub: (other) => {
+      if (other.baseType === "unknown") {
+        return true;
+      }
+
       if (other.baseType !== "fn") {
         return false;
       }

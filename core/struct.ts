@@ -21,6 +21,10 @@ const struct = (shape: Record<string, Type>): StructType => {
     field: (field) => shape[field],
     fields: () => Object.entries(shape),
     sub: (other) => {
+      if (other.baseType === "unknown") {
+        return true;
+      }
+
       if (other.baseType !== "struct") {
         return false;
       }
