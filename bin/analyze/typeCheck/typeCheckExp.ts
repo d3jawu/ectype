@@ -364,7 +364,7 @@ export const bindTypeCheckExp = ({
             .with({ baseType: "num" }, () => {
               const nodeType = node.property.type;
               if (nodeType !== "Identifier") {
-                throw new Error("Cannot use bracket access on a number.");
+                throw new Error("Bracket accesses on a number are forbidden.");
               }
 
               return match(node.property.value)

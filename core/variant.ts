@@ -61,7 +61,7 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       option.when = (
         handlers: Record<string, (unwrappedVal: unknown) => void>
-      ) => (handlers[name] || handlers["*"])(val);
+      ) => (handlers[name] || handlers["_"])(val);
 
       return option;
     },

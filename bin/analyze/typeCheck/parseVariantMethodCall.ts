@@ -99,7 +99,7 @@ export const bindParseVariantMethodCall = ({
 
         // Ensure that match coverage is exhaustive or uses
         const tags = variantType.tags();
-        if (!seenProps.includes("*")) {
+        if (!seenProps.includes("_")) {
           // Skip if wildcard handler used
           tags.forEach((expectedTag) => {
             if (!seenProps.includes(expectedTag)) {
