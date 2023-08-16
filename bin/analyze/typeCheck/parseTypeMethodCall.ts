@@ -12,7 +12,7 @@ import type { bindTypeCheckNode } from "./typeCheckNode";
 
 import { SymbolTable } from "../SymbolTable.js";
 
-import { Bool, Str, Unknown } from "../../../core/primitives.js";
+import { Bool, Num, Str, Unknown } from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
 import { Type } from "../../../core/types.js";
@@ -115,6 +115,15 @@ export const bindParseTypeMethodCall = ({
             }
 
             return Bool;
+          })
+          .with("conform", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to Num.conform but got ${args.length}`
+              );
+            }
+
+            return option(Num);
           })
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Num.`);

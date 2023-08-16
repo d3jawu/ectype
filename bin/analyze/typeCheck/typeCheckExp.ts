@@ -343,7 +343,11 @@ export const bindTypeCheckExp = ({
               if (node.property.type === "Identifier") {
                 // must be an array member like length, map, etc.
 
-                throw new Error(`Array functions are not yet implemented.`);
+                return match(node.property.value)
+                  .with("length", () => Num)
+                  .otherwise(() => {
+                    throw new Error(`Array functions are not yet implemented.`);
+                  });
               } else if (node.property.type === "ECComputed") {
                 // field access; must be a number.
 
