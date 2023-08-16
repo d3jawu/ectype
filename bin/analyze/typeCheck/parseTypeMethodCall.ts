@@ -156,7 +156,6 @@ export const bindParseTypeMethodCall = ({
               throw new Error(`fn.from() must be an arrow function literal.`);
             }
 
-            // TODO function type introspection
             typeCheckFn(literalNode, fnType);
 
             return fnType;
@@ -485,6 +484,19 @@ export const bindParseTypeMethodCall = ({
           })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid variant operation.`);
+          })
+      )
+      .with({ baseType: "type" }, (typeType) =>
+        match(method)
+          .with("from", () => {
+            throw new Error(
+              `"from" cannot be used with a type that is not known statically.`
+            );
+          })
+          .otherwise(() => {
+            throw new Error(
+              `${method} is not a valid method on an unknown type.`
+            );
           })
       )
       .otherwise(() => {

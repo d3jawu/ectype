@@ -157,11 +157,13 @@ export type DeferredType = {
   valid: (other: unknown) => boolean;
 };
 
-// "type" is the type of type-values. Getting the type of a type-value is not possible at runtime,
+// During analysis, "type" is the type of type-values. Getting the type of a type-value is not possible at runtime,
 // (and allowing that opens up a giant can of worms) but we need a way to represent type values in the type checker.
+// During runtime, "type" is the abstract type representing all type-values. See the implementation (type.ts).
 export type TypeType = {
   baseType: "type";
-  sub: () => boolean;
+  sub: (other: unknown) => boolean;
   valid: (other: unknown) => boolean;
-  type: () => Type;
+  type: () => Type; // Gets the underlying type. Not callable at runtime.
+  toString: () => string;
 };

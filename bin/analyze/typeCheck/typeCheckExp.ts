@@ -19,6 +19,7 @@ import type { Scope } from "./typeCheck";
 
 import { fn } from "../../../core/fn.js";
 import { Bool, Null, Num, Str, Unknown } from "../../../core/primitives.js";
+import { Type as TypeType } from "../../../core/type.js";
 import { Type } from "../../../core/types.js";
 
 import { bindParseTypeDeclaration } from "./parseTypeDeclaration.js";
@@ -457,6 +458,7 @@ export const bindTypeCheckExp = ({
           .with("Bool", () => Bool)
           .with("Num", () => Num)
           .with("Str", () => Str)
+          .with("Type", () => TypeType)
           .otherwise(() => {
             // Try resolving the identifier as a type variable.
             const maybeType = scope.current.get(node.value);

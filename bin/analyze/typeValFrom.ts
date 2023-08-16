@@ -1,3 +1,4 @@
+import { Type as TypeType } from "../../core/type.js";
 import { Type } from "../../core/types";
 
 export const typeValFrom = (t: Type): Type => {
@@ -6,9 +7,7 @@ export const typeValFrom = (t: Type): Type => {
   }
 
   return {
-    baseType: "type",
-    sub: () => false,
-    valid: (other: unknown) => false,
+    ...TypeType,
     type: () => t,
   };
 };
