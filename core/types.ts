@@ -28,7 +28,6 @@ export type Type =
   | ArrayType
   | VariantType
   | StructType
-  | DeferredType
   | TypeType;
 
 // `from` is a passthrough function used to signal to the type-checker
@@ -145,16 +144,6 @@ export type StructType = {
   sub: (other: Type) => boolean;
   toString: () => string;
   baseType: "struct";
-};
-
-// The following types do not appear at runtime, but are used during type-checking.
-// Because this entire file compiles away to an empty file, there is no overhead for these.
-
-// "deferred" is the type given to values whose type cannot be determined statically.
-export type DeferredType = {
-  baseType: "deferred";
-  sub: () => false;
-  valid: (other: unknown) => boolean;
 };
 
 // During analysis, "type" is the type of type-values. Getting the type of a type-value is not possible at runtime,

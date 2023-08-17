@@ -488,8 +488,6 @@ export const bindTypeCheckExp = ({
         }
 
         return expType.type();
-
-        // TODO maybe return Deferred here?
       });
 
   const parseTypeDeclaration = bindParseTypeDeclaration({
