@@ -212,7 +212,13 @@ export const bindTypeCheckNode = ({
               );
             });
 
-          scope.current.set(ident, typeCheckExp(decl.init).ectype);
+          const createdType = typeCheckExp(decl.init).ectype;
+
+          if (createdType.baseType === "type" && node.kind !== "const") {
+            throw new Error(`Type declarations must be const.`);
+          }
+
+          scope.current.set(ident, createdType);
         });
       })
       .with({ type: "ECWhileStatement" }, (node) => {
