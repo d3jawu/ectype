@@ -37,6 +37,10 @@ const tuple = (fields: Type[]): TupleType => {
 
       return other.fields().every((_, i) => fields[i].sub(other.field(i)));
     },
+    eq: (other: Type) =>
+      other.baseType === "tuple" &&
+      other.fields().length === fields.length &&
+      other.fields().every((f, i) => f.eq(fields[i])),
     toString: () => `(${fields.join(",")})`,
     baseType: "tuple",
   };

@@ -16,6 +16,7 @@ const array = (contains: Type): ArrayType => {
     conform: (val) => (valid(val) ? someOf(val as unknown[]) : None),
     valid,
     contains: () => contains,
+    eq: (other) => other.baseType === "array" && other.contains().eq(contains),
     sub: (other) => {
       if (other.baseType === "unknown") {
         return true;

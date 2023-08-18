@@ -16,6 +16,7 @@ const Unknown: UnknownType = {
   conform: (val: unknown) => someOf(val), // All values conform to Unknown.
   valid: (val: unknown) => true, // All values are valid instances of Unknown.
   sub: (other: Type): boolean => other.baseType === "unknown", // Only Unknown is a subtype of Unknown.
+  eq: (other) => other.baseType === "unknown",
   toString: () => "Unknown",
 };
 
@@ -25,6 +26,7 @@ const Null: NullType = {
   conform: (val) => (val === null ? someOf(null) : None),
   valid: (val) => val === null,
   sub: (other) => other.baseType === "null" || other.baseType === "unknown",
+  eq: (other) => other.baseType === "null",
   toString: () => "Null",
   baseType: "null",
 };
@@ -36,6 +38,7 @@ const Bool: BoolType = {
   sub: (other) =>
     other["baseType" as keyof typeof other] === "bool" ||
     other.baseType === "unknown",
+  eq: (other) => other.baseType === "bool",
   toString: () => "Bool",
   baseType: "bool",
 };
@@ -47,6 +50,7 @@ const Num: NumType = {
   sub: (other) =>
     other["baseType" as keyof typeof other] === "num" ||
     other.baseType === "unknown",
+  eq: (other) => other.baseType === "num",
   toString: () => "Num",
   baseType: "num",
 };
@@ -56,6 +60,7 @@ const Str: StrType = {
   conform: (val) => (typeof val === "string" ? someOf(val) : None),
   valid: (val) => typeof val === "string",
   sub: (other) => other.baseType === "str" || other.baseType === "unknown",
+  eq: (other) => other.baseType === "str",
   toString: () => "Str",
   baseType: "str",
 };

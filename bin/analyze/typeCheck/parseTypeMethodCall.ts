@@ -56,6 +56,25 @@ export const bindParseTypeMethodCall = ({
 
     const args = callExp.arguments;
 
+    // Reusable handler for the "eq" method (which is the same across all types.)
+    const handleEq = () => {
+      if (args.length !== 1) {
+        throw new Error(
+          `Expected exactly 1 argument to eq but got ${args.length}`
+        );
+      }
+
+      // TODO warn if the eq() is always true or false (which is the case if both types are known statically).
+
+      const argType = typeCheckExp(args[0].expression).ectype;
+
+      if (argType.baseType !== "type") {
+        throw new Error(`Argument to eq() must be a type.`);
+      }
+
+      return Bool;
+    };
+
     const ectype = match(targetType.type())
       .with({ baseType: "null" }, () =>
         match(method)
@@ -74,6 +93,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Null.`);
           })
@@ -95,6 +115,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Bool.`);
           })
@@ -125,6 +146,7 @@ export const bindParseTypeMethodCall = ({
 
             return option(Num);
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Num.`);
           })
@@ -146,6 +168,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Str.`);
           })
@@ -184,6 +207,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid fn operation.`);
           })
@@ -245,6 +269,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid tuple operation.`);
           })
@@ -304,6 +329,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid array operation.`);
           })
@@ -409,6 +435,7 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
+          .with("eq", handleEq)
           .with("toString", () => {
             if (args.length !== 0) {
               throw new Error(
@@ -489,6 +516,7 @@ export const bindParseTypeMethodCall = ({
 
             return variantType;
           })
+          .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid variant operation.`);
           })
@@ -504,6 +532,13 @@ export const bindParseTypeMethodCall = ({
             throw new Error(
               `${method} is not a valid method on an unknown type.`
             );
+          })
+      )
+      .with({ baseType: "unknown" }, () =>
+        match(method)
+          .with("eq", handleEq)
+          .otherwise(() => {
+            throw new Error(`${method} is not a valid on unknown`);
           })
       )
       .otherwise(() => {

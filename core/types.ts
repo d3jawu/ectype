@@ -48,6 +48,7 @@ export type UnknownType = {
   conform: (val: unknown) => Option<unknown>;
   valid: (val: unknown) => true;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "unknown";
 };
@@ -57,6 +58,7 @@ export type NullType = {
   conform: (val: unknown) => Option<null>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "null";
 };
@@ -66,6 +68,7 @@ export type BoolType = {
   conform: (val: unknown) => Option<boolean>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "bool";
 };
@@ -75,6 +78,7 @@ export type NumType = {
   conform: (val: unknown) => Option<number>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "num";
 };
@@ -84,6 +88,7 @@ export type StrType = {
   conform: (val: unknown) => Option<string>;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "str";
 };
@@ -95,6 +100,7 @@ export type FnType = {
   params: () => Type[];
   returns: () => Type;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "fn";
 };
@@ -109,6 +115,7 @@ export type VariantType = {
   tags: () => string[]; // returns a list of tag names.
   of: (val: Record<string, unknown>) => unknown; // produces an option instance.
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "variant";
 };
@@ -120,6 +127,7 @@ export type TupleType = {
   field: (pos: number) => Type; // gets the type held at that position in the tuple.
   fields: () => Type[];
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "tuple";
 };
@@ -130,6 +138,7 @@ export type ArrayType = {
   valid: (val: unknown) => boolean;
   contains: () => Type;
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "array";
 };
@@ -142,6 +151,7 @@ export type StructType = {
   field: (key: string) => Type;
   fields: () => [string, Type][];
   sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "struct";
 };
@@ -152,6 +162,7 @@ export type StructType = {
 export type TypeType = {
   baseType: "type";
   sub: (other: unknown) => boolean;
+  eq: (other: Type) => boolean;
   valid: (other: unknown) => boolean;
   type: () => Type; // Gets the underlying type. Not callable at runtime.
   toString: () => string;

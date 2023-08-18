@@ -69,6 +69,19 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       return option;
     },
+    eq: (other) => {
+      if (other.baseType !== "variant") {
+        return false;
+      }
+
+      const otherOptions = Object.entries(other.options());
+
+      if (otherOptions.length !== Object.entries(options).length) {
+        return false;
+      }
+
+      return otherOptions.every(([k, t]) => k in options && options[k].eq(t));
+    },
     toString: () =>
       `variant{\n${Object.entries(options).reduce(
         (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,

@@ -12,6 +12,7 @@ const Type: TypeType = {
   valid,
   toString: () => "Type",
   type: () => Type, // Not callable at runtime.
+  eq: (other) => other.baseType === "type",
 };
 
 export { Type };

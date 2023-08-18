@@ -35,6 +35,19 @@ const struct = (shape: Record<string, Type>): StructType => {
         .fields()
         .every(([key]) => shape[key] && shape[key].sub(other.field(key)));
     },
+    eq: (other) => {
+      if (other.baseType !== "struct") {
+        return false;
+      }
+
+      const otherFields = other.fields();
+
+      if (otherFields.length !== Object.entries(shape).length) {
+        return false;
+      }
+
+      return otherFields.every(([k, t]) => k in shape && shape[k].eq(t));
+    },
     toString: () =>
       `struct{\n${Object.entries(shape).reduce(
         (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,

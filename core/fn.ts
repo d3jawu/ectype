@@ -61,6 +61,11 @@ const fn = (params: Type[], returns: Type): FnType => {
       // contravariant on the parameter type, covariant on the return type
       return paramsSub(other.params(), params) && returns.sub(other.returns());
     },
+    eq: (other) =>
+      other.baseType === "fn" &&
+      other.params().length === params.length &&
+      other.params().every((p, i) => p.eq(params[i])) &&
+      other.returns().eq(returns),
     toString: () => `fn((${params.join(",")}) => ${returns})`,
     baseType: "fn",
   };
