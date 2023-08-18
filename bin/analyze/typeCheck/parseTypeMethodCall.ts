@@ -12,7 +12,7 @@ import type { bindTypeCheckNode } from "./typeCheckNode";
 
 import { SymbolTable } from "../SymbolTable.js";
 
-import { Bool, Num, Str } from "../../../core/primitives.js";
+import { Bool, Num, Str, Unknown } from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
 import { Type } from "../../../core/types.js";
@@ -536,9 +536,20 @@ export const bindParseTypeMethodCall = ({
       )
       .with({ baseType: "unknown" }, () =>
         match(method)
+          .with("from", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to unknown.from but got ${args.length}`
+              );
+            }
+
+            // Casting to Unknown always succeeds.
+
+            return Unknown;
+          })
           .with("eq", handleEq)
           .otherwise(() => {
-            throw new Error(`${method} is not a valid on unknown`);
+            throw new Error(`${method} is not a valid function on Unknown`);
           })
       )
       .otherwise(() => {
