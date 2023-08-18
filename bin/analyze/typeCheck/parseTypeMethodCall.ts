@@ -567,7 +567,14 @@ export const bindParseTypeMethodCall = ({
         throw new Error(`Function must explicitly return.`);
       }
     } else {
-      typeCheckExp(fnNode.body);
+      const returnedType = typeCheckExp(fnNode.body);
+      if (!returnedType.ectype.eq(expectedType.returns())) {
+        throw new Error(
+          `Expected return type of ${expectedType.returns()} but got ${
+            returnedType.ectype
+          }.`
+        );
+      }
     }
 
     scope.current = originalScope;
