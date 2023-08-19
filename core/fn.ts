@@ -12,6 +12,15 @@ const paramsSub = (a: Type[], b: Type[]): boolean => {
   return aTuple.sub(bTuple);
 };
 
+// true if a and b represent the exact same type, false otherwise.
+const paramsEq = (a: Type[], b: Type[]): boolean => {
+  // Reuse tuple subtyping logic.
+  const aTuple = tuple(a);
+  const bTuple = tuple(b);
+
+  return aTuple.eq(bTuple);
+};
+
 type TypedFunction = {
   (): unknown;
   __kparams__: Type[];
@@ -31,8 +40,8 @@ const fn = (params: Type[], returns: Type): FnType => {
     return Boolean(
       val.__kparams__ &&
         val.__kreturns__ &&
-        paramsSub(val.__kparams__, params) &&
-        returns.sub(val.__kreturns__)
+        paramsEq(val.__kparams__, params) &&
+        returns.eq(val.__kreturns__)
     );
   };
 

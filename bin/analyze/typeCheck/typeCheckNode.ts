@@ -130,7 +130,7 @@ export const bindTypeCheckNode = ({
         if (node.test) {
           const testType = typeCheckExp(node.test).ectype;
 
-          if (!testType.sub(Bool)) {
+          if (!testType.eq(Bool)) {
             throw new Error(`Condition for for-loop must be a Bool.`);
           }
         }
@@ -143,7 +143,7 @@ export const bindTypeCheckNode = ({
       })
       .with({ type: "ECIfStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
-        if (!testType.sub(Bool)) {
+        if (!testType.eq(Bool)) {
           throw new Error(`Condition for if-statement must be a Bool.`);
         }
 
@@ -163,7 +163,7 @@ export const bindTypeCheckNode = ({
         const returnedType = typeCheckExp(node.argument).ectype;
 
         if (!!scope.current.returnType) {
-          if (!returnedType.sub(scope.current.returnType)) {
+          if (!returnedType.eq(scope.current.returnType)) {
             throw new Error(
               `Expected return type of ${scope.current.returnType} but got ${returnedType}`
             );
@@ -223,7 +223,7 @@ export const bindTypeCheckNode = ({
       })
       .with({ type: "ECWhileStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
-        if (!testType.sub(Bool)) {
+        if (!testType.eq(Bool)) {
           throw new Error(`Condition for while-statement must be a Bool.`);
         }
 

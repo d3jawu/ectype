@@ -243,7 +243,7 @@ export const bindParseTypeMethodCall = ({
 
             const inputType = tuple(shape);
 
-            if (!inputType.sub(tupleType)) {
+            if (!inputType.eq(tupleType)) {
               throw new Error(
                 `Invalid cast to tuple type: ${inputType} vs ${tupleType}`
               );
@@ -304,7 +304,7 @@ export const bindParseTypeMethodCall = ({
 
               const elType = typeCheckExp(el.expression).ectype;
 
-              if (!elType.sub(arrayType.contains())) {
+              if (!elType.eq(arrayType.contains())) {
                 throw new Error(
                   `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`
                 );
@@ -380,7 +380,7 @@ export const bindParseTypeMethodCall = ({
 
             const inputType = struct(shape);
 
-            if (!inputType.sub(structType)) {
+            if (!inputType.eq(structType)) {
               // TODO explain incompatibility in error message
               throw new Error(
                 `Invalid cast to struct type:\nGot:\n${inputType}\nExpected:\n${structType}`
@@ -512,7 +512,7 @@ export const bindParseTypeMethodCall = ({
 
             const valueType = typeCheckExp(value).ectype;
 
-            if (!valueType.sub(variantType.get(key.value))) {
+            if (!valueType.eq(variantType.get(key.value))) {
               throw new Error(
                 `Expected type ${variantType.get(
                   key.value

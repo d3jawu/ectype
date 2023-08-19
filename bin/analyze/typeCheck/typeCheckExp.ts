@@ -76,10 +76,8 @@ export const bindTypeCheckExp = ({
               const right = typeCheckExp(node.right);
               const rightType = right.ectype;
 
-              if (!rightType.sub(leftType)) {
-                throw new Error(
-                  `Expected type compatible with ${leftType} but got ${rightType}`
-                );
+              if (!rightType.eq(leftType)) {
+                throw new Error(`Expected ${leftType} but got ${rightType}`);
               }
 
               return {
@@ -96,7 +94,7 @@ export const bindTypeCheckExp = ({
               const right = typeCheckExp(node.right);
               const rightType = right.ectype;
 
-              if (!rightType.sub(leftType)) {
+              if (!rightType.eq(leftType)) {
                 throw new Error(
                   `Expected type compatible with ${leftType} but got ${rightType}`
                 );
@@ -128,7 +126,7 @@ export const bindTypeCheckExp = ({
             const left = typeCheckExp(node.left).ectype;
             const right = typeCheckExp(node.right).ectype;
 
-            if (!left.sub(right) && !right.sub(left)) {
+            if (!left.eq(right) && !right.eq(left)) {
               throw new Error(`Types ${left} and ${right} are incompatible.`);
             }
 
@@ -138,7 +136,7 @@ export const bindTypeCheckExp = ({
             const left = typeCheckExp(node.left).ectype;
             const right = typeCheckExp(node.right).ectype;
 
-            if (!left.sub(Bool) || !right.sub(Bool)) {
+            if (!left.eq(Bool) || !right.eq(Bool)) {
               throw new Error(
                 `${node.operator} requires a Bool on both sides.`
               );
@@ -150,7 +148,7 @@ export const bindTypeCheckExp = ({
             const left = typeCheckExp(node.left).ectype;
             const right = typeCheckExp(node.right).ectype;
 
-            if (!left.sub(Num) || !right.sub(Num)) {
+            if (!left.eq(Num) || !right.eq(Num)) {
               throw new Error(`${node.operator} requires a Num on both sides.`);
             }
 
@@ -173,7 +171,7 @@ export const bindTypeCheckExp = ({
               const left = typeCheckExp(node.left).ectype;
               const right = typeCheckExp(node.right).ectype;
 
-              if (!left.sub(Num) || !right.sub(Num)) {
+              if (!left.eq(Num) || !right.eq(Num)) {
                 throw new Error(
                   `${node.operator} requires a Num on both sides.`
                 );
@@ -271,7 +269,7 @@ export const bindTypeCheckExp = ({
               const typedArg = typeCheckExp(arg.expression);
               const argType = typedArg.ectype;
 
-              if (!argType.sub(fnTypeParams[i])) {
+              if (!argType.eq(fnTypeParams[i])) {
                 throw new Error(
                   `Argument ${i} (of type ${argType}) does not match expected type ${fnTypeParams[i]}`
                 );
@@ -294,7 +292,7 @@ export const bindTypeCheckExp = ({
       )
       .with({ type: "ECConditionalExpression" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
-        if (!testType.sub(Bool)) {
+        if (!testType.eq(Bool)) {
           throw new Error(`Condition for ternary expression must be a Bool.`);
         }
 
@@ -302,8 +300,8 @@ export const bindTypeCheckExp = ({
         const alternateType = typeCheckExp(node.alternate).ectype;
 
         if (
-          !consequentType.sub(alternateType) ||
-          !alternateType.sub(consequentType)
+          !consequentType.eq(alternateType) ||
+          !alternateType.eq(consequentType)
         ) {
           throw new Error(`Types for ternary expression results must match.`);
         }
@@ -357,7 +355,7 @@ export const bindTypeCheckExp = ({
               } else if (node.property.type === "ECComputed") {
                 // field access; must be a number.
 
-                if (!typeCheckExp(node.property.expression).ectype.sub(Num)) {
+                if (!typeCheckExp(node.property.expression).ectype.eq(Num)) {
                   throw new Error(`Array index must be a nunmber.`);
                 }
 

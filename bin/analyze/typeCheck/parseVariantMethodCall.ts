@@ -83,12 +83,9 @@ export const bindParseVariantMethodCall = ({
 
           const handlerReturnType = handlerType.returns();
 
-          // Note: this logic does mean that the first handler gets to determine the return type of the other handlers
-          // (the other handlers' return types must be a subtype of the first return type.)
-          // TODO: find the broadest type possible across all types and type the return to that type.
           if (i === 0) {
             seenReturnType = handlerReturnType;
-          } else if (!handlerReturnType.sub(seenReturnType)) {
+          } else if (!handlerReturnType.eq(seenReturnType)) {
             throw new Error(
               `Expected type ${seenReturnType} but got ${handlerReturnType}`
             );
