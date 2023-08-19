@@ -5,6 +5,7 @@ import type {
   NumType,
   StrType,
   Type,
+  TypeType,
   UnknownType,
 } from "./types";
 import { None, someOf } from "./util.js";
@@ -65,4 +66,19 @@ const Str: StrType = {
   baseType: "str",
 };
 
-export { Bool, Null, Num, Str, Unknown };
+// Type is the abstract type representing all type-values. Like Unknown, it cannot be instantiated directly
+// and is meant to be used as a placeholder where the specific type is not known (e.g. in generic functions).
+const typeValid = (val: unknown) =>
+  typeof val === "object" && val !== null && "baseType" in val;
+
+const Type: TypeType = {
+  baseType: "type",
+  from: (val) => val,
+  sub: typeValid, // TODO
+  valid: typeValid,
+  toString: () => "Type",
+  type: () => Type, // Not callable at runtime.
+  eq: (other) => other.baseType === "type",
+};
+
+export { Bool, Null, Num, Str, Type, Unknown };

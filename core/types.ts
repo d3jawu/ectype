@@ -161,6 +161,7 @@ export type StructType = {
 // During runtime, "type" is the abstract type representing all type-values. See the implementation (type.ts).
 export type TypeType = {
   baseType: "type";
+  from: (val: unknown) => typeof val;
   sub: (other: unknown) => boolean;
   eq: (other: Type) => boolean;
   valid: (other: unknown) => boolean;

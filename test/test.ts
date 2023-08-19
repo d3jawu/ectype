@@ -53,7 +53,7 @@ await (async () => {
         ? testConfig
         : {
             staticTest: MaybeStaticTest.of({ None: null }),
-            analysisThrows: false,
+            analysisFails: false,
           };
 
       stage = "analysis";

@@ -18,8 +18,14 @@ import type { Typed, TypedExp } from "../../types/Typed";
 import type { Scope } from "./typeCheck";
 
 import { fn } from "../../../core/fn.js";
-import { Bool, Null, Num, Str, Unknown } from "../../../core/primitives.js";
-import { Type as TypeType } from "../../../core/type.js";
+import {
+  Bool,
+  Null,
+  Num,
+  Str,
+  Type as TypeType,
+  Unknown,
+} from "../../../core/primitives.js";
 import { Type } from "../../../core/types.js";
 
 import { bindParseTypeDeclaration } from "./parseTypeDeclaration.js";

@@ -12,7 +12,13 @@ import type { bindTypeCheckNode } from "./typeCheckNode";
 
 import { SymbolTable } from "../SymbolTable.js";
 
-import { Bool, Num, Str, Unknown } from "../../../core/primitives.js";
+import {
+  Bool,
+  Num,
+  Str,
+  Type as TypeType,
+  Unknown,
+} from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
 import { Type } from "../../../core/types.js";
@@ -524,9 +530,21 @@ export const bindParseTypeMethodCall = ({
       .with({ baseType: "type" }, (typeType) =>
         match(method)
           .with("from", () => {
-            throw new Error(
-              `"from" cannot be used with a type that is not known statically.`
-            );
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to type.from but got ${args.length}`
+              );
+            }
+
+            const argType = typeCheckExp(args[0].expression).ectype;
+
+            if (argType.baseType !== "type") {
+              throw new Error(
+                `Only type-values can be cast to Type (got ${argType}).`
+              );
+            }
+
+            return TypeType;
           })
           .otherwise(() => {
             throw new Error(
