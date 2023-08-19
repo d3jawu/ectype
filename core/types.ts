@@ -2,16 +2,12 @@
 export type Option<T> =
   | {
       Some: T;
-      isSome: () => true;
-      isNone: () => false;
       when: (
         handlers: Record<string, (unwrapped?: unknown) => unknown>
       ) => unknown;
     }
   | {
       None: undefined;
-      isSome: () => false;
-      isNone: () => true;
       when: (
         handlers: Record<string, (unwrapped?: unknown) => unknown>
       ) => unknown;

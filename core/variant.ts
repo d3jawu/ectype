@@ -1,6 +1,4 @@
 "ectype:variant";
-import { fn } from "./fn.js";
-import { Bool } from "./primitives.js";
 import { Type, VariantType } from "./types.js";
 import { None, someOf } from "./util.js";
 
@@ -49,16 +47,7 @@ const variant = (options: Record<string, Type>): VariantType => {
       // assume static analyzer has ensured mappedVal has exactly one entry.
       const [name, val] = Object.entries(mappedVal)[0];
 
-      const option = Object.entries(options).reduce(
-        (acc: Record<string, unknown>, [k, v]) => {
-          acc[`is${k}`] = fn([], Bool).from(
-            k === name ? () => true : () => false
-          );
-
-          return acc;
-        },
-        {}
-      );
+      const option: Record<string, unknown> = {};
 
       // Allow read of wrapped value (assume static analyzer has checked this first).
       option[name] = val;
