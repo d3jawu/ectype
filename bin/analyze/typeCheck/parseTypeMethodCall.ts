@@ -16,12 +16,12 @@ import {
   Bool,
   Num,
   Str,
+  Type,
   Type as TypeType,
   Unknown,
 } from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
 import { tuple } from "../../../core/tuple.js";
-import { Type } from "../../../core/types.js";
 
 import { option } from "../../../lib/option.js";
 
@@ -530,21 +530,32 @@ export const bindParseTypeMethodCall = ({
       .with({ baseType: "type" }, (typeType) =>
         match(method)
           .with("from", () => {
-            if (args.length !== 1) {
+            // Since Type is its own type (calling type() on Type returns Type), it has the same type (Type) as a runtime type-value, e.g. the return value of a fn([Type], Type),
+            // both cases will have the same type signature in the analyzer.
+            // To disambiguate, we have to manually check if the value being read is Type itself.
+            // This isn't perfect, since it won't work on e.g. variables with other names that reference Type.
+
+            if (typeVal.type === "ECIdentifier" && typeVal.value === "Type") {
+              if (args.length !== 1) {
+                throw new Error(
+                  `Expected exactly 1 argument to type.from but got ${args.length}`
+                );
+              }
+
+              const argType = typeCheckExp(args[0].expression).ectype;
+
+              if (argType.baseType !== "type") {
+                throw new Error(
+                  `Only type-values can be cast to Type (got ${argType}).`
+                );
+              }
+
+              return TypeType;
+            } else {
               throw new Error(
-                `Expected exactly 1 argument to type.from but got ${args.length}`
+                `"from" cannot be used with a type that is not known statically.`
               );
             }
-
-            const argType = typeCheckExp(args[0].expression).ectype;
-
-            if (argType.baseType !== "type") {
-              throw new Error(
-                `Only type-values can be cast to Type (got ${argType}).`
-              );
-            }
-
-            return TypeType;
           })
           .otherwise(() => {
             throw new Error(
