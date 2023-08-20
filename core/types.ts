@@ -5,12 +5,14 @@ export type Option<T> =
       when: (
         handlers: Record<string, (unwrapped?: unknown) => unknown>
       ) => unknown;
+      toString: () => string;
     }
   | {
-      None: undefined;
+      None: null;
       when: (
         handlers: Record<string, (unwrapped?: unknown) => unknown>
       ) => unknown;
+      toString: () => string;
     };
 
 export type Type =

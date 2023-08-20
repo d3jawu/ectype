@@ -442,7 +442,7 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECTypeDeclaration" },
         { type: "ECTypeMethodCall" },
-        { type: "ECVariantMethod" },
+        { type: "ECVariantMethodCall" },
         { type: "ECJSCall" },
         ({ type }) => {
           throw new Error(

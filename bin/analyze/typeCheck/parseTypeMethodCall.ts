@@ -573,7 +573,18 @@ export const bindParseTypeMethodCall = ({
                 );
               }
 
-              throw new Error("implementation in progress");
+              // A conform on a type-value only known at runtime is always an option(Type).
+              return option(Type);
+            })
+            .with("toString", () => {
+              // All types have a toString() method, so this is always safe.
+              if (args.length !== 0) {
+                throw new Error(
+                  `Expected exactly 0 arguments to toString() but got ${args.length}.`
+                );
+              }
+
+              return Str;
             })
             .otherwise(() => {
               throw new Error(

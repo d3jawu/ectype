@@ -5,7 +5,7 @@ import type { bindTypeCheckExp } from "./typeCheckExp";
 
 import { match } from "ts-pattern";
 
-import { Unknown } from "../../../core/primitives.js";
+import { Str, Unknown } from "../../../core/primitives.js";
 
 export const bindParseVariantMethodCall = ({
   typeCheckExp,
@@ -94,10 +94,9 @@ export const bindParseVariantMethodCall = ({
           return true;
         });
 
-        // Ensure that match coverage is exhaustive or uses
         const tags = variantType.tags();
+        // Skip if wildcard handler used, because it's automatically exhaustive
         if (!seenProps.includes("_")) {
-          // Skip if wildcard handler used
           tags.forEach((expectedTag) => {
             if (!seenProps.includes(expectedTag)) {
               throw new Error(
@@ -106,17 +105,38 @@ export const bindParseVariantMethodCall = ({
             }
           });
 
-          // TODO warn if handler set includes handler for tag that does not exist (and will therefore never be run)
+          if (tags.length !== handlersMap.properties.length) {
+            throw new Error(
+              `Expected ${tags.length} handlers for "when" but got ${handlersMap.properties.length}.`
+            );
+          }
         }
 
         return {
-          type: "ECVariantMethod",
+          type: "ECVariantMethodCall",
           span: callExp.span,
           variant: variantVal,
           method: "when",
           arguments: args.map((arg) => arg.expression),
 
           ectype: seenReturnType,
+        };
+      })
+      .with("toString", (): Typed<ECVariantMethodCall> => {
+        if (args.length !== 0) {
+          throw new Error(
+            `Expected exactly 0 args to toString but got ${args.length}.`
+          );
+        }
+
+        return {
+          type: "ECVariantMethodCall",
+          span: callExp.span,
+          variant: variantVal,
+          method: "when",
+          arguments: [],
+
+          ectype: Str,
         };
       })
       .otherwise((prop) => {

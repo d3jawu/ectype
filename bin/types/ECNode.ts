@@ -188,7 +188,7 @@ export interface ECTypeMethodCall extends Node, HasSpan {
 
 // Represents a call to a variant method.
 export interface ECVariantMethodCall extends Node, HasSpan {
-  type: "ECVariantMethod";
+  type: "ECVariantMethodCall";
   variant: ECExp; // The variant this method is being called on.
   method: string; // TODO type this more tightly?
   arguments: ECExp[];

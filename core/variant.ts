@@ -49,12 +49,13 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       const option: Record<string, unknown> = {};
 
-      // Allow read of wrapped value (assume static analyzer has checked this first).
       option[name] = val;
 
       option.when = (
         handlers: Record<string, (unwrappedVal: unknown) => void>
       ) => (handlers[name] || handlers["_"])(val);
+
+      option.toString = () => `${name}(${val})`;
 
       return option;
     },

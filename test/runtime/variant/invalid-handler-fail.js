@@ -11,9 +11,16 @@ const MaybeStr = variant({
 
 const someStr = MaybeStr.of({ Some: "abc" });
 
-// Type-checking should fail when a handler is missing.
+// Type-checking should fail when a handler matches a tag not found in the variant,
+// even if all actual tags are handled.
 someStr.when({
   Some: fn([Str], Null).from((s) => {
+    return null;
+  }),
+  None: fn([], Null).from(() => {
+    return null;
+  }),
+  NotInVariant: fn([], Null).from(() => {
     return null;
   }),
 });
