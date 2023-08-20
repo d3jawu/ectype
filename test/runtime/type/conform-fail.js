@@ -2,5 +2,5 @@
 
 import { Type } from "../../../core/primitives.js";
 
-// Can't cast a value to a type.
-const A = Type.from(10);
+// Can't call conform() on Type.
+const A = Type.conform(10);

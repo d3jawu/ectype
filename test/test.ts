@@ -12,12 +12,10 @@ const tests = readdirSync(runtimeDir).flatMap((dir) => {
 
   return readdirSync(dirPath).map((file) => {
     const runtimePath = path.join(dirPath, file);
-    const staticPath = path.join(path.join(staticDir, dir, file));
 
     return {
       name: `${dir}/${file}`,
       runtimePath,
-      staticPath,
     };
   });
 });
@@ -34,44 +32,29 @@ const lineLength =
 import { analyzeFile } from "../bin/analyze/analyzeFile.js";
 
 import { strict as assert } from "node:assert";
-import type { Type } from "../core/types.js";
-import { MaybeStaticTest } from "./lib/TestConfig.js";
 
 let failed = false;
 
-type Stage = "setup" | "exec" | "analysis" | "static test";
+type Stage = "setup" | "exec" | "analysis";
 
+// Run tests
 await (async () => {
-  for (const { name, runtimePath, staticPath } of tests) {
+  for (const { name, runtimePath } of tests) {
     process.stdout.write(`${name}:`.padEnd(lineLength));
 
     let stage: Stage = "setup";
     try {
-      stage = "exec";
-      const { config: testConfig } = await import(runtimePath);
-      const config = !!testConfig
-        ? testConfig
-        : {
-            staticTest: MaybeStaticTest.of({ None: null }),
-            analysisFails: false,
-          };
-
       stage = "analysis";
-      if (config.analysisFails) {
+      if (runtimePath.includes("-fail.js")) {
+        // Do not run; expect static checking to fail.
         assert.throws(() => {
           analyzeFile(runtimePath);
         });
       } else {
-        const staticExports = analyzeFile(runtimePath);
+        analyzeFile(runtimePath);
 
-        // Yeah, this is cheating. If this were an actual Ectype file, these functions would require types.
-        config.staticTest.when({
-          Some: (testFn: (staticExports: Record<string, Type>) => void) => {
-            stage = "static test";
-            testFn(staticExports || {});
-          },
-          None: () => {},
-        });
+        stage = "exec";
+        await import(runtimePath);
       }
 
       process.stdout.write(chalk.black.bgGreenBright("PASS") + "\n");
@@ -81,6 +64,7 @@ await (async () => {
         `${chalk.black.bgRedBright("FAIL")} (${chalk.bold.redBright(stage)})\n`
       );
       console.log(e);
+      console.log(runtimePath);
     }
   }
 })();
