@@ -527,15 +527,15 @@ export const bindParseTypeMethodCall = ({
             throw new Error(`'${method}' is not a valid variant operation.`);
           })
       )
-      .with({ baseType: "type" }, (typeType) =>
-        match(method)
-          .with("from", () => {
-            // Since Type is its own type (calling type() on Type returns Type), it has the same type (Type) as a runtime type-value, e.g. the return value of a fn([Type], Type),
-            // both cases will have the same type signature in the analyzer.
-            // To disambiguate, we have to manually check if the value being read is Type itself.
-            // This isn't perfect, since it won't work on e.g. variables with other names that reference Type.
-
-            if (typeVal.type === "ECIdentifier" && typeVal.value === "Type") {
+      .with({ baseType: "type" }, (typeType) => {
+        // Since Type is its own type (calling type() on Type returns Type), it has the same type (Type) as a runtime type-value, e.g. the return value of a fn([Type], Type),
+        // both cases will have the same type signature in the analyzer.
+        // To disambiguate, we have to manually check if the value being read is Type itself.
+        // This does depend on the user being unable to create their own new references to Type.
+        if (typeVal.type === "ECIdentifier" && typeVal.value === "Type") {
+          // Type constant
+          return match(method)
+            .with("from", () => {
               if (args.length !== 1) {
                 throw new Error(
                   `Expected exactly 1 argument to type.from but got ${args.length}`
@@ -551,18 +551,37 @@ export const bindParseTypeMethodCall = ({
               }
 
               return TypeType;
-            } else {
+            })
+            .with("conform", () => {
+              throw new Error(`Cannot call "conform" on Type.`);
+            })
+            .otherwise(() => {
+              throw new Error(`${method} is not a valid method on Type.`);
+            });
+        } else {
+          // runtime type-value
+          return match(method)
+            .with("from", () => {
               throw new Error(
                 `"from" cannot be used with a type that is not known statically.`
               );
-            }
-          })
-          .otherwise(() => {
-            throw new Error(
-              `${method} is not a valid method on an unknown type.`
-            );
-          })
-      )
+            })
+            .with("conform", () => {
+              if (args.length !== 1) {
+                throw new Error(
+                  `Expected exactly 1 argument to type.conform but got ${args.length}`
+                );
+              }
+
+              throw new Error("implementation in progress");
+            })
+            .otherwise(() => {
+              throw new Error(
+                `${method} is not a valid method on an unknown type.`
+              );
+            });
+        }
+      })
       .with({ baseType: "unknown" }, () =>
         match(method)
           .with("from", () => {
