@@ -26,7 +26,7 @@ const variant = (options: Record<string, Type>): VariantType => {
     valid,
     has: (name) => options.hasOwnProperty(name),
     get: (name) => options[name],
-    options: () => options,
+    options: () => Object.entries(options),
     tags: () => Object.keys(options),
     sub: (other) => {
       if (other.baseType === "unknown") {
@@ -64,7 +64,7 @@ const variant = (options: Record<string, Type>): VariantType => {
         return false;
       }
 
-      const otherOptions = Object.entries(other.options());
+      const otherOptions = other.options();
 
       if (otherOptions.length !== Object.entries(options).length) {
         return false;

@@ -36,7 +36,6 @@ const fn = (params: Type[], returns: Type): FnType => {
     const val = _val as TypedFunction;
 
     // Functions without param and return type tags are assumed to not match the fn type.
-    // contravariant on the parameter type, covariant on the return type
     return Boolean(
       val.__kparams__ &&
         val.__kreturns__ &&

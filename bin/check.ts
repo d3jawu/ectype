@@ -8,4 +8,10 @@ if (!process.argv[2]) {
 }
 
 const entryPoint = resolve(process.argv[2]);
-analyzeFile(entryPoint);
+
+try {
+  analyzeFile(entryPoint);
+} catch (e: any) {
+  console.log(`Error: ${e.message}`);
+  process.exit(1);
+}
