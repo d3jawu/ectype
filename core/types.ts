@@ -1,19 +1,4 @@
 "ectype:types";
-export type Option<T> =
-  | {
-      Some: T;
-      when: (
-        handlers: Record<string, (unwrapped?: unknown) => unknown>
-      ) => unknown;
-      toString: () => string;
-    }
-  | {
-      None: null;
-      when: (
-        handlers: Record<string, (unwrapped?: unknown) => unknown>
-      ) => unknown;
-      toString: () => string;
-    };
 
 export type Type =
   | UnknownType
@@ -43,7 +28,7 @@ export type Type =
 
 export type UnknownType = {
   from: (val: unknown) => unknown;
-  conform: (val: unknown) => Option<unknown>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => true;
   sub: (other: Type) => boolean;
   eq: (other: Type) => boolean;
@@ -53,7 +38,7 @@ export type UnknownType = {
 
 export type NullType = {
   from: (val: null) => null;
-  conform: (val: unknown) => Option<null>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   eq: (other: Type) => boolean;
@@ -63,7 +48,7 @@ export type NullType = {
 
 export type BoolType = {
   from: (val: boolean) => boolean;
-  conform: (val: unknown) => Option<boolean>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   eq: (other: Type) => boolean;
@@ -73,7 +58,7 @@ export type BoolType = {
 
 export type NumType = {
   from: (val: number) => number;
-  conform: (val: unknown) => Option<number>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   eq: (other: Type) => boolean;
@@ -83,7 +68,7 @@ export type NumType = {
 
 export type StrType = {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Option<string>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   sub: (other: Type) => boolean;
   eq: (other: Type) => boolean;
@@ -93,7 +78,7 @@ export type StrType = {
 
 export type FnType = {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Option<Function>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   params: () => Type[];
   returns: () => Type;
@@ -105,7 +90,7 @@ export type FnType = {
 
 export type VariantType = {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Option<{ [key: string]: any }>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   has: (name: string) => boolean;
   get: (name: string) => Type; // Internal only
@@ -120,7 +105,7 @@ export type VariantType = {
 
 export type TupleType = {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Option<unknown[]>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   field: (pos: number) => Type; // Internal only
   fields: () => Type[];
@@ -132,7 +117,7 @@ export type TupleType = {
 
 export type ArrayType = {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Option<unknown[]>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   contains: () => Type;
   sub: (other: Type) => boolean;
@@ -143,7 +128,7 @@ export type ArrayType = {
 
 export type StructType = {
   from: (val: unknown) => typeof val;
-  conform: (val: unknown) => Option<Record<string, any>>;
+  conform: (val: unknown) => unknown;
   valid: (val: unknown) => boolean;
   has: (key: string) => boolean;
   field: (key: string) => Type; // Internal only

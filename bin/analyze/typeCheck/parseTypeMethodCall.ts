@@ -531,6 +531,9 @@ export const bindParseTypeMethodCall = ({
           .with("get", () => {
             throw new Error(`variant.get cannot be used at runtime.`);
           })
+          .with("conform", () => {
+            throw new Error(`A variant type instance cannot be conformed.`);
+          })
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid variant operation.`);

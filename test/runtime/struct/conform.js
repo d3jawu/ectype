@@ -1,13 +1,12 @@
 "use ectype";
 
-import { Num } from "../../../core/primitives.js";
+import { Null, Num } from "../../../core/primitives.js";
 import { struct } from "../../../core/struct.js";
-
-import { None, someOf } from "../../../core/util.js";
 
 import { js } from "../../../core/js.js";
 
-import { strict as assert } from "node:assert";
+import { fn } from "../../../core/fn.js";
+import { ok } from "../../lib/assert.js";
 
 const Point = struct({
   x: Num,
@@ -19,16 +18,18 @@ const maybePoint = Point.conform({
   y: 30,
 });
 
-js(() => {
-  assert.deepEqual(
-    JSON.stringify(maybePoint),
-    JSON.stringify(
-      someOf({
-        x: 20,
-        y: 30,
-      })
-    )
-  );
+maybePoint.when({
+  Some: fn([Point], Null).from((p) => {
+    ok(p.x === 20);
+    ok(p.y === 30);
+    return null;
+  }),
+  None: fn([], Null).from(() => {
+    js(() => {
+      throw new Error(`expected Some but got None.`);
+    });
+    return null;
+  }),
 });
 
 const Vector = struct({
@@ -47,22 +48,20 @@ let maybeVector = Vector.conform({
   },
 });
 
-js(() => {
-  assert.deepEqual(
-    JSON.stringify(maybeVector),
-    JSON.stringify(
-      someOf({
-        start: {
-          x: 10,
-          y: 15,
-        },
-        end: {
-          x: 20,
-          y: 40,
-        },
-      })
-    )
-  );
+maybeVector.when({
+  Some: fn([Vector], Null).from((p) => {
+    ok(p.start.x === 10);
+    ok(p.start.y === 15);
+    ok(p.end.x === 20);
+    ok(p.end.y === 40);
+    return null;
+  }),
+  None: fn([], Null).from(() => {
+    js(() => {
+      throw new Error(`expected Some but got None.`);
+    });
+    return null;
+  }),
 });
 
 maybeVector = Vector.conform({
@@ -76,6 +75,14 @@ maybeVector = Vector.conform({
   },
 });
 
-js(() => {
-  assert.deepEqual(JSON.stringify(maybeVector), JSON.stringify(None));
+maybeVector.when({
+  Some: fn([], Null).from(() => {
+    js(() => {
+      throw new Error(`expected None but got Some.`);
+    });
+    return null;
+  }),
+  None: fn([], Null).from(() => {
+    return null;
+  }),
 });

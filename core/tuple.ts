@@ -1,7 +1,7 @@
 "ectype:tuple";
+import { Null } from "./primitives.js";
 import type { TupleType, Type } from "./types.js";
-
-import { None, someOf } from "./util.js";
+import { variant } from "./variant.js";
 
 const tuple = (fields: Type[]): TupleType => {
   const valid = (val: unknown) => {
@@ -16,7 +16,20 @@ const tuple = (fields: Type[]): TupleType => {
 
   return {
     from: (val) => val,
-    conform: (val) => (valid(val) ? someOf(val as unknown[]) : None),
+    conform(val) {
+      const MaybeType = variant({
+        Some: this,
+        None: Null,
+      });
+
+      return this.valid(val)
+        ? MaybeType.of({
+            Some: val,
+          })
+        : MaybeType.of({
+            None: null,
+          });
+    },
     valid,
     field: (pos) => fields[pos],
     fields: () => fields,

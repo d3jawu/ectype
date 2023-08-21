@@ -1,6 +1,7 @@
 "ectype:struct";
+import { Null } from "./primitives.js";
 import type { StructType, Type } from "./types.js";
-import { None, someOf } from "./util.js";
+import { variant } from "./variant.js";
 
 const struct = (shape: Record<string, Type>): StructType => {
   const valid = (val: unknown) => {
@@ -15,7 +16,20 @@ const struct = (shape: Record<string, Type>): StructType => {
 
   return {
     from: (val) => val,
-    conform: (val) => (valid(val) ? someOf(val as Record<string, any>) : None),
+    conform(val) {
+      const MaybeType = variant({
+        Some: this,
+        None: Null,
+      });
+
+      return this.valid(val)
+        ? MaybeType.of({
+            Some: val,
+          })
+        : MaybeType.of({
+            None: null,
+          });
+    },
     valid,
     has: (field) => shape.hasOwnProperty(field),
     field: (field) => shape[field],

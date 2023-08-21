@@ -8,13 +8,27 @@ import type {
   TypeType,
   UnknownType,
 } from "./types";
-import { None, someOf } from "./util.js";
+
+import { variant } from "./variant.js";
 
 // Unknown is the top type. It is analogous to `unknown` in TypeScript.
 const Unknown: UnknownType = {
   baseType: "unknown",
   from: (val) => val,
-  conform: (val: unknown) => someOf(val), // All values conform to Unknown.
+  conform(val) {
+    const MaybeType = variant({
+      Some: this,
+      None: Null,
+    });
+
+    return this.valid(val)
+      ? MaybeType.of({
+          Some: val,
+        })
+      : MaybeType.of({
+          None: null,
+        });
+  }, // All values conform to Unknown.
   valid: (val: unknown) => true, // All values are valid instances of Unknown.
   sub: (other: Type): boolean => other.baseType === "unknown", // Only Unknown is a subtype of Unknown.
   eq: (other) => other.baseType === "unknown",
@@ -24,7 +38,20 @@ const Unknown: UnknownType = {
 // Null is a type that only has one value, `null`.
 const Null: NullType = {
   from: (val) => val,
-  conform: (val) => (val === null ? someOf(null) : None),
+  conform(val) {
+    const MaybeType = variant({
+      Some: this,
+      None: Null,
+    });
+
+    return this.valid(val)
+      ? MaybeType.of({
+          Some: val,
+        })
+      : MaybeType.of({
+          None: null,
+        });
+  },
   valid: (val) => val === null,
   sub: (other) => other.baseType === "null" || other.baseType === "unknown",
   eq: (other) => other.baseType === "null",
@@ -34,7 +61,20 @@ const Null: NullType = {
 
 const Bool: BoolType = {
   from: (val) => val,
-  conform: (val) => (typeof val === "boolean" ? someOf(val) : None),
+  conform(val) {
+    const MaybeType = variant({
+      Some: this,
+      None: Null,
+    });
+
+    return this.valid(val)
+      ? MaybeType.of({
+          Some: val,
+        })
+      : MaybeType.of({
+          None: null,
+        });
+  },
   valid: (val) => typeof val === "boolean",
   sub: (other) =>
     other["baseType" as keyof typeof other] === "bool" ||
@@ -46,7 +86,20 @@ const Bool: BoolType = {
 
 const Num: NumType = {
   from: (val) => val,
-  conform: (val) => (typeof val === "number" ? someOf(val) : None),
+  conform(val) {
+    const MaybeType = variant({
+      Some: this,
+      None: Null,
+    });
+
+    return this.valid(val)
+      ? MaybeType.of({
+          Some: val,
+        })
+      : MaybeType.of({
+          None: null,
+        });
+  },
   valid: (val) => typeof val === "number",
   sub: (other) =>
     other["baseType" as keyof typeof other] === "num" ||
@@ -58,7 +111,20 @@ const Num: NumType = {
 
 const Str: StrType = {
   from: (val) => val,
-  conform: (val) => (typeof val === "string" ? someOf(val) : None),
+  conform(val) {
+    const MaybeType = variant({
+      Some: this,
+      None: Null,
+    });
+
+    return this.valid(val)
+      ? MaybeType.of({
+          Some: val,
+        })
+      : MaybeType.of({
+          None: null,
+        });
+  },
   valid: (val) => typeof val === "string",
   sub: (other) => other.baseType === "str" || other.baseType === "unknown",
   eq: (other) => other.baseType === "str",

@@ -349,6 +349,7 @@ export const bindTypeCheckExp = ({
 
                 return match(node.property.value)
                   .with("length", () => Num)
+                  .with("toString", () => fn([], Str))
                   .otherwise(() => {
                     throw new Error(`Array functions are not yet implemented.`);
                   });

@@ -1,7 +1,8 @@
 "ectype:fn";
+import { Null } from "./primitives.js";
 import { tuple } from "./tuple.js";
 import { FnType, Type } from "./types.js";
-import { None, someOf } from "./util.js";
+import { variant } from "./variant.js";
 
 // true if a <: b, false otherwise.
 const paramsSub = (a: Type[], b: Type[]): boolean => {
@@ -53,7 +54,20 @@ const fn = (params: Type[], returns: Type): FnType => {
       val.__kreturns__ = returns;
       return val;
     },
-    conform: (val) => (valid(val) ? someOf(val as Function) : None),
+    conform(val) {
+      const MaybeType = variant({
+        Some: this,
+        None: Null,
+      });
+
+      return this.valid(val)
+        ? MaybeType.of({
+            Some: val,
+          })
+        : MaybeType.of({
+            None: null,
+          });
+    },
     valid,
     params: () => params,
     returns: () => returns,

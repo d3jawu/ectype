@@ -1,6 +1,7 @@
 "ectype:array";
+import { Null } from "./primitives.js";
 import type { ArrayType, Type } from "./types.js";
-import { None, someOf } from "./util.js";
+import { variant } from "./variant.js";
 
 const array = (contains: Type): ArrayType => {
   const valid = (val: unknown) => {
@@ -13,7 +14,20 @@ const array = (contains: Type): ArrayType => {
 
   return {
     from: (val) => val,
-    conform: (val) => (valid(val) ? someOf(val as unknown[]) : None),
+    conform(val) {
+      const MaybeType = variant({
+        Some: this,
+        None: Null,
+      });
+
+      return this.valid(val)
+        ? MaybeType.of({
+            Some: val,
+          })
+        : MaybeType.of({
+            None: null,
+          });
+    },
     valid,
     contains: () => contains,
     eq: (other) => other.baseType === "array" && other.contains().eq(contains),

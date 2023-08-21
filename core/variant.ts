@@ -1,6 +1,5 @@
 "ectype:variant";
 import { Type, VariantType } from "./types.js";
-import { None, someOf } from "./util.js";
 
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
@@ -21,8 +20,11 @@ const variant = (options: Record<string, Type>): VariantType => {
 
   return {
     from: (val) => val,
-    conform: (val) =>
-      valid(val) ? someOf(val as { [key: string]: any }) : None,
+    conform: (val) => {
+      // This might be allowable later, maybe if variant instances are implemented as structs?
+      // But it's a can of recursive worms for now.
+      throw new Error(`A variant type instance cannot be conformed.`);
+    },
     valid,
     has: (name) => options.hasOwnProperty(name),
     get: (name) => options[name],
