@@ -22,10 +22,10 @@ const paramsEq = (a: Type[], b: Type[]): boolean => {
   return aTuple.eq(bTuple);
 };
 
-type TypedFunction = {
-  (): unknown;
-  __kparams__: Type[];
-  __kreturns__: Type;
+export type TypedFunction = {
+  (val: unknown): unknown;
+  __ecparams__: Type[];
+  __ecreturns__: Type;
 };
 
 const fn = (params: Type[], returns: Type): FnType => {
@@ -38,10 +38,10 @@ const fn = (params: Type[], returns: Type): FnType => {
 
     // Functions without param and return type tags are assumed to not match the fn type.
     return Boolean(
-      val.__kparams__ &&
-        val.__kreturns__ &&
-        paramsEq(val.__kparams__, params) &&
-        returns.eq(val.__kreturns__)
+      val.__ecparams__ &&
+        val.__ecreturns__ &&
+        paramsEq(val.__ecparams__, params) &&
+        returns.eq(val.__ecreturns__)
     );
   };
 
@@ -50,8 +50,8 @@ const fn = (params: Type[], returns: Type): FnType => {
     // we attach parameter and return types to the function value.
     from: (v) => {
       const val = v as TypedFunction;
-      val.__kparams__ = params;
-      val.__kreturns__ = returns;
+      val.__ecparams__ = params;
+      val.__ecreturns__ = returns;
       return val;
     },
     conform(val) {

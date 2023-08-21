@@ -47,7 +47,7 @@ await (async () => {
       continue;
     }
 
-    let stage = "analysis";
+    let stage: Stage = "analysis";
     try {
       if (runtimePath.includes("-fail.js")) {
         // Do not run; expect static checking to fail.

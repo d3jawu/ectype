@@ -1,6 +1,8 @@
 "ectype:variant";
 import { Type, VariantType } from "./types.js";
 
+import type { TypedFunction } from "./fn.js";
+
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
     if (typeof val !== "object" || val === null) {
@@ -53,9 +55,29 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       option[name] = val;
 
-      option.when = (
-        handlers: Record<string, (unwrappedVal: unknown) => void>
-      ) => (handlers[name] || handlers["_"])(val);
+      option.when = (handlers: Record<string, TypedFunction>) => {
+        if (!handlers[name]) {
+          return handlers["_"](val);
+        }
+
+        const params = handlers[name]?.__ecparams__;
+        if (!params) {
+          throw new Error(`Handler for ${name} was not created properly.`);
+        }
+
+        // If handler has no argument, no guarantees have been made so it's safe to call directly.
+        if (params.length === 0) {
+          return handlers[name](val);
+        }
+
+        const argType = params[0];
+
+        if (argType.valid(val)) {
+          return handlers[name](val);
+        } else {
+          return handlers["_"](val);
+        }
+      };
 
       option.toString = () => `${name}(${val})`;
 

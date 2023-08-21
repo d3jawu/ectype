@@ -65,6 +65,15 @@ NumPair.conform({
 
     return null;
   }),
+  None: fn([], Null).from(() => {
+    js(() => {
+      throw new Error(
+        `None() handler should not run when argument does not match variant`
+      );
+    });
+
+    return null;
+  }),
   _: fn([], Null).from(() => {
     return null;
   }),
