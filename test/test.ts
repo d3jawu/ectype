@@ -35,16 +35,20 @@ import { strict as assert } from "node:assert";
 
 let failed = false;
 
-type Stage = "setup" | "exec" | "analysis";
+type Stage = "exec" | "analysis";
 
 // Run tests
 await (async () => {
   for (const { name, runtimePath } of tests) {
     process.stdout.write(`${name}:`.padEnd(lineLength));
 
-    let stage: Stage = "setup";
+    if (runtimePath.includes("-skip.js")) {
+      process.stdout.write(chalk.black.bgYellowBright("SKIP") + "\n");
+      continue;
+    }
+
+    let stage = "analysis";
     try {
-      stage = "analysis";
       if (runtimePath.includes("-fail.js")) {
         // Do not run; expect static checking to fail.
         assert.throws(() => {
