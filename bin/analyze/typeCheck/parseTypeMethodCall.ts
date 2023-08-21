@@ -276,6 +276,9 @@ export const bindParseTypeMethodCall = ({
             return Bool;
           })
           .with("eq", handleEq)
+          .with("field", () => {
+            throw new Error(`tuple.field cannot be used at runtime.`);
+          })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid tuple operation.`);
           })
@@ -451,6 +454,9 @@ export const bindParseTypeMethodCall = ({
 
             return Str;
           })
+          .with("get", () => {
+            throw new Error(`struct.get cannot be used at runtime.`);
+          })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid struct operation.`);
           })
@@ -521,6 +527,9 @@ export const bindParseTypeMethodCall = ({
             }
 
             return variantType;
+          })
+          .with("get", () => {
+            throw new Error(`variant.get cannot be used at runtime.`);
           })
           .with("eq", handleEq)
           .otherwise(() => {
