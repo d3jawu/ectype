@@ -502,21 +502,21 @@ export const bindParseTypeMethodCall = ({
               throw new Error(`variant.of key must be a string.`);
             }
 
-            if (!variantType.has(key.value)) {
+            const valueType = typeCheckExp(value).ectype;
+
+            const [_, tagType] =
+              variantType.options().find(([name]) => name === key.value) || [];
+            if (!tagType) {
               throw new Error(
                 `${
                   key.value
-                } is not a valid option in variant ${variantType.toString()}`
+                } is not a valid tag in variant ${variantType.toString()}`
               );
             }
 
-            const valueType = typeCheckExp(value).ectype;
-
-            if (!valueType.eq(variantType.get(key.value))) {
+            if (!valueType.eq(tagType)) {
               throw new Error(
-                `Expected type ${variantType.get(
-                  key.value
-                )} for variant option ${key.value} but got ${valueType}`
+                `Expected type ${tagType} for variant option ${key.value} but got ${valueType}`
               );
             }
 
