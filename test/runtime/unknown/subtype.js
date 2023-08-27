@@ -1,10 +1,15 @@
 "use ectype";
-import { fn } from "../../../core/fn.js";
-import { struct } from "../../../core/struct.js";
-import { tuple } from "../../../core/tuple.js";
-import { variant } from "../../../core/variant.js";
-
-import { Bool, Null, Num, Str, Unknown } from "../../../core/primitives.js";
+import {
+  Bool,
+  Null,
+  Num,
+  Str,
+  Unknown,
+  fn,
+  struct,
+  tuple,
+  variant,
+} from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 

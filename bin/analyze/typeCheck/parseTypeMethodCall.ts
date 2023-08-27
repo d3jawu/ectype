@@ -5,7 +5,7 @@ import type {
 } from "../../types/ECNode";
 import type { Typed } from "../../types/Typed";
 
-import type { FnType } from "../../../core/types";
+import type { FnType, Type } from "../../../core/core";
 
 import type { bindTypeCheckExp } from "./typeCheckExp";
 import type { bindTypeCheckNode } from "./typeCheckNode";
@@ -16,12 +16,11 @@ import {
   Bool,
   Num,
   Str,
-  Type,
   Type as TypeType,
   Unknown,
-} from "../../../core/primitives.js";
-import { struct } from "../../../core/struct.js";
-import { tuple } from "../../../core/tuple.js";
+  struct,
+  tuple,
+} from "../../../core/core.js";
 
 import { option } from "../../../lib/option.js";
 
@@ -586,7 +585,7 @@ export const bindParseTypeMethodCall = ({
               }
 
               // A conform on a type-value only known at runtime is always an option(Type).
-              return option(Type);
+              return option(TypeType);
             })
             .with("toString", () => {
               // All types have a toString() method, so this is always safe.

@@ -2,14 +2,13 @@ import type { Scope } from "./typeCheck.js";
 
 import { ECExp, ECNode } from "../../types/ECNode.js";
 
-import { analyzeFile } from "../analyzeFile.js";
+import { analyzeFile, coreTypeMap } from "../analyzeFile.js";
 
 import { match } from "ts-pattern";
 
 import { dirname, join as joinPaths } from "path";
 
-import { Bool, Unknown } from "../../../core/primitives.js";
-import { Type } from "../../../core/types.js";
+import { Bool, Type } from "../../../core/core.js";
 import { bindTypeCheckExp } from "./typeCheckExp.js";
 
 export const bindTypeCheckNode = ({
@@ -34,8 +33,10 @@ export const bindTypeCheckNode = ({
         // Bypass imports from ectype itself
         if (node.source.value === "ectype") {
           node.specifiers.forEach((specifier) => {
-            // TODO make sure these are actually valid specifiers
-            scope.current.set(specifier.local.value, Unknown);
+            scope.current.set(
+              specifier.local.value,
+              coreTypeMap[specifier.local.value]
+            );
           });
 
           return;

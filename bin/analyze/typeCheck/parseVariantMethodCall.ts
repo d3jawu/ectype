@@ -1,11 +1,11 @@
-import type { Type } from "../../../core/types";
+import type { Type } from "../../../core/core";
 import type { ECCallExpression, ECVariantMethodCall } from "../../types/ECNode";
 import type { Typed } from "../../types/Typed";
 import type { bindTypeCheckExp } from "./typeCheckExp";
 
 import { match } from "ts-pattern";
 
-import { Str, Unknown } from "../../../core/primitives.js";
+import { Str, Unknown } from "../../../core/core.js";
 
 export const bindParseVariantMethodCall = ({
   typeCheckExp,

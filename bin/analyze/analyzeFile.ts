@@ -1,15 +1,27 @@
+import type { Type } from "../../core/core.js";
+
 import { parseFileSync } from "@swc/core";
 import { lower } from "./lower.js";
 import { typeCheck } from "./typeCheck/typeCheck.js";
 import { typeValFrom } from "./typeValFrom.js";
 
-import * as primitives from "../../core/primitives.js";
-import type { Type } from "../../core/types.js";
+import * as core from "../../core/core.js";
 
-const primitiveTypeVals = Object.entries(primitives).reduce(
-  (acc: Record<string, Type>, [k, v]) => {
-    acc[k] = typeValFrom(v);
-    return acc;
+// Core type map, used for introducing Ectype core types into a scope.
+export const coreTypeMap = Object.entries(core).reduce(
+  (a: Record<string, Type>, [k, v]) => {
+    if (
+      k.charAt(0) === k.charAt(0).toUpperCase() &&
+      typeof v !== "function" // For TypeScript's sake
+    ) {
+      // For concrete types, generate a type value.
+      a[k] = typeValFrom(v);
+    } else {
+      // For type factory functions, just mark them unknown (the functions themselves are never type-checked, they just need to be in scope.)
+      a[k] = core.Unknown;
+    }
+
+    return a;
   },
   {}
 );
@@ -53,16 +65,8 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
 
   // Ectype library file, imported directly
   // (This is an edge case, usually the user will import the "ectype" package instead of importing directly from a file within the package)
-  if (initialString.startsWith("ectype:")) {
-    const suffix = ast[0].expression.value.split(":")[1];
-
-    if (suffix === "primitives") {
-      return primitiveTypeVals;
-    }
-
-    return {
-      [suffix]: primitives.Unknown,
-    };
+  if (initialString === "ectype:core") {
+    return coreTypeMap;
   }
 
   // Only type-check a file if it is declared as an ectype file.

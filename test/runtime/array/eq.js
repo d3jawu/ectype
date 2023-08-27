@@ -1,8 +1,6 @@
 "use ectype";
 
-import { array } from "../../../core/array.js";
-import { Num, Unknown } from "../../../core/primitives.js";
-import { struct } from "../../../core/struct.js";
+import { Num, Unknown, array, struct } from "../../../core/core.js";
 import { ok } from "../../lib/assert.js";
 
 const A = array(Num);

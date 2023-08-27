@@ -1,6 +1,5 @@
 "use ectype";
-import { tuple } from "../../../core/tuple.js";
-import { Num, Str } from "../../../core/primitives.js";
+import { Num, Str, tuple } from "../../../core/core.js";
 
 const MyTuple = tuple([Num, Str]);
 

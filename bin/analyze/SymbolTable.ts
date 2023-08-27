@@ -1,4 +1,4 @@
-import { Type } from "../../core/types.js";
+import type { Type } from "../../core/core";
 
 export class SymbolTable {
   parent: SymbolTable | null;

@@ -1,7 +1,7 @@
 "use ectype";
 
-import { Null, Num, Str } from "../../../core/primitives.js";
-import { variant } from "../../../core/variant.js";
+import { Null, Num, Str, variant } from "../../../core/core.js";
+
 import { ok } from "../../lib/assert.js";
 
 const A = variant({ Some: Num, None: Null });

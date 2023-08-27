@@ -13,11 +13,11 @@ import type {
   ECVariantMethodCall,
 } from "../../types/ECNode";
 
+import type { Type } from "../../../core/core.js";
 import type { Typed, TypedExp } from "../../types/Typed";
 
 import type { Scope } from "./typeCheck";
 
-import { fn } from "../../../core/fn.js";
 import {
   Bool,
   Null,
@@ -25,8 +25,8 @@ import {
   Str,
   Type as TypeType,
   Unknown,
-} from "../../../core/primitives.js";
-import { Type } from "../../../core/types.js";
+  fn,
+} from "../../../core/core.js";
 
 import { bindParseTypeDeclaration } from "./parseTypeDeclaration.js";
 import { bindParseTypeMethodCall } from "./parseTypeMethodCall.js";

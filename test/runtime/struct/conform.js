@@ -1,11 +1,7 @@
 "use ectype";
 
-import { Null, Num } from "../../../core/primitives.js";
-import { struct } from "../../../core/struct.js";
+import { Null, Num, fn, js, struct } from "../../../core/core.js";
 
-import { js } from "../../../core/js.js";
-
-import { fn } from "../../../core/fn.js";
 import { ok } from "../../lib/assert.js";
 
 const Point = struct({

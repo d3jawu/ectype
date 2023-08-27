@@ -1,4 +1,4 @@
-import type { Type } from "../../../core/types";
+import type { Type } from "../../../core/core";
 import type {
   ECCallExpression,
   ECExp,
@@ -11,13 +11,8 @@ import { typeValFrom } from "../typeValFrom.js";
 
 import { bindTypeCheckExp } from "./typeCheckExp";
 
-import { array } from "../../../core/array.js";
-import { fn } from "../../../core/fn.js";
-import { struct } from "../../../core/struct.js";
-import { tuple } from "../../../core/tuple.js";
-import { variant } from "../../../core/variant.js";
-
 import { match } from "ts-pattern";
+import { array, fn, struct, tuple, variant } from "../../../core/core.js";
 
 const isTypeName = (name: string): boolean =>
   ["fn", "tuple", "array", "variant", "struct"].includes(name);

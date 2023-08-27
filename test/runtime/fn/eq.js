@@ -1,7 +1,6 @@
 "use ectype";
 
-import { fn } from "../../../core/fn.js";
-import { Num, Str } from "../../../core/primitives.js";
+import { fn, Num, Str } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 

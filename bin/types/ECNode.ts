@@ -20,7 +20,7 @@ import type {
   TemplateElement,
 } from "@swc/core";
 
-import type { Type } from "../../core/types";
+import type { Type } from "../../core/core";
 import type { ECPattern } from "./ECPattern";
 
 export type ECNode = ECExp | ECStatement;

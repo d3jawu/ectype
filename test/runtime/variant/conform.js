@@ -1,8 +1,6 @@
 "use ectype";
-import { fn } from "../../../core/fn.js";
-import { js } from "../../../core/js.js";
-import { Null, Str } from "../../../core/primitives.js";
-import { variant } from "../../../core/variant.js";
+import { fn, js, Null, Str, variant } from "../../../core/core.js";
+
 import { ok } from "../../lib/assert.js";
 
 const MaybeStr = variant({

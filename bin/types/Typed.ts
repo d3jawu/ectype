@@ -1,4 +1,4 @@
-import type { Type } from "../../core/types";
+import type { Type } from "../../core/core";
 import type {
   ECExp,
   ECJSCall,

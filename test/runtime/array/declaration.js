@@ -1,6 +1,5 @@
 "use ectype";
-import { array } from "../../../core/array.js";
-import { Num } from "../../../core/primitives.js";
+import { array, Num } from "../../../core/core.js";
 
 const NumArray = array(Num);
 

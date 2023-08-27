@@ -1,6 +1,6 @@
 "use ectype";
 
-import { Bool, Null, Num, Str, Unknown } from "../../../core/primitives.js";
+import { Bool, Null, Num, Str, Unknown } from "../../../core/core.js";
 import { ok } from "../../lib/assert.js";
 
 ok(Unknown.eq(Unknown));

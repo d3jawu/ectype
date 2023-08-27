@@ -1,9 +1,6 @@
 "use ectype";
 
-import { fn } from "../../../core/fn.js";
-import { js } from "../../../core/js.js";
-import { Null, Num, Str, Type } from "../../../core/primitives.js";
-import { struct } from "../../../core/struct.js";
+import { Null, Num, Str, Type, fn, js, struct } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 const pair = fn([Type], Type).from((T) =>

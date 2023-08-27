@@ -10,5 +10,5 @@
     "allowJs": true,
     "removeComments": true
   },
-  "include": ["core/**/*", "bin/**/*", "test/**/*", "lib/**/*", "index.ts"]
+  "include": ["core/**/*", "bin/**/*", "test/**/*", "lib/**/*"]
 }

@@ -1,7 +1,5 @@
 "use ectype";
-import { array } from "../../../core/array.js";
-import { Num } from "../../../core/primitives.js";
-import { struct } from "../../../core/struct.js";
+import { array, Num, struct } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 

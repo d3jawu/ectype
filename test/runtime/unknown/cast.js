@@ -1,5 +1,5 @@
 "use ectype";
 
-import { Unknown } from "../../../core/primitives.js";
+import { Unknown } from "../../../core/core.js";
 
 const A = Unknown.from(10);
