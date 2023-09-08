@@ -1,6 +1,6 @@
 "use ectype";
 
-import { Null, Num, fn, js, struct } from "../../../core/core.js";
+import { Bool, Num, fn, struct } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 
@@ -14,19 +14,18 @@ const maybePoint = Point.conform({
   y: 30,
 });
 
-maybePoint.when({
-  Some: fn([Point], Null).from((p) => {
-    ok(p.x === 20);
-    ok(p.y === 30);
-    return null;
-  }),
-  None: fn([], Null).from(() => {
-    js(() => {
-      throw new Error(`expected Some but got None.`);
-    });
-    return null;
-  }),
-});
+ok(
+  maybePoint.when({
+    Some: fn([Point], Bool).from((p) => {
+      ok(p.x === 20);
+      ok(p.y === 30);
+      return true;
+    }),
+    None: fn([], Bool).from(() => {
+      return false;
+    }),
+  })
+);
 
 const Vector = struct({
   start: Point,
@@ -44,21 +43,20 @@ let maybeVector = Vector.conform({
   },
 });
 
-maybeVector.when({
-  Some: fn([Vector], Null).from((p) => {
-    ok(p.start.x === 10);
-    ok(p.start.y === 15);
-    ok(p.end.x === 20);
-    ok(p.end.y === 40);
-    return null;
-  }),
-  None: fn([], Null).from(() => {
-    js(() => {
-      throw new Error(`expected Some but got None.`);
-    });
-    return null;
-  }),
-});
+ok(
+  maybeVector.when({
+    Some: fn([Vector], Bool).from((p) => {
+      ok(p.start.x === 10);
+      ok(p.start.y === 15);
+      ok(p.end.x === 20);
+      ok(p.end.y === 40);
+      return true;
+    }),
+    None: fn([], Bool).from(() => {
+      return false;
+    }),
+  })
+);
 
 maybeVector = Vector.conform({
   start: {
@@ -71,14 +69,13 @@ maybeVector = Vector.conform({
   },
 });
 
-maybeVector.when({
-  Some: fn([], Null).from(() => {
-    js(() => {
-      throw new Error(`expected None but got Some.`);
-    });
-    return null;
-  }),
-  None: fn([], Null).from(() => {
-    return null;
-  }),
-});
+ok(
+  maybeVector.when({
+    Some: fn([], Bool).from(() => {
+      return false;
+    }),
+    None: fn([], Bool).from(() => {
+      return true;
+    }),
+  })
+);

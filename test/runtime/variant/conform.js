@@ -1,5 +1,5 @@
 "use ectype";
-import { fn, js, Null, Str, variant } from "../../../core/core.js";
+import { Bool, fn, Null, Str, variant } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 
@@ -10,32 +10,28 @@ const MaybeStr = variant({
 
 const someStr = MaybeStr.of({ Some: "abc" });
 
-someStr.when({
-  Some: fn([Str], Null).from((s) => {
-    ok(s === "abc");
-    return null;
-  }),
-  None: fn([], Null).from(() => {
-    js(() => {
-      throw new Error(`This branch should not run`);
-    });
-
-    return null;
-  }),
-});
+ok(
+  someStr.when({
+    Some: fn([Str], Bool).from((s) => {
+      ok(s === "abc");
+      return true;
+    }),
+    None: fn([], Bool).from(() => {
+      return false;
+    }),
+  })
+);
 
 const noneStr = MaybeStr.of({ None: null });
 
-noneStr.when({
-  Some: fn([Str], Null).from((s) => {
-    js(() => {
-      throw new Error(`This branch should not run`);
-    });
-
-    return null;
-  }),
-  None: fn([Null], Null).from((n) => {
-    ok(n === null);
-    return null;
-  }),
-});
+ok(
+  noneStr.when({
+    Some: fn([Str], Bool).from((s) => {
+      return false;
+    }),
+    None: fn([Null], Bool).from((n) => {
+      ok(n === null);
+      return true;
+    }),
+  })
+);

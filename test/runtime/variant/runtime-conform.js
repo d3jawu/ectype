@@ -1,6 +1,6 @@
 "use ectype";
 
-import { Null, Num, Str, Type, fn, js, struct } from "../../../core/core.js";
+import { Bool, Num, Str, Type, fn, struct } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 const pair = fn([Type], Type).from((T) =>
@@ -13,84 +13,66 @@ const pair = fn([Type], Type).from((T) =>
 const NumPair = pair(Num);
 
 // Correct handler arg type, correct incoming value
-NumPair.conform({
-  a: 10,
-  b: 20,
-}).when({
-  Some: fn([struct({ a: Num, b: Num })], Null).from((p) => {
-    ok(p.a === 10);
-    ok(p.b === 20);
-    return null;
-  }),
-  _: fn([], Null).from(() => {
-    js(() => {
-      throw new Error(`wildcard handler should not run when type is correct`);
-    });
-    return null;
-  }),
-});
+ok(
+  NumPair.conform({
+    a: 10,
+    b: 20,
+  }).when({
+    Some: fn([struct({ a: Num, b: Num })], Bool).from((p) => {
+      ok(p.a === 10);
+      ok(p.b === 20);
+      return true;
+    }),
+    _: fn([], Bool).from(() => {
+      return false;
+    }),
+  })
+);
 
 // Correct handler arg type, wrong incoming value.
-NumPair.conform({
-  a: "abc",
-  b: "xyz",
-}).when({
-  Some: fn([struct({ a: Num, b: Num })], Null).from((p) => {
-    js(() => {
-      throw new Error(
-        `Some() handler should not run when value is of wrong type`
-      );
-    });
-    return null;
-  }),
-  _: fn([], Null).from(() => {
-    return null;
-  }),
-});
+ok(
+  NumPair.conform({
+    a: "abc",
+    b: "xyz",
+  }).when({
+    Some: fn([struct({ a: Num, b: Num })], Bool).from((p) => {
+      return false;
+    }),
+    _: fn([], Bool).from(() => {
+      return true;
+    }),
+  })
+);
 
 // Wrong arg type should fall back to wildcard.
-NumPair.conform({
-  a: 10,
-  b: 20,
-}).when({
-  Some: fn([struct({ x: Str, y: Str })], Null).from((p) => {
-    js(() => {
-      throw new Error(
-        `Some() handler should not run when argument does not match variant`
-      );
-    });
-
-    return null;
-  }),
-  None: fn([], Null).from(() => {
-    js(() => {
-      throw new Error(
-        `None() handler should not run when argument does not match variant`
-      );
-    });
-
-    return null;
-  }),
-  _: fn([], Null).from(() => {
-    return null;
-  }),
-});
+ok(
+  NumPair.conform({
+    a: 10,
+    b: 20,
+  }).when({
+    Some: fn([struct({ x: Str, y: Str })], Bool).from((p) => {
+      return false;
+    }),
+    None: fn([], Bool).from(() => {
+      return false;
+    }),
+    _: fn([], Bool).from(() => {
+      return true;
+    }),
+  })
+);
 
 // Wrong arg type should fall back to wildcard even if incoming value matches.
-NumPair.conform({
-  x: "abc",
-  y: "xyz",
-}).when({
-  Some: fn([struct({ x: Str, y: Str })], Null).from((p) => {
-    js(() => {
-      throw new Error(
-        `Some() handler should not run when argument does not match variant, even if incoming value matches handler argument.`
-      );
-    });
-
-    return null;
-  }),
-  _: fn([], Null).from(() => {
-    return null;
-  }),
-});
+ok(
+  NumPair.conform({
+    x: "abc",
+    y: "xyz",
+  }).when({
+    Some: fn([struct({ x: Str, y: Str })], Bool).from((p) => {
+      return false;
+    }),
+    _: fn([], Bool).from(() => {
+      return true;
+    }),
+  })
+);
