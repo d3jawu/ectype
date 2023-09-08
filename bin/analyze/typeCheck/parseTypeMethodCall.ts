@@ -342,6 +342,24 @@ export const bindParseTypeMethodCall = ({
             throw new Error(`'${method}' is not a valid array operation.`);
           })
       )
+      .with({ baseType: "cond" }, (condType) =>
+        match(method)
+          .with("from", () => {
+            throw new Error(`"from" cannot be used on a conditional type.`);
+          })
+          .with("conform", () => {
+            if (args.length !== 1) {
+              throw new Error(
+                `Expected exactly 1 argument to cond.conform but got ${args.length}`
+              );
+            }
+
+            return option(condType);
+          })
+          .otherwise(() => {
+            throw new Error(`'${method}' is not a valid array operation.`);
+          })
+      )
       .with({ baseType: "struct" }, (structType) =>
         match(method)
           .with("from", () => {

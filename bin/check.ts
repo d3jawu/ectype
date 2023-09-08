@@ -10,7 +10,10 @@ if (!process.argv[2]) {
 const entryPoint = resolve(process.argv[2]);
 
 try {
-  analyzeFile(entryPoint);
+  const res = analyzeFile(entryPoint);
+  if (res === null) {
+    console.log(`Warning: entrypoint ${entryPoint} is not an Ectype file.`);
+  }
 } catch (e: any) {
   console.log(`Error: ${e.message}`);
   process.exit(1);

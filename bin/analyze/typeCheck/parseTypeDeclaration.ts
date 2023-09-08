@@ -12,10 +12,10 @@ import { typeValFrom } from "../typeValFrom.js";
 import { bindTypeCheckExp } from "./typeCheckExp";
 
 import { match } from "ts-pattern";
-import { array, fn, struct, tuple, variant } from "../../../core/core.js";
+import { array, cond, fn, struct, tuple, variant } from "../../../core/core.js";
 
 const isTypeName = (name: string): boolean =>
-  ["fn", "tuple", "array", "variant", "struct"].includes(name);
+  ["fn", "tuple", "array", "variant", "struct", "cond"].includes(name);
 
 export const bindParseTypeDeclaration = ({
   resolveTypeExp,
@@ -182,8 +182,28 @@ export const bindParseTypeDeclaration = ({
 
         return typeValFrom(struct(shape));
       })
-      .otherwise(() => {
-        throw new Error("Unreachable");
+      .with("cond", () => {
+        if (args.length !== 2) {
+          throw new Error(
+            `Expected exactly 2 arguments to cond() but got ${args.length}`
+          );
+        }
+
+        const parentType = resolveTypeExp(args[0].expression);
+
+        const predicate = args[1].expression;
+        if (predicate.type !== "ECArrowFunctionExpression") {
+          throw new Error(`cond() predicate must be a function.`);
+        }
+
+        return typeValFrom(
+          cond(parentType, () => {
+            throw new Error(`Cannot use cond predicate at analysis-time.`);
+          })
+        );
+      })
+      .otherwise((t) => {
+        throw new Error(`Unimplemented type: ${t}`);
       });
 
     return {

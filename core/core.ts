@@ -8,13 +8,14 @@ export type Type =
   | StrType
   | TypeType
   | ArrayType
+  | CondType
   | FnType
   | StructType
   | TupleType
   | VariantType;
 
 export type UnknownType = {
-  from: (val: unknown) => unknown;
+  from: (val: unknown) => typeof val;
   conform: (val: unknown) => unknown;
   valid: (val: unknown) => true;
   sub: (other: Type) => boolean;
@@ -72,6 +73,16 @@ export type ArrayType = {
   eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "array";
+};
+
+export type CondType = {
+  from: (val: unknown) => typeof val; // Technically "never", since from cannot be used with cond.
+  conform: (val: unknown) => unknown;
+  valid: (val: unknown) => boolean;
+  sub: (other: Type) => boolean;
+  eq: (other: Type) => boolean;
+  toString: () => string;
+  baseType: "cond";
 };
 
 export type FnType = {
@@ -316,6 +327,36 @@ const array = (contains: Type): ArrayType => {
     },
     toString: () => `${contains}[]`,
     baseType: "array",
+  };
+};
+
+const cond = (type: Type, predicate: (val: unknown) => boolean): CondType => {
+  const valid = (val: unknown): boolean => type.valid(val) && predicate(val);
+
+  return {
+    from: (val) => val,
+    conform(val) {
+      const MaybeType = variant({
+        Some: this,
+        None: Null,
+      });
+
+      return this.valid(val)
+        ? MaybeType.of({
+            Some: val,
+          })
+        : MaybeType.of({
+            None: null,
+          });
+    },
+    valid,
+    sub: (other) => other.eq(type), // This type is a subtype only of the type that it wraps around.
+    eq(other) {
+      // Because function equality is a dubious concept to begin with, the only form of type equality supported is reference equality.
+      return other === this;
+    },
+    toString: () => `cond(${type.toString()})`,
+    baseType: "cond",
   };
 };
 
@@ -646,6 +687,7 @@ export {
   Type,
   Unknown,
   array,
+  cond,
   fn,
   js,
   struct,

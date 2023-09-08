@@ -347,12 +347,18 @@ export const bindTypeCheckExp = ({
               if (node.property.type === "Identifier") {
                 // must be an array member like length, map, etc.
 
-                return match(node.property.value)
-                  .with("length", () => Num)
-                  .with("toString", () => fn([], Str))
-                  .otherwise(() => {
-                    throw new Error(`Array functions are not yet implemented.`);
-                  });
+                return (
+                  match(node.property.value)
+                    // TODO somehow generate string methods from the TypeScript definition.
+                    .with("length", () => Num)
+                    .with("includes", () => fn([Str], Bool))
+                    .with("toString", () => fn([], Str))
+                    .otherwise(() => {
+                      throw new Error(
+                        `Array functions are not yet implemented.`
+                      );
+                    })
+                );
               } else if (node.property.type === "ECComputed") {
                 // field access; must be a number.
 
