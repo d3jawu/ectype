@@ -17,7 +17,7 @@ ok(
   NumPair.conform({
     a: 10,
     b: 20,
-  }).when({
+  }).match({
     Some: fn([struct({ a: Num, b: Num })], Bool).from((p) => {
       ok(p.a === 10);
       ok(p.b === 20);
@@ -34,7 +34,7 @@ ok(
   NumPair.conform({
     a: "abc",
     b: "xyz",
-  }).when({
+  }).match({
     Some: fn([struct({ a: Num, b: Num })], Bool).from((p) => {
       return false;
     }),
@@ -49,7 +49,7 @@ ok(
   NumPair.conform({
     a: 10,
     b: 20,
-  }).when({
+  }).match({
     Some: fn([struct({ x: Str, y: Str })], Bool).from((p) => {
       return false;
     }),
@@ -67,7 +67,7 @@ ok(
   NumPair.conform({
     x: "abc",
     y: "xyz",
-  }).when({
+  }).match({
     Some: fn([struct({ x: Str, y: Str })], Bool).from((p) => {
       return false;
     }),

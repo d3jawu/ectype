@@ -12,7 +12,7 @@ const maybePoint = Point2D.conform({
   y: 20,
 });
 
-maybePoint.when({
+maybePoint.match({
   Some: fn([], Null).from(() => {
     return null;
   }),

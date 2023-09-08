@@ -15,7 +15,7 @@ const maybePoint = Point.conform({
 });
 
 ok(
-  maybePoint.when({
+  maybePoint.match({
     Some: fn([Point], Bool).from((p) => {
       ok(p.x === 20);
       ok(p.y === 30);
@@ -44,7 +44,7 @@ let maybeVector = Vector.conform({
 });
 
 ok(
-  maybeVector.when({
+  maybeVector.match({
     Some: fn([Vector], Bool).from((p) => {
       ok(p.start.x === 10);
       ok(p.start.y === 15);
@@ -70,7 +70,7 @@ maybeVector = Vector.conform({
 });
 
 ok(
-  maybeVector.when({
+  maybeVector.match({
     Some: fn([], Bool).from(() => {
       return false;
     }),

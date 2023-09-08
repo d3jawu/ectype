@@ -12,7 +12,7 @@ let myStr = "";
 
 let someStr = MaybeStr.of({ Some: "asdf" });
 
-myStr = someStr.when({
+myStr = someStr.match({
   Some: fn([Str], Str).from((str) => str),
   _: fn([], Str).from(() => ""),
 });
@@ -21,7 +21,7 @@ ok(myStr === "asdf");
 
 someStr = MaybeStr.of({ None: null });
 
-myStr = someStr.when({
+myStr = someStr.match({
   Some: fn([Str], Str).from((str) => str),
   _: fn([], Str).from(() => ""),
 });

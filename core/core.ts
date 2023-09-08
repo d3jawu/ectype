@@ -627,7 +627,7 @@ const variant = (options: Record<string, Type>): VariantType => {
 
       option[name] = val;
 
-      option.when = (handlers: Record<string, TypedFunction>) => {
+      option.match = (handlers: Record<string, TypedFunction>) => {
         if (!handlers[name]) {
           return handlers["_"](val);
         }

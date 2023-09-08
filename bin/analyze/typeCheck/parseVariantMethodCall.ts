@@ -36,17 +36,17 @@ export const bindParseVariantMethodCall = ({
     const args = callExp.arguments;
 
     return match(method)
-      .with("when", (): Typed<ECVariantMethodCall> => {
+      .with("match", (): Typed<ECVariantMethodCall> => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to variant.when but got ${args.length}`
+            `Expected exactly 1 argument to variant.match but got ${args.length}`
           );
         }
 
         const handlersMap = args[0].expression;
         if (handlersMap.type !== "ECObjectExpression") {
           throw new Error(
-            `Expected argument to variant when to be an object literal.`
+            `Expected argument to variant match to be an object literal.`
           );
         }
 
@@ -63,12 +63,12 @@ export const bindParseVariantMethodCall = ({
         handlersMap.properties.forEach((prop, i) => {
           if (prop.type === "ECSpreadElement") {
             throw new Error(
-              `Spread ... expressions in "when" are not yet implemented.`
+              `Spread ... expressions in "match" are not yet implemented.`
             );
           }
 
           if (prop.type !== "ECKeyValueProperty") {
-            throw new Error(`Expected a key-value property in "when".`);
+            throw new Error(`Expected a key-value property in "match".`);
           }
 
           if (
@@ -76,7 +76,7 @@ export const bindParseVariantMethodCall = ({
             prop.key.type !== "StringLiteral"
           ) {
             throw new Error(
-              `Handler key in "when" must be an identifier or string literal.`
+              `Handler key in "match" must be an identifier or string literal.`
             );
           }
 
@@ -86,11 +86,11 @@ export const bindParseVariantMethodCall = ({
 
           const handlerType = typeCheckExp(prop.value).ectype;
           if (handlerType.baseType !== "fn") {
-            throw new Error(`Handler for "when" must be a function.`);
+            throw new Error(`Handler for "match" must be a function.`);
           }
 
           // TypeScript infers that this can only be Type, why do I have to specify that it can also be null?
-          const handlerArgType: Type | null = handlerType.params()[0] || null; // The argument for a "when" handler is optional.
+          const handlerArgType: Type | null = handlerType.params()[0] || null; // The argument for a "match" handler is optional.
           const handlerReturnType = handlerType.returns();
 
           if (i === 0) {
@@ -98,7 +98,7 @@ export const bindParseVariantMethodCall = ({
           } else if (!seenReturnType.eq(handlerReturnType)) {
             // Ensure that all return types match.
             throw new Error(
-              `Return types for "when" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`
+              `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`
             );
           }
 
@@ -147,7 +147,7 @@ export const bindParseVariantMethodCall = ({
             tags.forEach((expectedTag) => {
               if (!seenProps.includes(expectedTag)) {
                 throw new Error(
-                  `"when" handlers are not exhaustive (missing ${expectedTag})`
+                  `"match" handlers are not exhaustive (missing ${expectedTag})`
                 );
               }
             });
@@ -158,7 +158,7 @@ export const bindParseVariantMethodCall = ({
           type: "ECVariantMethodCall",
           span: callExp.span,
           variant: variantVal,
-          method: "when",
+          method: "match",
           arguments: args.map((arg) => arg.expression),
 
           ectype: seenReturnType,
@@ -175,7 +175,7 @@ export const bindParseVariantMethodCall = ({
           type: "ECVariantMethodCall",
           span: callExp.span,
           variant: variantVal,
-          method: "when",
+          method: "match",
           arguments: [],
 
           ectype: Str,

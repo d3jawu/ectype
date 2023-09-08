@@ -11,7 +11,7 @@ const MaybeStr = variant({
 const someStr = MaybeStr.of({ Some: "abc" });
 
 ok(
-  someStr.when({
+  someStr.match({
     Some: fn([Str], Bool).from((s) => {
       ok(s === "abc");
       return true;
@@ -25,7 +25,7 @@ ok(
 const noneStr = MaybeStr.of({ None: null });
 
 ok(
-  noneStr.when({
+  noneStr.match({
     Some: fn([Str], Bool).from((s) => {
       return false;
     }),

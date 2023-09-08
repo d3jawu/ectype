@@ -8,7 +8,7 @@ const NumArray = array(Num);
 const numArray = NumArray.conform([1, 2, 3]);
 
 ok(
-  numArray.when({
+  numArray.match({
     Some: fn([NumArray], Bool).from((arr) => {
       ok(arr[0] === 1);
       return true;

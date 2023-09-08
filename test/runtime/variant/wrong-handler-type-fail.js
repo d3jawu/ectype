@@ -12,7 +12,7 @@ const maybePoint = Point2D.conform({
   y: 20,
 });
 
-maybePoint.when({
+maybePoint.match({
   Some: fn([struct({ a: Str, b: Str })], Null).from((pair) => {
     pair.a = "oh no"; // If allowed, this would be a static guarantee of field of the wrong type
     return null;

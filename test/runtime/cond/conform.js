@@ -7,7 +7,7 @@ const Email = cond(Str, (val) => {
 });
 
 ok(
-  Email.conform("a@b").when({
+  Email.conform("a@b").match({
     Some: fn([], Bool).from(() => {
       return true;
     }),
@@ -18,7 +18,7 @@ ok(
 );
 
 ok(
-  Email.conform("ab").when({
+  Email.conform("ab").match({
     Some: fn([], Bool).from(() => {
       return false;
     }),

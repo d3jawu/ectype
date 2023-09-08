@@ -13,7 +13,7 @@ const maybePoint = Point2D.conform({
 });
 
 // Handlers cannot have different return types.
-maybePoint.when({
+maybePoint.match({
   Some: fn([], Str).from(() => {
     return "";
   }),
