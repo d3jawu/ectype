@@ -20,6 +20,7 @@ import type { Scope } from "./typeCheck";
 
 import {
   Bool,
+  Deferred,
   Null,
   Num,
   Str,
@@ -31,6 +32,8 @@ import {
 import { bindParseTypeDeclaration } from "./parseTypeDeclaration.js";
 import { bindParseTypeMethodCall } from "./parseTypeMethodCall.js";
 import { bindParseVariantMethodCall } from "./parseVariantMethodCall.js";
+
+import { typeValFrom } from "../typeValFrom.js";
 
 import { match } from "ts-pattern";
 import { ECPattern } from "../../types/ECPattern.js";
@@ -256,6 +259,7 @@ export const bindTypeCheckExp = ({
 
           const fnTypeParams = fnType.params();
 
+          // Check argument count.
           if (node.arguments.length !== fnTypeParams.length) {
             throw new Error(
               `Expected ${fnType.params().length} arguments but got ${
@@ -264,6 +268,7 @@ export const bindTypeCheckExp = ({
             );
           }
 
+          // Check argument types.
           const typedArgs: Typed<ECArgument>[] = node.arguments.map(
             (arg, i) => {
               const typedArg = typeCheckExp(arg.expression);
@@ -282,11 +287,21 @@ export const bindTypeCheckExp = ({
             }
           );
 
+          // If return type is a Type, try to resolve it.
+          const returnBaseType = fnType.returns().baseType;
+          const returnType =
+            returnBaseType === "type"
+              ? (() => {
+                  // For now, all function types resolve to Deferred.
+                  return typeValFrom(Deferred);
+                })()
+              : fnType.returns();
+
           return {
             ...node,
             callee: typedFn,
             arguments: typedArgs,
-            ectype: fnType.returns(),
+            ectype: returnType,
           };
         }
       )
@@ -489,6 +504,7 @@ export const bindTypeCheckExp = ({
             return maybeType.type();
           })
       )
+      // TODO resolve anonymous types from type function calls (e.g. struct()).
       .otherwise(() => {
         // Try getting the type of the expression.
         const expType = typeCheckExp(node).ectype;

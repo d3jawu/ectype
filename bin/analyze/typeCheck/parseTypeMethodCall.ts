@@ -14,6 +14,7 @@ import { SymbolTable } from "../SymbolTable.js";
 
 import {
   Bool,
+  Deferred,
   Num,
   Str,
   Type as TypeType,
@@ -80,7 +81,7 @@ export const bindParseTypeMethodCall = ({
       return Bool;
     };
 
-    const ectype = match(targetType.type())
+    const ectype = match(targetType.type()) // Note that we are matching against the underlying type.
       .with({ baseType: "null" }, () =>
         match(method)
           .with("sub", () => {
@@ -561,6 +562,7 @@ export const bindParseTypeMethodCall = ({
         // both cases will have the same type signature in the analyzer.
         // To disambiguate, we have to manually check if the value being read is Type itself.
         // This does depend on the user being unable to create their own new references to Type.
+        // TODO revisit this. Renamed references to Type are always possible through function calls.
         if (typeVal.type === "ECIdentifier" && typeVal.value === "Type") {
           // Type constant
           return match(method)
@@ -582,44 +584,17 @@ export const bindParseTypeMethodCall = ({
               return TypeType;
             })
             .with("conform", () => {
-              throw new Error(`Cannot call "conform" on Type.`);
+              throw new Error(
+                `A value cannot be conformed to Type at runtime.`
+              );
             })
             .otherwise(() => {
               throw new Error(`${method} is not a valid method on Type.`);
             });
         } else {
-          // runtime type-value
-          return match(method)
-            .with("from", () => {
-              throw new Error(
-                `"from" cannot be used with a type that is not known statically.`
-              );
-            })
-            .with("conform", () => {
-              if (args.length !== 1) {
-                throw new Error(
-                  `Expected exactly 1 argument to type.conform but got ${args.length}`
-                );
-              }
-
-              // A conform on a type-value only known at runtime is always an option(Type).
-              return option(TypeType);
-            })
-            .with("toString", () => {
-              // All types have a toString() method, so this is always safe.
-              if (args.length !== 0) {
-                throw new Error(
-                  `Expected exactly 0 arguments to toString() but got ${args.length}.`
-                );
-              }
-
-              return Str;
-            })
-            .otherwise(() => {
-              throw new Error(
-                `${method} is not a valid method on an unknown type.`
-              );
-            });
+          throw new Error(
+            `Internal error: a type's underlying type cannot be Type.`
+          );
         }
       })
       .with({ baseType: "unknown" }, () =>
@@ -638,6 +613,22 @@ export const bindParseTypeMethodCall = ({
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid function on Unknown`);
+          })
+      )
+      .with({ baseType: "deferred" }, () =>
+        match(method)
+          .with("from", () => {
+            throw new Error(
+              `"from" cannot be used with a type that is not known statically.`
+            );
+          })
+          .with("conform", () => {
+            return option(Deferred);
+          })
+          .otherwise(() => {
+            throw new Error(
+              `${method} is not a valid function on a Deferred type.`
+            );
           })
       )
       .otherwise(() => {

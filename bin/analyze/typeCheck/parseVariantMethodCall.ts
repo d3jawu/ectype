@@ -54,7 +54,7 @@ export const bindParseVariantMethodCall = ({
 
         // Check whether any tag in this variant has a type not known statically.
         const unknownExists = variantOptions.some(
-          ([_, type]) => type.baseType === "type"
+          ([_, type]) => type.baseType === "deferred"
         );
 
         // Do some checking that's common to both known and unknown variant types.

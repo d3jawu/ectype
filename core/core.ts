@@ -2,6 +2,7 @@
 
 export type Type =
   | UnknownType
+  | DeferredType
   | NullType
   | BoolType
   | NumType
@@ -148,6 +149,33 @@ export type TypeType = {
   valid: (other: unknown) => boolean;
   type: () => Type; // Gets the underlying type. Not callable at runtime.
   toString: () => string;
+};
+
+// Deferred is a type whose shape is unknown statically. Since no guarantees can be made on it, it can be thought
+// of as a bottom type, though it's not really used in that way.
+// Deferred is not accessible from the runtime.
+export type DeferredType = {
+  baseType: "deferred";
+  from: (val: unknown) => never;
+  conform: (val: unknown) => unknown;
+  sub: (other: unknown) => false;
+  eq: (other: Type) => false; // No guarantees can be made about equality.
+  valid: (other: unknown) => false; // TODO: Is this actually always false?
+  toString: () => string;
+};
+
+const Deferred: DeferredType = {
+  baseType: "deferred",
+  from: () => {
+    throw new Error(`DeferredType cannot be instantiated.`);
+  },
+  conform: () => {
+    throw new Error(`DeferredType cannot be conformed.`);
+  },
+  sub: () => false,
+  eq: () => false,
+  valid: () => false,
+  toString: () => "Deferred",
 };
 
 // Unknown is the top type. It is analogous to `unknown` in TypeScript.
@@ -681,6 +709,7 @@ const js = (behavior: () => unknown, type: Type = Null) => behavior();
 
 export {
   Bool,
+  Deferred,
   Null,
   Num,
   Str,
