@@ -2,7 +2,7 @@
   "name": "ectype",
   "version": "1.0.1",
   "description": "",
-  "main": "dist/index.js",
+  "main": "index.js",
   "scripts": {
     "prepare": "npm run clean && npm run build",
     "build": "tsc",
