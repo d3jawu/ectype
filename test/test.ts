@@ -3,19 +3,18 @@ import path from "node:path";
 
 import chalk from "chalk";
 
-const runtimeDir = path.join(path.dirname(process.argv[1]), "./runtime");
-const staticDir = path.join(path.dirname(process.argv[1]), "./static");
+const testDir = path.join(path.dirname(process.argv[1]), "./cases");
 
 // Collect tests
-const tests = readdirSync(runtimeDir).flatMap((dir) => {
-  const dirPath = path.join(runtimeDir, dir);
+const tests = readdirSync(testDir).flatMap((dir) => {
+  const dirPath = path.join(testDir, dir);
 
   return readdirSync(dirPath).map((file) => {
-    const runtimePath = path.join(dirPath, file);
+    const testPath = path.join(dirPath, file);
 
     return {
       name: `${dir}/${file}`,
-      runtimePath,
+      testPath,
     };
   });
 });
@@ -39,26 +38,26 @@ type Stage = "exec" | "analysis";
 
 // Run tests
 await (async () => {
-  for (const { name, runtimePath } of tests) {
+  for (const { name, testPath } of tests) {
     process.stdout.write(`${name}:`.padEnd(lineLength));
 
-    if (runtimePath.includes("-skip.js")) {
+    if (testPath.includes("-skip.js")) {
       process.stdout.write(chalk.black.bgYellowBright("SKIP") + "\n");
       continue;
     }
 
     let stage: Stage = "analysis";
     try {
-      if (runtimePath.includes("-fail.js")) {
+      if (testPath.includes("-fail.js")) {
         // Do not run; expect static checking to fail.
         assert.throws(() => {
-          analyzeFile(runtimePath);
+          analyzeFile(testPath);
         });
       } else {
-        analyzeFile(runtimePath);
+        analyzeFile(testPath);
 
         stage = "exec";
-        await import(runtimePath);
+        await import(testPath);
       }
 
       process.stdout.write(chalk.black.bgGreenBright("PASS") + "\n");
@@ -68,7 +67,7 @@ await (async () => {
         `${chalk.black.bgRedBright("FAIL")} (${chalk.bold.redBright(stage)})\n`
       );
       console.log(e);
-      console.log(runtimePath);
+      console.log(testPath);
     }
   }
 })();
