@@ -3,11 +3,17 @@
 import { resolve } from "node:path";
 import { analyzeFile } from "./analyze/analyzeFile.js";
 
-if (!process.argv[2]) {
-  throw new Error("No entry point specified.");
+if (!process.argv[2] || process.argv[2] !== "check") {
+  console.log(`Usage: ectype check entrypoint.js`);
+  process.exit(1);
 }
 
-const entryPoint = resolve(process.argv[2]);
+if (!process.argv[3]) {
+  console.log(`Entrypoint not specified.`);
+  process.exit(1);
+}
+
+const entryPoint = resolve(process.argv[3]);
 
 try {
   const res = analyzeFile(entryPoint);

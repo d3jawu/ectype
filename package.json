@@ -9,11 +9,11 @@
     "watch": "tsc --watch",
     "clean": "rm -rf dist/",
     "test": "node dist/test/test.js",
-    "check": "node dist/bin/check.js"
+    "check": "node dist/bin/ectype.js check"
   },
   "files": ["dist/**/*", "!dist/test"],
   "bin": {
-    "ec-check": "dist/bin/check.js"
+    "ectype": "dist/bin/ectype.js"
   },
   "author": "",
   "license": "ISC",
