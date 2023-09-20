@@ -20,4 +20,4 @@ Ectype is being implemented with TypeScript until it is capable of self-hosting.
 
 ## Testing
 
-`npm run test` to run test cases. Test cases live in `test/cases`. If a test case is expected to fail, end the filename in `-fail.js`. To skip a test, end the filename in `-skip.js`.
+`npm run test` to run test cases. Test cases live in `test/cases`. If a test case is expected to fail static analysis, end the filename in `-fail.js`. To skip a test, end the filename in `-skip.js`.
