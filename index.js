@@ -1,3 +1,4 @@
+"ectype:core";
 export {
   Bool,
   Null,
