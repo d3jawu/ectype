@@ -163,11 +163,16 @@ export const bindTypeCheckNode = ({
         }
         const returnedType = typeCheckExp(node.argument).ectype;
 
-        if (!!scope.current.returnType) {
-          if (!returnedType.eq(scope.current.returnType)) {
-            throw new Error(
-              `Expected return type of ${scope.current.returnType} but got ${returnedType}`
-            );
+        if (scope.current.functionScope) {
+          // This behavior may become brittle if type system changes, e.g. if types stop being invariant or if untagged unions are introduced.
+          if (scope.current.inferredReturnType === null) {
+            scope.current.inferredReturnType = returnedType;
+          } else {
+            if (!scope.current.inferredReturnType.eq(returnedType)) {
+              throw new Error(
+                `Function has inconsistent return types: got ${returnedType} but previously saw ${scope.current.inferredReturnType}.`
+              );
+            }
           }
         }
       })

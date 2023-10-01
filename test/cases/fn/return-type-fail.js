@@ -1,4 +1,5 @@
 "use ectype";
+
 import { fn, Num, Str } from "../../../core/core.js";
 
 const MyFnType = fn([Str], Num);
@@ -8,7 +9,6 @@ const myFn = MyFnType.from((p) => {
     return 10;
   }
 
-  return 20;
+  // Returning the wrong type should fail.
+  return "abc";
 });
-
-const myExpressionFn = MyFnType.from((n) => 30);

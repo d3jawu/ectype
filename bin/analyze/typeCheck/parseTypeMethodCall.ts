@@ -650,15 +650,8 @@ export const bindParseTypeMethodCall = ({
   };
 
   // Checks a bare function's parameter and return types against an expected function type.
-  // Handles its own scope creation.
-  const typeCheckFn = (
-    fnNode: ECArrowFunctionExpression,
-    expectedType: FnType
-  ) => {
-    const originalScope = scope.current;
-    scope.current = new SymbolTable(scope.current, expectedType.returns());
-
-    const expectedParams = expectedType.params();
+  const typeCheckFn = (fnNode: ECArrowFunctionExpression, fnType: FnType) => {
+    const expectedParams = fnType.params();
 
     if (expectedParams.length !== fnNode.params.length) {
       throw new Error(
@@ -666,6 +659,7 @@ export const bindParseTypeMethodCall = ({
       );
     }
 
+    const paramTypes: Record<string, Type> = {};
     fnNode.params.forEach((param, i) => {
       if (param.type !== "ECIdentifier") {
         throw new Error(
@@ -673,9 +667,39 @@ export const bindParseTypeMethodCall = ({
         );
       }
 
-      scope.current.set(param.value, expectedParams[i]);
+      paramTypes[param.value] = expectedParams[i];
     });
 
+    const inferredReturnType = inferReturnType(fnNode, paramTypes);
+    if (!inferredReturnType.eq(fnType.returns())) {
+      throw new Error(
+        `Expected function to return ${fnType.returns()} but got ${inferredReturnType}.`
+      );
+    }
+  };
+
+  // Visits (and type-checks) a function node and infers i return type.
+  // Handles its own scope creation.
+  const inferReturnType = (
+    fnNode: ECArrowFunctionExpression,
+    paramTypes: Record<string, Type>
+  ): Type => {
+    // Spawn new function scope
+    const originalScope = scope.current;
+    scope.current = new SymbolTable(scope.current, true);
+
+    // Load parameters into scope
+    fnNode.params.forEach((param, i) => {
+      if (param.type !== "ECIdentifier") {
+        throw new Error(
+          `Function parameters other than identifiers are not yet implemented (got ${param.type})`
+        );
+      }
+
+      scope.current.set(param.value, paramTypes[param.value]);
+    });
+
+    let inferredType: Type;
     if (fnNode.body.type === "ECBlockStatement") {
       typeCheckNode(fnNode.body);
 
@@ -686,23 +710,28 @@ export const bindParseTypeMethodCall = ({
         );
       }
 
-      // Check for missing return
+      // Check for missing return at end of body
       const lastNode = statements[statements.length - 1];
       if (lastNode.type !== "ECReturnStatement") {
         throw new Error(`Function must explicitly return.`);
       }
-    } else {
-      const returnedType = typeCheckExp(fnNode.body);
-      if (!returnedType.ectype.eq(expectedType.returns())) {
+
+      if (scope.current.inferredReturnType === null) {
         throw new Error(
-          `Expected return type of ${expectedType.returns()} but got ${
-            returnedType.ectype
-          }.`
+          `Could not infer a type. Is the function missing a return statement?`
         );
       }
+
+      inferredType = scope.current.inferredReturnType;
+    } else {
+      // Function returns an expression directly.
+      inferredType = typeCheckExp(fnNode.body).ectype;
     }
 
+    // Return scope to parent
     scope.current = originalScope;
+
+    return inferredType;
   };
 
   return parseTypeMethodCall;

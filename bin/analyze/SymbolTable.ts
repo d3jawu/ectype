@@ -3,12 +3,14 @@ import type { Type } from "../../core/core";
 export class SymbolTable {
   parent: SymbolTable | null;
   values: Record<string, Type>;
-  returnType: Type | null; // null if not a function scope.
+  functionScope: boolean;
+  inferredReturnType: Type | null; // Catalogues types seen while visiting this function.
 
-  constructor(parent: SymbolTable | null, returnType: Type | null = null) {
+  constructor(parent: SymbolTable | null, functionScope = false) {
     this.parent = parent;
     this.values = {};
-    this.returnType = returnType;
+    this.functionScope = functionScope;
+    this.inferredReturnType = null;
   }
 
   get(name: string): Type | null {
