@@ -7,7 +7,7 @@ const MaybeStr = variant({
   None: Null,
 });
 
-const someStr = MaybeStr.of({ Some: "abc" });
+const someStr = MaybeStr.from({ Some: "abc" });
 
 // Type-checking should fail when a handler matches a tag not found in the variant,
 // even if all actual tags are handled.

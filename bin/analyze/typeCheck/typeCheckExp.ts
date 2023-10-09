@@ -10,7 +10,6 @@ import type {
   ECTypeDeclaration,
   ECTypeMethodCall,
   ECUnaryOperator,
-  ECVariantMethodCall,
 } from "../../types/ECNode";
 
 import type { Type } from "../../../core/core.js";
@@ -20,7 +19,6 @@ import type { Scope } from "./typeCheck";
 
 import {
   Bool,
-  Deferred,
   Null,
   Num,
   Str,
@@ -29,9 +27,10 @@ import {
   fn,
 } from "../../../core/core.js";
 
+import { Deferred } from "../../../core/internal.js";
+
 import { bindParseTypeDeclaration } from "./parseTypeDeclaration.js";
 import { bindParseTypeMethodCall } from "./parseTypeMethodCall.js";
-import { bindParseVariantMethodCall } from "./parseVariantMethodCall.js";
 
 import { typeValFrom } from "../typeValFrom.js";
 
@@ -196,7 +195,6 @@ export const bindTypeCheckExp = ({
           | Typed<ECCallExpression>
           | Typed<ECTypeDeclaration>
           | Typed<ECTypeMethodCall>
-          | Typed<ECVariantMethodCall>
           | Typed<ECJSCall> => {
           // There's a lot going on here. Because Ectype "keywords" are implemented as functions,
           // the Call Expression handler has extra logic for handling calls to these special cases.
@@ -240,12 +238,6 @@ export const bindTypeCheckExp = ({
           const typeMethod = parseTypeMethodCall(node);
           if (typeMethod) {
             return typeMethod;
-          }
-
-          // See if call is a variant method.
-          const variantMethodCall = parseVariantMethodCall(node);
-          if (variantMethodCall) {
-            return variantMethodCall;
           }
 
           // Normal call expression.
@@ -464,7 +456,6 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECTypeDeclaration" },
         { type: "ECTypeMethodCall" },
-        { type: "ECVariantMethodCall" },
         { type: "ECJSCall" },
         ({ type }) => {
           throw new Error(
@@ -526,10 +517,7 @@ export const bindTypeCheckExp = ({
     scope,
     typeCheckExp,
     typeCheckNode,
-  });
-
-  const parseVariantMethodCall = bindParseVariantMethodCall({
-    typeCheckExp,
+    resolveTypeExp,
   });
 
   return typeCheckExp;

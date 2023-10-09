@@ -1,11 +1,12 @@
 import type {
   ECArrowFunctionExpression,
   ECCallExpression,
+  ECExp,
   ECTypeMethodCall,
 } from "../../types/ECNode";
 import type { Typed } from "../../types/Typed";
 
-import type { FnType, Type } from "../../../core/core";
+import type { FnType, Type } from "../../../core/internal.js";
 
 import type { bindTypeCheckExp } from "./typeCheckExp";
 import type { bindTypeCheckNode } from "./typeCheckNode";
@@ -14,7 +15,6 @@ import { SymbolTable } from "../SymbolTable.js";
 
 import {
   Bool,
-  Deferred,
   Num,
   Str,
   Type as TypeType,
@@ -23,20 +23,25 @@ import {
   tuple,
 } from "../../../core/core.js";
 
+import { Deferred } from "../../../core/internal.js";
+
 import { option } from "../../../lib/option.js";
 
 import { match } from "ts-pattern";
+import { typeValFrom } from "../typeValFrom.js";
 import { Scope } from "./typeCheck";
 
 export const bindParseTypeMethodCall = ({
   typeCheckExp,
   typeCheckNode,
+  resolveTypeExp,
   scope,
 }: {
   scope: Scope;
   // These methods should also be bound to `scope`.
   typeCheckExp: ReturnType<typeof bindTypeCheckExp>;
   typeCheckNode: ReturnType<typeof bindTypeCheckNode>;
+  resolveTypeExp: (node: ECExp) => Type;
 }) => {
   // Returns an ECTypeMethodCall if the incoming call expression matches, null otherwise.
   const parseTypeMethodCall = (
@@ -81,6 +86,17 @@ export const bindParseTypeMethodCall = ({
       return Bool;
     };
 
+    // Reusable handler for the "valid" method (which is the same across all types.)
+    const handleValid = () => {
+      if (args.length !== 1) {
+        throw new Error(
+          `Expected exactly 1 argument to valid but got ${args.length}`
+        );
+      }
+      // TODO warn if valid() is always true or false (which is the case if both types are known statically).
+      return Bool;
+    };
+
     const ectype = match(targetType.type()) // Note that we are matching against the underlying type.
       .with({ baseType: "null" }, () =>
         match(method)
@@ -122,6 +138,7 @@ export const bindParseTypeMethodCall = ({
             return Bool;
           })
           .with("eq", handleEq)
+          .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Bool.`);
           })
@@ -153,6 +170,7 @@ export const bindParseTypeMethodCall = ({
             return option(Num);
           })
           .with("eq", handleEq)
+          .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Num.`);
           })
@@ -175,6 +193,7 @@ export const bindParseTypeMethodCall = ({
             return Bool;
           })
           .with("eq", handleEq)
+          .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Str.`);
           })
@@ -496,34 +515,34 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
-          .with("of", () => {
+          .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to variant.sub but got ${args.length}`
+                `Expected exactly 1 argument to variant.from but got ${args.length}`
               );
             }
 
             const arg = args[0];
             if (arg.expression.type !== "ECObjectExpression") {
               throw new Error(
-                `Argument to variant.of must be an object literal.`
+                `Argument to variant.from must be an object literal.`
               );
             }
 
             if (arg.expression.properties.length !== 1) {
               throw new Error(
-                `Argument to variant.of must have exactly one key set.`
+                `Argument to variant.from must have exactly one key set.`
               );
             }
 
             if (arg.expression.properties[0].type !== "ECKeyValueProperty") {
-              throw new Error(`Argument to variant.of must use literal key.`);
+              throw new Error(`Argument to variant.from must use literal key.`);
             }
 
             const { key, value } = arg.expression.properties[0];
 
             if (key.type !== "Identifier" && key.type !== "StringLiteral") {
-              throw new Error(`variant.of key must be a string.`);
+              throw new Error(`variant.from key must be a string.`);
             }
 
             if (!variantType.has(key.value)) {
@@ -611,6 +630,7 @@ export const bindParseTypeMethodCall = ({
             return Unknown;
           })
           .with("eq", handleEq)
+          .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid function on Unknown`);
           })
@@ -628,6 +648,198 @@ export const bindParseTypeMethodCall = ({
           .otherwise(() => {
             throw new Error(
               `${method} is not a valid function on a Deferred type.`
+            );
+          })
+      )
+      .with({ baseType: "keyword" }, (kw) =>
+        match(kw.keyword())
+          .with("variant", () =>
+            match(method)
+              .with("match", () => {
+                if (args.length !== 2) {
+                  throw new Error(
+                    `Expected exactly 2 arguments to variant match but got ${args.length}.`
+                  );
+                }
+
+                const variantVal = typeCheckExp(args[0].expression);
+                const variantType = variantVal.ectype;
+                if (variantType.baseType !== "variant") {
+                  throw new Error(
+                    `First argument to variant match must be a variant.`
+                  );
+                }
+
+                const handlersMap = args[1].expression;
+                if (handlersMap.type !== "ECObjectExpression") {
+                  throw new Error(
+                    `Second argument to variant match should be an object mapping tags to handlers.`
+                  );
+                }
+
+                const variantOptions = variantType.options();
+
+                let unknownExists = false;
+
+                let seenReturnType: Type = Unknown; // Set to Unknown initially so TypeScript knows it's always initialized.
+                let seenTags: string[] = [];
+                handlersMap.properties.forEach((prop, i) => {
+                  if (prop.type === "ECSpreadElement") {
+                    throw new Error(
+                      `Spread ... expressions in "match" are not yet implemented.`
+                    );
+                  }
+
+                  if (prop.type !== "ECKeyValueProperty") {
+                    throw new Error(
+                      `Expected a key-value property in "match".`
+                    );
+                  }
+
+                  if (
+                    prop.key.type !== "Identifier" &&
+                    prop.key.type !== "StringLiteral"
+                  ) {
+                    throw new Error(
+                      `Handler key in "match" must be an identifier or string literal.`
+                    );
+                  }
+
+                  const tagName = prop.key.value; // constant to make TypeScript happy
+
+                  if (
+                    !variantOptions.some(([t]) => tagName === t) &&
+                    tagName !== "_"
+                  ) {
+                    throw new Error(
+                      `${tagName} is not a valid tag on this variant.`
+                    );
+                  }
+
+                  seenTags.push(tagName);
+
+                  let _handlerArgType: Type;
+                  let _handler: ECArrowFunctionExpression;
+                  // Handler can either be a function or tuple of [assertedType, handler]
+                  if (tagName === "_") {
+                    _handlerArgType = typeValFrom(Unknown);
+                    if (prop.value.type !== "ECArrowFunctionExpression") {
+                      throw new Error(
+                        `Wildcard handler cannot take a type assertion.`
+                      );
+                    }
+                    _handler = prop.value;
+                  } else if (prop.value.type === "ECArrowFunctionExpression") {
+                    // Known param type - use the type from the variant.
+                    _handlerArgType = variantOptions.find(
+                      ([t]) => t === tagName
+                    )![1]; // Guaranteed to find, because we have already eliminated the case where the tag is not in the variant.
+                    _handler = prop.value;
+                  } else if (prop.value.type === "ECArrayExpression") {
+                    if (
+                      variantOptions.find(([t]) => t === tagName)![1]
+                        .baseType !== "deferred"
+                    ) {
+                      // TODO downgrade to warning
+                      throw new Error(
+                        `Type assertion is unnecessary on ${tagName} because its type is known statically.`
+                      );
+                    }
+
+                    // Asserted param type - use the type from the assertion.
+                    if (prop.value.elements.length !== 2) {
+                      throw new Error(
+                        `Type assertion in match must have (only) type and handler.`
+                      );
+                    }
+
+                    const assertedType = resolveTypeExp(
+                      prop.value.elements[0]!.expression
+                    );
+
+                    _handlerArgType = assertedType;
+
+                    if (
+                      prop.value.elements[1]?.expression?.type !==
+                      "ECArrowFunctionExpression"
+                    ) {
+                      throw new Error(
+                        `Second value in match assertion must be a handler function.`
+                      );
+                    }
+
+                    _handler = prop.value.elements[1].expression;
+                    unknownExists = true;
+                  } else {
+                    throw new Error(
+                      `Expected either a handler function or type assertion (got ${prop.value.type}).`
+                    );
+                  }
+                  const handlerArgType = _handlerArgType;
+                  const handler = _handler;
+
+                  // Add param to scope, if the handler uses one.
+                  const paramTypes: Record<string, Type> = {};
+                  if (handler.params.length === 1) {
+                    const param = handler.params[0];
+                    if (param.type !== "ECIdentifier") {
+                      throw new Error(
+                        `Handler parameter must be an identifier.`
+                      );
+                    }
+
+                    paramTypes[param.value] = handlerArgType;
+                  } else if (handler.params.length > 1) {
+                    throw new Error(`Handler must take 0 or 1 parameters.`);
+                  }
+
+                  // Infer return types for handler.
+                  const handlerReturnType = inferReturnType(
+                    handler,
+                    paramTypes
+                  );
+
+                  if (i === 0) {
+                    seenReturnType = handlerReturnType;
+                  } else if (!seenReturnType.eq(handlerReturnType)) {
+                    // Ensure that all return types match.
+                    throw new Error(
+                      `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`
+                    );
+                  }
+                });
+
+                // If a wildcard handler is omitted, make sure it is appropriate to do so.
+                if (!seenTags.includes("_")) {
+                  if (unknownExists) {
+                    // Wildcard is always required for statically unknown variants.
+                    throw new Error(
+                      `A wildcard is always required in a handler for a variant that cannot be statically checked.`
+                    );
+                  } else {
+                    const tags = variantType.tags();
+
+                    tags.forEach((expectedTag) => {
+                      if (!seenTags.includes(expectedTag)) {
+                        throw new Error(
+                          `"match" handlers are not exhaustive (missing ${expectedTag})`
+                        );
+                      }
+                    });
+                  }
+                }
+
+                return seenReturnType;
+              })
+              .otherwise(() => {
+                throw new Error(
+                  `${method} is not a valid method on 'variant'.`
+                );
+              })
+          )
+          .otherwise(() => {
+            throw new Error(
+              `Keyword methods on ${kw.keyword()} are not supported.`
             );
           })
       )

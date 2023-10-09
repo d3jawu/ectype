@@ -1,6 +1,6 @@
 "use ectype";
 
-import { Bool, Num, fn, struct } from "../../../core/core.js";
+import { Num, struct, variant } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 
@@ -15,15 +15,15 @@ const maybePoint = Point.conform({
 });
 
 ok(
-  maybePoint.match({
-    Some: fn([Point], Bool).from((p) => {
+  variant.match(maybePoint, {
+    Some: (p) => {
       ok(p.x === 20);
       ok(p.y === 30);
       return true;
-    }),
-    None: fn([], Bool).from(() => {
+    },
+    None: () => {
       return false;
-    }),
+    },
   })
 );
 
@@ -44,17 +44,17 @@ let maybeVector = Vector.conform({
 });
 
 ok(
-  maybeVector.match({
-    Some: fn([Vector], Bool).from((p) => {
+  variant.match(maybeVector, {
+    Some: (p) => {
       ok(p.start.x === 10);
       ok(p.start.y === 15);
       ok(p.end.x === 20);
       ok(p.end.y === 40);
       return true;
-    }),
-    None: fn([], Bool).from(() => {
+    },
+    None: () => {
       return false;
-    }),
+    },
   })
 );
 
@@ -70,12 +70,12 @@ maybeVector = Vector.conform({
 });
 
 ok(
-  maybeVector.match({
-    Some: fn([], Bool).from(() => {
+  variant.match(maybeVector, {
+    Some: () => {
       return false;
-    }),
-    None: fn([], Bool).from(() => {
+    },
+    None: () => {
       return true;
-    }),
+    },
   })
 );

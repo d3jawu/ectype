@@ -2,6 +2,8 @@
 
 Thanks for your interest in Ectype! Everything’s still very much in its early stages, so things are subject to (potentially major) change. More comprehensive documentation is also to come. But if that doesn’t deter you, here’s how you can get started:
 
+**If you are here from the Strange Loop talk, some things have changed! Check the demo file for a refresher.**
+
 # Usage
 
 Install with `npm install ectype`. Lint/type-check a script with `npx ectype check [entrypoint.js]`.

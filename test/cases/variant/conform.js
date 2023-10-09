@@ -1,5 +1,5 @@
 "use ectype";
-import { Bool, fn, Null, Str, variant } from "../../../core/core.js";
+import { Null, Str, variant } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 
@@ -8,30 +8,30 @@ const MaybeStr = variant({
   None: Null,
 });
 
-const someStr = MaybeStr.of({ Some: "abc" });
+const someStr = MaybeStr.from({ Some: "abc" });
 
 ok(
-  someStr.match({
-    Some: fn([Str], Bool).from((s) => {
+  variant.match(someStr, {
+    Some: (s) => {
       ok(s === "abc");
       return true;
-    }),
-    None: fn([], Bool).from(() => {
+    },
+    None: () => {
       return false;
-    }),
+    },
   })
 );
 
-const noneStr = MaybeStr.of({ None: null });
+const noneStr = MaybeStr.from({ None: null });
 
 ok(
-  noneStr.match({
-    Some: fn([Str], Bool).from((s) => {
+  variant.match(noneStr, {
+    Some: (s) => {
       return false;
-    }),
-    None: fn([Null], Bool).from((n) => {
+    },
+    None: (n) => {
       ok(n === null);
       return true;
-    }),
+    },
   })
 );

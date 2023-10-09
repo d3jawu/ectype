@@ -4,7 +4,6 @@ import type {
   ECJSCall,
   ECTypeDeclaration,
   ECTypeMethodCall,
-  ECVariantMethodCall,
 } from "./ECNode";
 
 export type Typed<T> = //
@@ -15,11 +14,6 @@ export type Typed<T> = //
       }
     : T extends ECJSCall
     ? ECJSCall & {
-        ectype: Type;
-      }
-    : T extends ECVariantMethodCall
-    ? Omit<ECVariantMethodCall, "variant"> & {
-        variant: Typed<ECExp>;
         ectype: Type;
       }
     : T extends ECTypeDeclaration
