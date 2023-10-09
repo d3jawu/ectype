@@ -1,5 +1,5 @@
 "use ectype";
-import { Bool, Str, cond, fn } from "../../../core/core.js";
+import { Str, cond, variant } from "../../../core/core.js";
 import { ok } from "../../lib/assert.js";
 
 const Email = cond(Str, (val) => {
@@ -7,23 +7,23 @@ const Email = cond(Str, (val) => {
 });
 
 ok(
-  Email.conform("a@b").match({
-    Some: fn([], Bool).from(() => {
+  variant.match(Email.conform("a@b"), {
+    Some: () => {
       return true;
-    }),
-    None: fn([], Bool).from(() => {
+    },
+    None: () => {
       return false;
-    }),
+    },
   })
 );
 
 ok(
-  Email.conform("ab").match({
-    Some: fn([], Bool).from(() => {
+  variant.match(Email.conform("ab"), {
+    Some: () => {
       return false;
-    }),
-    None: fn([], Bool).from(() => {
+    },
+    None: () => {
       return true;
-    }),
+    },
   })
 );

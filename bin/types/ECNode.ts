@@ -144,7 +144,6 @@ export type ECExp =
   | ECStringLiteral
   | ECTypeDeclaration
   | ECTypeMethodCall
-  | ECVariantMethodCall
   | ECJSCall
   | ECIdentifier
   | ECArrayExpression
@@ -182,14 +181,6 @@ export interface ECTypeDeclaration extends Node, HasSpan {
 export interface ECTypeMethodCall extends Node, HasSpan {
   type: "ECTypeMethodCall";
   targetType: Type["baseType"];
-  method: string; // TODO type this more tightly?
-  arguments: ECExp[];
-}
-
-// Represents a call to a variant method.
-export interface ECVariantMethodCall extends Node, HasSpan {
-  type: "ECVariantMethodCall";
-  variant: ECExp; // The variant this method is being called on.
   method: string; // TODO type this more tightly?
   arguments: ECExp[];
 }

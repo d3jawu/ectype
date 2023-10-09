@@ -1,6 +1,6 @@
 "use ectype";
 
-import { Bool, Num, Str, Type, fn, struct } from "../../../core/core.js";
+import { Num, Str, Type, fn, struct, variant } from "../../../core/core.js";
 
 import { ok } from "../../lib/assert.js";
 const pair = fn([Type], Type).from((T) =>
@@ -14,65 +14,89 @@ const NumPair = pair(Num);
 
 // Correct handler arg type, correct incoming value
 ok(
-  NumPair.conform({
-    a: 10,
-    b: 20,
-  }).match({
-    Some: fn([struct({ a: Num, b: Num })], Bool).from((p) => {
-      ok(p.a === 10);
-      ok(p.b === 20);
-      return true;
+  variant.match(
+    NumPair.conform({
+      a: 10,
+      b: 20,
     }),
-    _: fn([], Bool).from(() => {
-      return false;
-    }),
-  })
+    {
+      Some: [
+        struct({ a: Num, b: Num }),
+        (p) => {
+          ok(p.a === 10);
+          ok(p.b === 20);
+          return true;
+        },
+      ],
+      _: () => {
+        return false;
+      },
+    }
+  )
 );
 
 // Correct handler arg type, wrong incoming value.
 ok(
-  NumPair.conform({
-    a: "abc",
-    b: "xyz",
-  }).match({
-    Some: fn([struct({ a: Num, b: Num })], Bool).from((p) => {
-      return false;
+  variant.match(
+    NumPair.conform({
+      a: "abc",
+      b: "xyz",
     }),
-    _: fn([], Bool).from(() => {
-      return true;
-    }),
-  })
+    {
+      Some: [
+        struct({ a: Num, b: Num }),
+        (p) => {
+          return false;
+        },
+      ],
+      _: () => {
+        return true;
+      },
+    }
+  )
 );
 
 // Wrong arg type should fall back to wildcard.
 ok(
-  NumPair.conform({
-    a: 10,
-    b: 20,
-  }).match({
-    Some: fn([struct({ x: Str, y: Str })], Bool).from((p) => {
-      return false;
+  variant.match(
+    NumPair.conform({
+      a: 10,
+      b: 20,
     }),
-    None: fn([], Bool).from(() => {
-      return false;
-    }),
-    _: fn([], Bool).from(() => {
-      return true;
-    }),
-  })
+    {
+      Some: [
+        struct({ x: Str, y: Str }),
+        (p) => {
+          return false;
+        },
+      ],
+      None: () => {
+        return false;
+      },
+      _: () => {
+        return true;
+      },
+    }
+  )
 );
 
 // Wrong arg type should fall back to wildcard even if incoming value matches.
 ok(
-  NumPair.conform({
-    x: "abc",
-    y: "xyz",
-  }).match({
-    Some: fn([struct({ x: Str, y: Str })], Bool).from((p) => {
-      return false;
+  variant.match(
+    NumPair.conform({
+      x: "abc",
+      y: "xyz",
     }),
-    _: fn([], Bool).from(() => {
-      return true;
-    }),
-  })
+    {
+      Some: [
+        struct({ x: Str, y: Str }),
+        (p) => {
+          return false;
+        },
+      ],
+      _: () => {
+        return true;
+      },
+    }
+  )
 );

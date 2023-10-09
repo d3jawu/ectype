@@ -14,6 +14,7 @@ import { bindTypeCheckExp } from "./typeCheckExp";
 import { match } from "ts-pattern";
 import { array, cond, fn, struct, tuple, variant } from "../../../core/core.js";
 
+// TODO derive this from the exports on core.js, instead of hard-coding?
 const isTypeName = (name: string): boolean =>
   ["fn", "tuple", "array", "variant", "struct", "cond"].includes(name);
 

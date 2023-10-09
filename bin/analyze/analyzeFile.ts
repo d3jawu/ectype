@@ -6,6 +6,7 @@ import { typeCheck } from "./typeCheck/typeCheck.js";
 import { typeValFrom } from "./typeValFrom.js";
 
 import * as core from "../../core/core.js";
+import { keyword } from "../../core/internal.js";
 
 // Core type map, used for introducing Ectype core types into a scope.
 export const coreTypeMap = Object.entries(core).reduce(
@@ -17,8 +18,8 @@ export const coreTypeMap = Object.entries(core).reduce(
       // For concrete types, generate a type value.
       a[k] = typeValFrom(v);
     } else {
-      // For type factory functions, just mark them unknown (the functions themselves are never type-checked, they just need to be in scope.)
-      a[k] = core.Unknown;
+      // For type factory functions, mark them as keywords.
+      a[k] = typeValFrom(keyword(k));
     }
 
     return a;
@@ -26,8 +27,8 @@ export const coreTypeMap = Object.entries(core).reduce(
   {}
 );
 
-// If the file at path is an Ectype file, analyzeFile parses, lowers, and type-checks it, returning a record of the types of its exports.
-// If it is not, null is returned.
+// If the file at path is an Ectype file, analyzeFile parses, lowers, and type-checks
+// it, returning a record of the types of its exports. If it is not, null is returned.
 export const analyzeFile = (path: string): Record<string, Type> | null => {
   // Don't analyze Node built-in modules.
   if (path.includes("node:")) {
@@ -63,8 +64,9 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
     initialString = ast[0].expression.value;
   }
 
-  // Ectype library file, imported directly
-  // (This is an edge case, usually the user will import the "ectype" package instead of importing directly from a file within the package)
+  // Ectype library file, imported directly. This is an edge case, usually the
+  // user will import the "ectype" package instead of importing directly from
+  // a file within the package.
   if (initialString === "ectype:core") {
     return coreTypeMap;
   }
@@ -75,6 +77,7 @@ export const analyzeFile = (path: string): Record<string, Type> | null => {
     return typeCheck(lowered, path);
   }
 
-  // If we get here, the file had some other unused string literal sitting in top-level scope for some reason
+  // If we get here, the file had some other unused string literal sitting in
+  // top-level scope for some reason.
   return null;
 };

@@ -7,7 +7,7 @@ const MaybeStr = variant({
   None: Null,
 });
 
-const someStr = MaybeStr.of({ Some: "abc" });
+const someStr = MaybeStr.from({ Some: "abc" });
 
 // Type-checking should fail when a handler is missing.
 someStr.match({
