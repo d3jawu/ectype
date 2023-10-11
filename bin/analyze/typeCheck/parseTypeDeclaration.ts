@@ -9,21 +9,39 @@ import type { Typed } from "../../types/Typed";
 
 import { typeValFrom } from "../typeValFrom.js";
 
-import { bindTypeCheckExp } from "./typeCheckExp";
+import type { bindTypeCheckExp } from "./typeCheckExp";
+import type { bindTypeCheckNode } from "./typeCheckNode";
+
+import {
+  Bool,
+  array,
+  cond,
+  fn,
+  struct,
+  tuple,
+  variant,
+} from "../../../core/core.js";
+
+import { Scope } from "./typeCheck";
+
+import { bindInferReturnType } from "./inferReturnType.js";
 
 import { match } from "ts-pattern";
-import { array, cond, fn, struct, tuple, variant } from "../../../core/core.js";
 
 // TODO derive this from the exports on core.js, instead of hard-coding?
 const isTypeName = (name: string): boolean =>
   ["fn", "tuple", "array", "variant", "struct", "cond"].includes(name);
 
 export const bindParseTypeDeclaration = ({
+  scope,
   resolveTypeExp,
   typeCheckExp,
+  typeCheckNode,
 }: {
+  scope: Scope;
   resolveTypeExp: (node: ECExp) => Type;
   typeCheckExp: ReturnType<typeof bindTypeCheckExp>;
+  typeCheckNode: ReturnType<typeof bindTypeCheckNode>;
 }) => {
   // Returns an ECTypedeclaration if call was a type declaration, e.g. struct({}), or null otherwise.
   const parseTypeDeclaration = (
@@ -197,6 +215,26 @@ export const bindParseTypeDeclaration = ({
           throw new Error(`cond() predicate must be a function.`);
         }
 
+        const predicateParams: Record<string, Type> = {};
+        if (predicate.params.length === 1) {
+          if (predicate.params[0].type !== "ECIdentifier") {
+            throw new Error(`Predicate parameter must be an identifier.`);
+          }
+
+          const param = predicate.params[0];
+
+          predicateParams[param.value] = parentType;
+        } else if (predicate.params.length > 1) {
+          throw new Error(
+            `cond() predicate can take at most one param (got ${predicate.params.length}).`
+          );
+        }
+
+        const inferredReturnType = inferReturnType(predicate, predicateParams);
+        if (!inferredReturnType.eq(Bool)) {
+          throw new Error(`cond() predicate must return a boolean.`);
+        }
+
         return typeValFrom(
           cond(parentType, () => {
             throw new Error(`Cannot use cond predicate at analysis-time.`);
@@ -215,6 +253,12 @@ export const bindParseTypeDeclaration = ({
       ectype,
     };
   };
+
+  const inferReturnType = bindInferReturnType({
+    scope,
+    typeCheckExp,
+    typeCheckNode,
+  });
 
   return parseTypeDeclaration;
 };
