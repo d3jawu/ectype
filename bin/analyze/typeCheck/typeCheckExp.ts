@@ -404,6 +404,21 @@ export const bindTypeCheckExp = ({
               // If parsing has reached this point, then a member on a type has been accessed without a call.
               throw new Error(`Type methods must be called.`);
             })
+            .with({ baseType: "str" }, () => {
+              if (node.property.type === "ECComputed") {
+                // Bracket access
+                return Str;
+              } else {
+                const method = node.property.value;
+                return match(method)
+                  .with("includes", () => fn([Str], Bool))
+                  .otherwise(() => {
+                    throw new Error(
+                      `${method} is not a valid function on a string.`
+                    );
+                  });
+              }
+            })
             .otherwise(() => {
               throw new Error(
                 `Member expressions are not supported on ${targetType}.`
@@ -509,8 +524,10 @@ export const bindTypeCheckExp = ({
       });
 
   const parseTypeDeclaration = bindParseTypeDeclaration({
+    scope,
     resolveTypeExp,
     typeCheckExp,
+    typeCheckNode,
   });
 
   const parseTypeMethodCall = bindParseTypeMethodCall({

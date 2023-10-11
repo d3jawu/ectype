@@ -16,6 +16,10 @@
     "ectype": "dist/bin/ectype.js"
   },
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/dejawu/ectype"
+  },
   "license": "ISC",
   "type": "module",
   "dependencies": {
