@@ -419,6 +419,28 @@ export const bindTypeCheckExp = ({
                   });
               }
             })
+            .with({ baseType: "tuple" }, (targetType) => {
+              if (node.property.type !== "ECComputed") {
+                throw new Error(
+                  `Only bracket accesses are permitted on tuples.`
+                );
+              }
+
+              if (node.property.expression.type !== "NumericLiteral") {
+                throw new Error(
+                  `Tuple index must be a number literal (tuple indexes cannot be accessed with expressions).`
+                );
+              }
+
+              const index = node.property.expression.value;
+              if (index < 0 || index >= targetType.fields().length) {
+                throw new Error(
+                  `${index} is not a valid index on ${targetType}.`
+                );
+              }
+
+              return targetType.fields()[index];
+            })
             .otherwise(() => {
               throw new Error(
                 `Member expressions are not supported on ${targetType}.`
