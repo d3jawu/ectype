@@ -21,4 +21,4 @@ ok(Str.sub(Unknown));
 ok(struct({}).sub(Unknown));
 ok(variant({}).sub(Unknown));
 ok(fn([], Null).sub(Unknown));
-ok(tuple([]).sub(Unknown));
+ok(tuple().sub(Unknown));

@@ -140,8 +140,8 @@ const Str: StrType = {
 // true if a <: b, false otherwise.
 const fnParamsSub = (a: Type[], b: Type[]): boolean => {
   // Reuse tuple subtyping logic.
-  const aTuple = tuple(a);
-  const bTuple = tuple(b);
+  const aTuple = tuple(...a);
+  const bTuple = tuple(...b);
 
   return aTuple.sub(bTuple);
 };
@@ -149,8 +149,8 @@ const fnParamsSub = (a: Type[], b: Type[]): boolean => {
 // true if a and b represent the exact same type, false otherwise.
 const fnParamsEq = (a: Type[], b: Type[]): boolean => {
   // Reuse tuple subtyping logic.
-  const aTuple = tuple(a);
-  const bTuple = tuple(b);
+  const aTuple = tuple(...a);
+  const bTuple = tuple(...b);
 
   return aTuple.eq(bTuple);
 };
@@ -272,7 +272,7 @@ const array = (contains: Type): ArrayType => {
   };
 };
 
-const tuple = (fields: Type[]): TupleType => {
+const tuple = (...fields: Type[]): TupleType => {
   const valid = (val: unknown) => {
     if (!Array.isArray(val)) {
       return false;
@@ -323,7 +323,7 @@ const tuple = (fields: Type[]): TupleType => {
       other.baseType === "tuple" &&
       other.fields().length === fields.length &&
       other.fields().every((f, i) => f.eq(fields[i])),
-    toString: () => `(${fields.join(",")})`,
+    toString: () => `tuple(${fields.join(",")})`,
     baseType: "tuple",
   };
 };

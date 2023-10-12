@@ -82,23 +82,11 @@ export const bindParseTypeDeclaration = ({
         return typeValFrom(fn(paramTypes, returnType));
       })
       .with("tuple", () => {
-        if (args.length !== 1) {
-          throw new Error(
-            `Expected exactly 1 argument to tuple() but got ${args.length}`
-          );
-        }
+        const entryTypes = args
+          .map((arg) => arg.expression)
+          .map((arg) => resolveTypeExp(arg));
 
-        const entriesNode = args[0].expression;
-
-        if (entriesNode.type !== "ECArrayExpression") {
-          throw new Error(`Argument to tuple() must be an array literal.`);
-        }
-
-        const entryTypes = (<ECExprOrSpread[]>(
-          entriesNode.elements.filter((el) => !!el)
-        )).map((el) => resolveTypeExp(el.expression));
-
-        return typeValFrom(tuple(entryTypes));
+        return typeValFrom(tuple(...entryTypes));
       })
       .with("array", () => {
         if (args.length !== 1) {

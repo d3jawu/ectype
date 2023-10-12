@@ -248,7 +248,9 @@ export const bindParseTypeMethodCall = ({
             const literalNode = args[0].expression;
 
             if (literalNode.type !== "ECArrayExpression") {
-              throw new Error(`tuple.from() must be an array literal.`);
+              throw new Error(
+                `tuple.from() argument must be an array literal.`
+              );
             }
 
             const shape = literalNode.elements.reduce((acc: Type[], el) => {
@@ -259,7 +261,7 @@ export const bindParseTypeMethodCall = ({
               return [...acc, typeCheckExp(el.expression).ectype];
             }, []);
 
-            const inputType = tuple(shape);
+            const inputType = tuple(...shape);
 
             if (!inputType.eq(tupleType)) {
               throw new Error(
