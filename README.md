@@ -1,6 +1,6 @@
 # Ectype
 
-Ectype is a "language extension" that uses a library and type-checker in tandem to bring new language features like type safety, runtime validation, and more, directly to vanilla JavaScript. Declare types and validate foreign data, all from the familiar syntax of JavaScript, backed by the guarantees of full static type-coverage, without needing to build or transform your code.
+Ectype is a "language extension" that uses a library and type-checker in tandem to bring new language features like type safety, runtime validation, and more, directly to vanilla JavaScript.
 
 **If you are here from the Strange Loop talk, some syntax around variants has changed! Check the demo file for a refresher.**
 
@@ -12,9 +12,9 @@ Install with `npm install ectype`. Lint/type-check a script with `npx ectype che
 
 Ectype files must begin with `"use ectype"`. If a file is missing this directive, the analyzer will assume it is an untyped JavaScript file and ignore it.
 
-Once it passes the linter/type-checker you can run an Ectype file directly.
+Once it passes the linter/type-checker, you can run an Ectype file directly.
 
-See test cases and demo.js for examples. Full documentation is coming later as the language matures.
+See DEMO.js for a quick intro. Full documentation is coming later as the language matures.
 
 # Development
 
@@ -22,7 +22,7 @@ Ectype is being implemented with TypeScript until it is capable of self-hosting.
 
 `npm run build` to compile, `npm run watch` for a watcher. Built files go into `dist`.
 
-Feel free to email me about Ectype at holly@dejawu.me.
+Please feel free to email me about Ectype at holly@dejawu.me!
 
 ## Testing
 
