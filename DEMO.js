@@ -15,22 +15,24 @@ x = 20;
 // x = "abc"; // Causes the type-checker to fail.
 
 /*
-Types in Ectype are represented as constants beginning with an uppercase letter.
-Numbers, for example, have the Num type. You can check a value against a type 
-with the valid() function:
+Types in Ectype are represented as constants. The convention is to name types with 
+an uppercase letter. Numbers, for example, have the Num type. You can check a value 
+against a type with the valid() function:
 */
 import { Num } from "ectype";
 Num.valid(10); // true
 Num.valid("a string"); // false
 
-// There are also primitives for boolean and string:
+/*
+There are also primitives for boolean and string:
+*/
 import { Bool, Str } from "ectype";
 Bool.valid(true);
 Str.valid("abc");
 
 /*
-Unknown is an abstract type representing the top type. All values are valid 
-instances of Unknown.
+Unknown is an abstract type representing the top type. All values are valid instances 
+of Unknown.
 */
 import { Unknown } from "ectype";
 Unknown.valid(null);
@@ -57,13 +59,12 @@ We also have compound data types for arrays and tuples.
 */
 import { array, tuple } from "ectype";
 const NumArray = array(Num);
-const TwoNums = tuple([Num, Num]);
+const TwoNums = tuple(Num, Num);
 
 /*
 You can construct an instance of a type using "from()".
-
-Like "struct", the "from" method is like a "keyword" - it is not a method the 
-user can access or introspect.
+Like "struct", the "from" method is like a keyword - it is not a method the 
+user can introspect.
 */
 const myPoint = Point2D.from({
   x: 10,
@@ -113,12 +114,50 @@ variant.match(myIp, {
 });
 
 /*
-TODO: wildcard handler
+If you don't want to handle all tags on the variant, you can omit them and still 
+get an exhaustive match by using a wildcard handler instead:
 */
+variant.match(myIp, {
+  V4: (ip) => {
+    // ip here is typed to Str.
+    return null;
+  },
+  _: (ip) => {
+    // ip here is typed to Unknown.
+    // Not a V4 address.
+    return null;
+  },
+});
 
 /*
-TODO: conform()
+If you don't know the type of a value (for example, if it came from a web request),
+you can get type coverage on it by using "conform" instead:
 */
+const mysteryValue = "abc"; // Try changing this to something else (e.g. a number)!
+const maybeStr = Str.conform(mysteryValue);
+
+/*
+"conform" returns option types wrapped around the target type.
+So maybeStr will be have the type:
+
+variant({
+  Some: Str,
+  None: Null,
+});
+
+You can pull out the validated value and get static type coverage on it with a 
+variant match statement:
+*/
+variant.match(maybeStr, {
+  Some: (myStr) => {
+    // myStr is typed to Str.
+    return null;
+  },
+  None: () => {
+    // Not a string.
+    return null;
+  },
+});
 
 /*
 TODO: generic type functions
@@ -152,3 +191,14 @@ variant.match(NumPair.conform({ a: 1, b: 2 }), {
     return null;
   },
 });
+
+/*
+As Ectype matures and the type-checker becomes more powerful, certain cases will
+no longer require "conform" because we can guarantee them statically. When that 
+happens, you will get a warning that "conform" is unnecessary and "from" can 
+safely be used instead.
+*/
+
+/*
+TODO js()
+*/

@@ -1,8 +1,10 @@
 # Ectype
 
-Thanks for your interest in Ectype! Everything’s still very much in its early stages, so things are subject to (potentially major) change. More comprehensive documentation is also to come. But if that doesn’t deter you, here’s how you can get started:
+Ectype is a "language extension" that uses a library and type-checker in tandem to bring new language features like type safety, runtime validation, and more, directly to vanilla JavaScript. Declare types and validate foreign data, all from the familiar syntax of JavaScript, backed by the guarantees of full static type-coverage, without needing to build or transform your code.
 
 **If you are here from the Strange Loop talk, some syntax around variants has changed! Check the demo file for a refresher.**
+
+Thanks for your interest in Ectype! Everything’s still very much in its early stages, so things are subject to (potentially major) change. More comprehensive documentation is also to come. But if that doesn’t deter you, here’s how you can get started:
 
 # Usage
 
@@ -12,7 +14,7 @@ Ectype files must begin with `"use ectype"`. If a file is missing this directive
 
 Once it passes the linter/type-checker you can run an Ectype file directly.
 
-See test cases and demo.js for examples. A proper introduction is coming soon.
+See test cases and demo.js for examples. Full documentation is coming later as the language matures.
 
 # Development
 
