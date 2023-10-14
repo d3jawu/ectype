@@ -19,6 +19,7 @@ export type Type =
   | TypeType
   | DeferredType
   | KeywordType;
+// | ErrorType;
 
 export type UnknownType = {
   from: (val: unknown) => typeof val;
@@ -231,3 +232,20 @@ export const keyword = (kw: string): KeywordType => ({
   toString: () => `Keyword(${kw})`,
   keyword: () => kw,
 });
+
+/*
+ErrorType represents the type returned when a node cannot be successfully resolved 
+to a type. It exists to fill locations where a type is expected so type-checking 
+can continue when a type-error is not fatal.
+
+ErrorType is deliberately missing type methods because it should not be 
+compared to another type (the meaningfulness of this breaks down because it 
+is not an actual type). This ideally forces eliminating the case of an ErrorType
+in the control flow before doing other type handling.
+*/
+export type ErrorType = {
+  baseType: "error";
+  // Might be useful to include the message and location later.
+  // message: Error;
+  // location: Span;
+};

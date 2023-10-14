@@ -50,7 +50,7 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        const importedTypes = (() => {
+        const result = (() => {
           try {
             return analyzeFile(joinPaths(dirname(path), node.source.value));
           } catch (cause) {
@@ -64,10 +64,12 @@ export const bindTypeCheckNode = ({
           }
         })();
 
-        if (importedTypes === null) {
+        if (result === null) {
           // File was not an Ectype file; do nothing.
           return;
         }
+
+        const { exports: importedTypes } = result;
 
         node.specifiers.forEach((specifier) => {
           if (specifier.type === "ImportDefaultSpecifier") {
