@@ -19,6 +19,21 @@ try {
   const res = analyzeFile(entryPoint);
   if (res === null) {
     console.log(`Warning: entrypoint ${entryPoint} is not an Ectype file.`);
+    process.exit(1);
+  }
+
+  const { errors, warnings } = res;
+  errors.forEach(({ message, span }) => {
+    console.log(message);
+    console.log(span); // TODO resolve span to position in file.
+  });
+  warnings.forEach(({ message, span }) => {
+    console.log(message);
+    console.log(span); // TODO resolve span to position in file.
+  });
+
+  if (errors.length > 0) {
+    process.exit(1);
   }
 } catch (e: any) {
   console.log(`Error: ${e.message}`);

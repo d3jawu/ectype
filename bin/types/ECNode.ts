@@ -199,7 +199,7 @@ export interface ECStringLiteral extends Node, HasSpan {
   raw?: string;
 }
 
-export interface ECArrayExpression extends Node {
+export interface ECArrayExpression extends Node, HasSpan {
   type: "ECArrayExpression";
   elements: (ECExprOrSpread | undefined)[];
 }

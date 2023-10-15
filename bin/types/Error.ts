@@ -6,7 +6,7 @@ export type Error = {
   message: string;
 };
 
-type ErrorCode = "";
+type ErrorCode = "UNDEFINED_VARIABLE" | "TYPE_MISMATCH" | "INVALID_OPERATION";
 
 export type Warning = {
   span: Span;

@@ -18,8 +18,8 @@ export type Type =
   | CondType
   | TypeType
   | DeferredType
-  | KeywordType;
-// | ErrorType;
+  | KeywordType
+  | ErrorType;
 
 export type UnknownType = {
   from: (val: unknown) => typeof val;
@@ -248,4 +248,8 @@ export type ErrorType = {
   // Might be useful to include the message and location later.
   // message: Error;
   // location: Span;
+};
+
+export const ErrorType: ErrorType = {
+  baseType: "error",
 };
