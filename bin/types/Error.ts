@@ -8,6 +8,14 @@ export type Error = {
 
 type ErrorCode = "UNDEFINED_VARIABLE" | "TYPE_MISMATCH" | "INVALID_OPERATION";
 
+export type ResolvedError = {
+  code: ErrorCode;
+  message: string;
+  path: string;
+  line: number;
+  col: number;
+};
+
 export type Warning = {
   span: Span;
   code: WarningCode;
@@ -15,3 +23,11 @@ export type Warning = {
 };
 
 type WarningCode = "";
+
+export type ResolvedWarning = {
+  code: WarningCode;
+  message: string;
+  path: string;
+  line: number;
+  col: number;
+};

@@ -7,6 +7,7 @@ import { typeValFrom } from "./typeValFrom.js";
 
 import * as core from "../../core/core.js";
 import { keyword } from "../../core/internal.js";
+
 import { Error, Warning } from "../types/Error.js";
 
 // Core type map, used for introducing Ectype core types into a scope.
@@ -30,13 +31,13 @@ export const coreTypeMap = Object.entries(core).reduce(
 
 // If the file at path is an Ectype file, analyzeFile parses, lowers, and type-checks
 // it, returning its exports and any errors and warnings encountered. If it is
-// not, null is returned.
+// not an Ectype file, null is returned.
 export const analyzeFile = (
   path: string
 ): {
   exports: Record<string, Type>;
-  errors: Error[];
-  warnings: Warning[];
+  errors: Record<string, Error[]>;
+  warnings: Record<string, Warning[]>;
 } | null => {
   // Don't analyze Node built-in modules.
   if (path.includes("node:")) {
@@ -78,8 +79,8 @@ export const analyzeFile = (
   if (initialString === "ectype:core") {
     return {
       exports: coreTypeMap,
-      errors: [],
-      warnings: [],
+      errors: {},
+      warnings: {},
     };
   }
 

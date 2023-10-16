@@ -55,7 +55,7 @@ export const bindTypeCheckExp = ({
         const type = scope.current.get(node.value);
 
         if (type.baseType === "error") {
-          scope.errors.push({
+          scope.error({
             code: "UNDEFINED_VARIABLE",
             message: `${node.value} is not defined.`,
             span: node.span,
@@ -91,7 +91,7 @@ export const bindTypeCheckExp = ({
                 ectype = leftType;
               } else {
                 if (!rightType.eq(leftType)) {
-                  scope.errors.push({
+                  scope.error({
                     code: "TYPE_MISMATCH",
                     message: `Got ${rightType} but variable ${lhs.value} has type ${leftType}.`,
                     span: node.span,
@@ -128,7 +128,7 @@ export const bindTypeCheckExp = ({
                 ectype = leftType;
               } else {
                 if (!rightType.eq(leftType)) {
-                  scope.errors.push({
+                  scope.error({
                     code: "TYPE_MISMATCH",
                     message: `Expected ${leftType} but got ${rightType}.`,
                     span: node.span,
@@ -172,7 +172,7 @@ export const bindTypeCheckExp = ({
                 rightType.baseType !== "error" &&
                 !leftType.eq(rightType)
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "TYPE_MISMATCH",
                   message: `Cannot compare differing types ${leftType} and ${rightType}.`,
                   span: node.span,
@@ -182,7 +182,7 @@ export const bindTypeCheckExp = ({
               if (
                 !["bool", "num", "str", "error"].includes(leftType.baseType)
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${leftType} cannot be used with ${node.operator}.`,
                   span: left.span,
@@ -192,7 +192,7 @@ export const bindTypeCheckExp = ({
               if (
                 !["bool", "num", "str", "error"].includes(rightType.baseType)
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${rightType} cannot be used with ${node.operator}.`,
                   span: right.span,
@@ -203,7 +203,7 @@ export const bindTypeCheckExp = ({
             })
             .with("&&", "||", () => {
               if (leftType.baseType !== "error" && !leftType.eq(Bool)) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${leftType} cannot be used with ${node.operator} (must be Bool).`,
                   span: left.span,
@@ -211,7 +211,7 @@ export const bindTypeCheckExp = ({
               }
 
               if (rightType.baseType !== "error" && !rightType.eq(Bool)) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${rightType} cannot be used with ${node.operator} (must be Bool).`,
                   span: right.span,
@@ -222,7 +222,7 @@ export const bindTypeCheckExp = ({
             })
             .with("<", "<=", ">", ">=", () => {
               if (leftType.baseType !== "error" && !leftType.eq(Num)) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${leftType} cannot be used with ${node.operator} (must be Num).`,
                   span: left.span,
@@ -230,7 +230,7 @@ export const bindTypeCheckExp = ({
               }
 
               if (rightType.baseType !== "error" && !rightType.eq(Num)) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${rightType} cannot be used with ${node.operator} (must be Num).`,
                   span: right.span,
@@ -245,7 +245,7 @@ export const bindTypeCheckExp = ({
                 !leftType.eq(Num) &&
                 !leftType.eq(Str)
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${leftType} cannot be used with ${node.operator} (must be Num or Str).`,
                   span: left.span,
@@ -257,7 +257,7 @@ export const bindTypeCheckExp = ({
                 !rightType.eq(Num) &&
                 !rightType.eq(Str)
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "INVALID_OPERATION",
                   message: `${rightType} cannot be used with ${node.operator} (must be Num or Str).`,
                   span: right.span,
@@ -269,7 +269,7 @@ export const bindTypeCheckExp = ({
                 rightType.baseType !== "error" &&
                 !leftType.eq(rightType)
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "TYPE_MISMATCH",
                   message: `Types on both sides of '+' must match: got ${leftType} and ${rightType}.`,
                   span: node.span,
@@ -295,7 +295,7 @@ export const bindTypeCheckExp = ({
               ">>>",
               () => {
                 if (leftType.baseType !== "error" && !leftType.eq(Num)) {
-                  scope.errors.push({
+                  scope.error({
                     code: "INVALID_OPERATION",
                     message: `${leftType.baseType} cannot be used with ${node.operator} (must be Num).`,
                     span: left.span,
@@ -303,7 +303,7 @@ export const bindTypeCheckExp = ({
                 }
 
                 if (rightType.baseType !== "error" && !rightType.eq(Num)) {
-                  scope.errors.push({
+                  scope.error({
                     code: "INVALID_OPERATION",
                     message: `${rightType.baseType} cannot be used with ${node.operator} (must be Num).`,
                     span: right.span,
@@ -402,7 +402,7 @@ export const bindTypeCheckExp = ({
                 argType.baseType !== "error" &&
                 !argType.eq(fnTypeParams[i])
               ) {
-                scope.errors.push({
+                scope.error({
                   code: "TYPE_MISMATCH",
                   message: `Argument ${i} (of type ${argType}) does not match expected type ${fnTypeParams[i]}`,
                   span: arg.expression.span,
@@ -438,7 +438,7 @@ export const bindTypeCheckExp = ({
         const test = typeCheckExp(node.test);
         const testType = test.ectype;
         if (testType.baseType !== "error" && !testType.eq(Bool)) {
-          scope.errors.push({
+          scope.error({
             code: "TYPE_MISMATCH",
             message: `Condition for ternary expression must be a Bool.`,
             span: node.test.span,
@@ -455,7 +455,7 @@ export const bindTypeCheckExp = ({
           alternateType.baseType !== "error" &&
           !consequentType.eq(alternateType)
         ) {
-          scope.errors.push({
+          scope.error({
             code: "TYPE_MISMATCH",
             message: `Types for ternary expression results must match.`,
             span: node.span,
@@ -521,7 +521,7 @@ export const bindTypeCheckExp = ({
                 const indexType = typeCheckExp(node.property.expression).ectype;
 
                 if (indexType.baseType !== "error" && !indexType.eq(Num)) {
-                  scope.errors.push({
+                  scope.error({
                     code: "TYPE_MISMATCH",
                     message: `Array index must be a nunmber.`,
                     span: node.property.span,

@@ -23,18 +23,8 @@ try {
   }
 
   const { errors, warnings } = res;
-  errors.forEach(({ message, span }) => {
-    console.log(message);
-    console.log(span); // TODO resolve span to position in file.
-  });
-  warnings.forEach(({ message, span }) => {
-    console.log(message);
-    console.log(span); // TODO resolve span to position in file.
-  });
 
-  if (errors.length > 0) {
-    process.exit(1);
-  }
+  console.log(errors);
 } catch (e: any) {
   console.log(`Error: ${e.message}`);
   process.exit(1);

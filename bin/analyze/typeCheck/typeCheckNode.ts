@@ -69,7 +69,9 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        const { exports: importedTypes } = result;
+        const { exports: importedTypes, errors, warnings } = result;
+        scope.importErrors(errors);
+        scope.importWarnings(warnings);
 
         node.specifiers.forEach((specifier) => {
           if (specifier.type === "ImportDefaultSpecifier") {
@@ -146,8 +148,12 @@ export const bindTypeCheckNode = ({
       })
       .with({ type: "ECIfStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
-        if (!testType.eq(Bool)) {
-          throw new Error(`Condition for if-statement must be a Bool.`);
+        if (testType.baseType !== "error" && !testType.eq(Bool)) {
+          scope.error({
+            code: "TYPE_MISMATCH",
+            message: `Condition for if-statement must be a Bool.`,
+            span: node.test.span,
+          });
         }
 
         typeCheckNode(node.consequent);
