@@ -336,10 +336,15 @@ export const bindParseTypeMethodCall = ({
 
               const elType = typeCheckExp(el.expression).ectype;
 
-              if (!elType.eq(arrayType.contains())) {
-                throw new Error(
-                  `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`
-                );
+              if (
+                elType.baseType !== "error" &&
+                !elType.eq(arrayType.contains())
+              ) {
+                scope.error({
+                  code: "TYPE_MISMATCH",
+                  message: `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`,
+                  span: el.expression.span,
+                });
               }
             });
 
@@ -565,12 +570,17 @@ export const bindParseTypeMethodCall = ({
 
             const valueType = typeCheckExp(value).ectype;
 
-            if (!valueType.eq(variantType.get(key.value))) {
-              throw new Error(
-                `Expected type ${variantType.get(
+            if (
+              valueType.baseType !== "error" &&
+              !valueType.eq(variantType.get(key.value))
+            ) {
+              scope.error({
+                code: "TYPE_MISMATCH",
+                message: `Expected type ${variantType.get(
                   key.value
-                )} for variant option ${key.value} but got ${valueType}`
-              );
+                )} for variant option ${key.value} but got ${valueType}`,
+                span: value.span,
+              });
             }
 
             return variantType;
@@ -811,11 +821,16 @@ export const bindParseTypeMethodCall = ({
 
                   if (i === 0) {
                     seenReturnType = handlerReturnType;
-                  } else if (!seenReturnType.eq(handlerReturnType)) {
+                  } else if (
+                    seenReturnType.baseType !== "error" &&
+                    !seenReturnType.eq(handlerReturnType)
+                  ) {
                     // Ensure that all return types match.
-                    throw new Error(
-                      `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`
-                    );
+                    scope.error({
+                      code: "TYPE_MISMATCH",
+                      message: `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`,
+                      span: handler.span, // TODO this should be on the faulty return, not the whole handler
+                    });
                   }
                 });
 
@@ -893,10 +908,15 @@ export const bindParseTypeMethodCall = ({
     });
 
     const inferredReturnType = inferReturnType(fnNode, paramTypes);
-    if (!inferredReturnType.eq(fnType.returns())) {
-      throw new Error(
-        `Expected function to return ${fnType.returns()} but got ${inferredReturnType}.`
-      );
+    if (
+      inferredReturnType.baseType !== "error" &&
+      !inferredReturnType.eq(fnType.returns())
+    ) {
+      scope.error({
+        code: "TYPE_MISMATCH",
+        message: `Expected function to return ${fnType.returns()} but got ${inferredReturnType}.`,
+        span: fnNode.span, // TODO error should be on faulty return, not the entire function
+      });
     }
   };
 
