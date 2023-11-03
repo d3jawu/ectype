@@ -248,8 +248,14 @@ export type ErrorType = {
   // Might be useful to include the message and location later.
   // message: Error;
   // location: Span;
+
+  // Uhh this is kinda tentative. Ideally ErrorType would have no methods.
+  eq: () => false; // Requires that error checking on type mismatches produce a better error message than "types don't match".
+  valid: () => false; // Requires that valid() is never called from the analyzer (currently true).
 };
 
 export const ErrorType: ErrorType = {
   baseType: "error",
+  eq: () => false,
+  valid: () => false,
 };
