@@ -4,6 +4,7 @@ import { dirname, relative, resolve } from "node:path";
 import { analyzeFile } from "./analyze/analyzeFile.js";
 
 import { Span } from "@swc/core";
+import chalk from "chalk";
 import { readFileSync } from "node:fs";
 
 if (!process.argv[2] || process.argv[2] !== "check") {
@@ -68,16 +69,45 @@ try {
     }
 
     errored = true;
+
     const file = readFileSync(path).toString();
+
+    // Color all errors in file.
+    let coloredFile = "";
+    errors.forEach(({ span }, i) => {
+      const prevSpanEnd = errors[i - 1]?.span?.end || 0;
+      // Subtract to offset 1-indexed span
+      const start = span.start - 1;
+      const end = span.end - 1;
+
+      coloredFile +=
+        file.substring(prevSpanEnd, start) +
+        chalk.red(file.substring(start, end));
+    });
+
+    const lines = coloredFile.split("\n");
 
     errors.forEach(({ span, message }) => {
       const { start, end } = spanToPos(span, file);
 
-      process.stdout.write(
-        `${relative(dirname(entryPoint), path)}:${start.line}:${
-          start.column
-        }: ${message}\n`
+      console.log(
+        `${chalk.bgBlueBright(
+          relative(dirname(entryPoint), path)
+        )} ${chalk.bgRedBright.black("ERROR")} ${chalk.bgYellow(
+          `${start.line}:${start.column}`
+        )} ${chalk.bgWhite.black(message)}\n`
       );
+
+      // i is the line number, which is 1-indexed.
+      for (let i = start.line; i <= end.line; i += 1) {
+        console.log(
+          `${chalk.bgGray.black(
+            i.toString().padStart(end.line.toString().length)
+          )} ${lines[i - 1]}`
+        );
+      }
+
+      console.log();
     });
   });
 
