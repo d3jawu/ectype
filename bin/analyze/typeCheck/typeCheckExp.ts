@@ -375,6 +375,24 @@ export const bindTypeCheckExp = ({
           // Normal call expression.
           const typedFn = typeCheckExp(node.callee); // Type of the function being called.
           const fnType = typedFn.ectype;
+          if (fnType.baseType === "error") {
+            // If user called a non-function, no return type can be inferred and
+            // we have no choice but to pass the error up. (We don't log another
+            // error; it would have been logged when the incoming error surfaced.)
+
+            return {
+              ...node,
+              callee: typedFn,
+              // We don't have parameter types to check the args against, but we
+              // can still check the argrument expressions themselves.
+              arguments: node.arguments.map((arg) => ({
+                ...arg,
+                expression: typeCheckExp(arg.expression),
+              })),
+              ectype: ErrorType,
+            };
+          }
+
           if (fnType.baseType !== "fn") {
             throw new Error(
               `Callee is not a function (got ${fnType.baseType}).`
@@ -535,9 +553,13 @@ export const bindTypeCheckExp = ({
               throw new Error(`Unreachable (node.property has type never)`);
             })
             .with({ baseType: "variant" }, (variantType) => {
-              throw new Error(
-                `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`
-              );
+              scope.error({
+                code: "INVALID_OPERATION",
+                message: `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`,
+                span: node.property.span,
+              });
+
+              return ErrorType;
             })
             .with({ baseType: "num" }, () => {
               const nodeType = node.property.type;
@@ -640,10 +662,18 @@ export const bindTypeCheckExp = ({
           `Bare function expressions are forbidden; they must be attached to a function type.`
         );
       })
-      .with({ type: "ECObjectExpression" }, () => {
-        throw new Error(
-          `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`
-        );
+      .with({ type: "ECObjectExpression" }, (node) => {
+        scope.error({
+          code: "INVALID_SYNTAX",
+          message: `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`,
+          span: node.span,
+        });
+
+        return {
+          ...node,
+          properties: [], // TODO something more intelligent with the internals
+          ectype: ErrorType,
+        };
       })
       .with(
         { type: "ECTypeDeclaration" },

@@ -6,7 +6,11 @@ export type Error = {
   message: string;
 };
 
-type ErrorCode = "UNDEFINED_VARIABLE" | "TYPE_MISMATCH" | "INVALID_OPERATION";
+type ErrorCode =
+  | "UNDEFINED_VARIABLE"
+  | "TYPE_MISMATCH"
+  | "INVALID_OPERATION"
+  | "INVALID_SYNTAX";
 
 export type ResolvedError = {
   code: ErrorCode;
