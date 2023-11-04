@@ -241,6 +241,16 @@ export const bindParseTypeMethodCall = ({
             return Bool;
           })
           .with("eq", handleEq)
+          .with("conform", () => {
+            scope.error({
+              code: "INVALID_SYNTAX",
+              message: "conform cannot be called on a function.",
+              span: memberExp.property.span,
+            });
+
+            // It's not valid, but we still know what type the user meant.
+            return option(fnType);
+          })
           .otherwise(() => {
             throw new Error(`${method} is not a valid fn operation.`);
           })
@@ -380,7 +390,14 @@ export const bindParseTypeMethodCall = ({
       .with({ baseType: "cond" }, (condType) =>
         match(method)
           .with("from", () => {
-            throw new Error(`"from" cannot be used on a conditional type.`);
+            scope.error({
+              code: "INVALID_SYNTAX",
+              message: `"from" cannot be used on a conditional type.`,
+              span: memberExp.property.span,
+            });
+
+            // We still know what type the user meant here.
+            return condType;
           })
           .with("conform", () => {
             if (args.length !== 1) {
@@ -437,9 +454,14 @@ export const bindParseTypeMethodCall = ({
 
             if (!inputType.eq(structType)) {
               // TODO explain incompatibility in error message
-              throw new Error(
-                `Invalid cast to struct type:\nGot:\n${inputType}\nExpected:\n${structType}`
-              );
+              scope.error({
+                code: "TYPE_MISMATCH",
+                message: `Wrong shape for struct type:\nGot:\n${inputType}\nExpected:\n${structType}`,
+                span: literalNode.span, // TODO put error directly on incorrect field(s)
+              });
+
+              // Still safe to return structType, since that's defined elsewhere
+              // and most likely what the user wanted when they called "from".
             }
 
             return structType;
@@ -615,17 +637,26 @@ export const bindParseTypeMethodCall = ({
               const argType = typeCheckExp(args[0].expression).ectype;
 
               if (argType.baseType !== "type") {
-                throw new Error(
-                  `Only type-values can be cast to Type (got ${argType}).`
-                );
+                scope.error({
+                  code: "TYPE_MISMATCH",
+                  message: `Only type-values can be cast to Type (got ${argType}).`,
+                  span: args[0].expression.span,
+                });
+                // Still safe to return TypeType, since that's likely what the
+                // user meant when they called Type.from.
               }
 
               return TypeType;
             })
             .with("conform", () => {
-              throw new Error(
-                `A value cannot be conformed to Type at runtime.`
-              );
+              scope.error({
+                code: "INVALID_OPERATION",
+                message: `A value cannot be conformed to Type at runtime.`,
+                span: memberExp.property.span,
+              });
+
+              // We still know what type the user meant, even if it's not allowed.
+              return option(TypeType);
             })
             .otherwise(() => {
               throw new Error(`${method} is not a valid method on Type.`);
