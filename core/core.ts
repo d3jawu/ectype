@@ -223,7 +223,7 @@ const fn = (params: Type[], returns: Type): FnType => {
       other.params().length === params.length &&
       other.params().every((p, i) => p.eq(params[i])) &&
       other.returns().eq(returns),
-    toString: () => `fn((${params.join(",")}) => ${returns})`,
+    toString: () => `fn([${params.join(", ")}], ${returns})`,
     baseType: "fn",
   };
 };
@@ -267,7 +267,7 @@ const array = (contains: Type): ArrayType => {
 
     //   return contains.sub(other.contains());
     // },
-    toString: () => `${contains}[]`,
+    toString: () => `array(${contains})`,
     baseType: "array",
   };
 };
@@ -323,7 +323,7 @@ const tuple = (...fields: Type[]): TupleType => {
       other.baseType === "tuple" &&
       other.fields().length === fields.length &&
       other.fields().every((f, i) => f.eq(fields[i])),
-    toString: () => `tuple(${fields.join(",")})`,
+    toString: () => `tuple(${fields.join(", ")})`,
     baseType: "tuple",
   };
 };
@@ -388,10 +388,9 @@ const struct = (shape: Record<string, Type>): StructType => {
       return otherFields.every(([k, t]) => k in shape && shape[k].eq(t));
     },
     toString: () =>
-      `struct{\n${Object.entries(shape).reduce(
-        (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,
-        ""
-      )}\n}`,
+      `struct({ ${Object.entries(shape)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ")} })`,
     baseType: "struct",
   };
 };
@@ -455,10 +454,9 @@ const variant = (options: Record<string, Type>): VariantType => {
       return otherOptions.every(([k, t]) => k in options && options[k].eq(t));
     },
     toString: () =>
-      `variant{\n${Object.entries(options).reduce(
-        (acc, [k, v]) => `${acc}\t${k}: ${v}\n`,
-        ""
-      )}\n}`,
+      `variant({ ${Object.entries(options)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ")} })`,
     baseType: "variant",
   };
 };
@@ -532,7 +530,7 @@ const cond = (type: Type, predicate: (val: unknown) => boolean): CondType => {
       // form of type equality supported is reference equality.
       return other === this;
     },
-    toString: () => `cond(${type.toString()})`,
+    toString: () => `cond(${type}, ${predicate})`,
     baseType: "cond",
   };
 };
