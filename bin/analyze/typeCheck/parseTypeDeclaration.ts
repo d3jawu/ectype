@@ -219,8 +219,15 @@ export const bindParseTypeDeclaration = ({
         }
 
         const inferredReturnType = inferReturnType(predicate, predicateParams);
-        if (!inferredReturnType.eq(Bool)) {
-          throw new Error(`cond() predicate must return a boolean.`);
+        if (
+          inferredReturnType.baseType !== "error" &&
+          !inferredReturnType.eq(Bool)
+        ) {
+          scope.error({
+            code: "TYPE_MISMATCH",
+            message: "cond() predicate must return a boolean.",
+            span: predicate.span, // TODO this should be on the return statements themselves, not the whole function
+          });
         }
 
         return typeValFrom(

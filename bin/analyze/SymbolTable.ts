@@ -1,4 +1,5 @@
 import type { Type } from "../../core/core";
+import { ErrorType } from "../../core/internal.js";
 
 export class SymbolTable {
   parent: SymbolTable | null;
@@ -13,13 +14,13 @@ export class SymbolTable {
     this.inferredReturnType = null;
   }
 
-  get(name: string): Type | null {
+  get(name: string): Type {
     if (name in this.values) {
       return this.values[name];
     } else if (this.parent !== null) {
       return this.parent.get(name);
     } else {
-      return null;
+      return ErrorType;
     }
   }
 

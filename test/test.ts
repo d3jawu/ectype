@@ -30,7 +30,7 @@ const lineLength =
 
 import { analyzeFile } from "../bin/analyze/analyzeFile.js";
 
-import { strict as assert } from "node:assert";
+import { Error } from "../bin/types/Error.js";
 
 let failed = false;
 
@@ -49,10 +49,15 @@ await (async () => {
     let stage: Stage = "analysis";
     try {
       if (testPath.includes("-fail.js")) {
-        // Do not run; expect static checking to fail.
-        assert.throws(() => {
-          analyzeFile(testPath);
-        });
+        // Expect static checking to fail.
+        const { errors } = analyzeFile(testPath) || {
+          errors: {} as Record<string, Error[]>,
+        };
+        if ((errors[testPath] || []).length === 0) {
+          // TODO actual error checking. Be warned: swc seems to not reset span
+          // positions between files. This alone may warrant a migration.
+          throw new Error("Expected an error but got none.");
+        }
       } else {
         analyzeFile(testPath);
 

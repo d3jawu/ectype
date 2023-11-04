@@ -50,7 +50,7 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        const importedTypes = (() => {
+        const result = (() => {
           try {
             return analyzeFile(joinPaths(dirname(path), node.source.value));
           } catch (cause) {
@@ -64,10 +64,14 @@ export const bindTypeCheckNode = ({
           }
         })();
 
-        if (importedTypes === null) {
+        if (result === null) {
           // File was not an Ectype file; do nothing.
           return;
         }
+
+        const { exports: importedTypes, errors, warnings } = result;
+        scope.importErrors(errors);
+        scope.importWarnings(warnings);
 
         node.specifiers.forEach((specifier) => {
           if (specifier.type === "ImportDefaultSpecifier") {
@@ -131,8 +135,12 @@ export const bindTypeCheckNode = ({
         if (node.test) {
           const testType = typeCheckExp(node.test).ectype;
 
-          if (!testType.eq(Bool)) {
-            throw new Error(`Condition for for-loop must be a Bool.`);
+          if (testType.baseType !== "error" && !testType.eq(Bool)) {
+            scope.error({
+              code: "TYPE_MISMATCH",
+              message: `Condition for for-loop must be a Bool.`,
+              span: node.test.span,
+            });
           }
         }
 
@@ -144,8 +152,12 @@ export const bindTypeCheckNode = ({
       })
       .with({ type: "ECIfStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
-        if (!testType.eq(Bool)) {
-          throw new Error(`Condition for if-statement must be a Bool.`);
+        if (testType.baseType !== "error" && !testType.eq(Bool)) {
+          scope.error({
+            code: "TYPE_MISMATCH",
+            message: `Condition for if-statement must be a Bool.`,
+            span: node.test.span,
+          });
         }
 
         typeCheckNode(node.consequent);
@@ -168,10 +180,15 @@ export const bindTypeCheckNode = ({
           if (scope.current.inferredReturnType === null) {
             scope.current.inferredReturnType = returnedType;
           } else {
-            if (!scope.current.inferredReturnType.eq(returnedType)) {
-              throw new Error(
-                `Function has inconsistent return types: got ${returnedType} but previously saw ${scope.current.inferredReturnType}.`
-              );
+            if (
+              scope.current.inferredReturnType.baseType !== "error" &&
+              !scope.current.inferredReturnType.eq(returnedType)
+            ) {
+              scope.error({
+                code: "TYPE_MISMATCH",
+                message: `Function has inconsistent return types: got ${returnedType} but previously saw ${scope.current.inferredReturnType}.`,
+                span: node.argument.span,
+              });
             }
           }
         }
@@ -229,8 +246,12 @@ export const bindTypeCheckNode = ({
       })
       .with({ type: "ECWhileStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
-        if (!testType.eq(Bool)) {
-          throw new Error(`Condition for while-statement must be a Bool.`);
+        if (testType.baseType !== "error" && !testType.eq(Bool)) {
+          scope.error({
+            code: "TYPE_MISMATCH",
+            message: `Condition for while-statement must be a Bool.`,
+            span: node.test.span,
+          });
         }
 
         typeCheckNode(node.body);

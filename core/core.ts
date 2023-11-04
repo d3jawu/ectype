@@ -35,7 +35,7 @@ const Unknown: UnknownType = {
         });
   }, // All values conform to Unknown.
   valid: (val: unknown) => true, // All values are valid instances of Unknown.
-  sub: (other: Type): boolean => other.baseType === "unknown", // Only Unknown is a subtype of Unknown.
+  // sub: (other: Type): boolean => other.baseType === "unknown", // Only Unknown is a subtype of Unknown.
   eq: (other) => other.baseType === "unknown",
   toString: () => "Unknown",
 };
@@ -58,7 +58,7 @@ const Null: NullType = {
         });
   },
   valid: (val) => val === null,
-  sub: (other) => other.baseType === "null" || other.baseType === "unknown",
+  // sub: (other) => other.baseType === "null" || other.baseType === "unknown",
   eq: (other) => other.baseType === "null",
   toString: () => "Null",
   baseType: "null",
@@ -81,9 +81,9 @@ const Bool: BoolType = {
         });
   },
   valid: (val) => typeof val === "boolean",
-  sub: (other) =>
-    other["baseType" as keyof typeof other] === "bool" ||
-    other.baseType === "unknown",
+  // sub: (other) =>
+  //   other["baseType" as keyof typeof other] === "bool" ||
+  //   other.baseType === "unknown",
   eq: (other) => other.baseType === "bool",
   toString: () => "Bool",
   baseType: "bool",
@@ -106,9 +106,9 @@ const Num: NumType = {
         });
   },
   valid: (val) => typeof val === "number",
-  sub: (other) =>
-    other["baseType" as keyof typeof other] === "num" ||
-    other.baseType === "unknown",
+  // sub: (other) =>
+  //   other["baseType" as keyof typeof other] === "num" ||
+  //   other.baseType === "unknown",
   eq: (other) => other.baseType === "num",
   toString: () => "Num",
   baseType: "num",
@@ -131,20 +131,20 @@ const Str: StrType = {
         });
   },
   valid: (val) => typeof val === "string",
-  sub: (other) => other.baseType === "str" || other.baseType === "unknown",
+  // sub: (other) => other.baseType === "str" || other.baseType === "unknown",
   eq: (other) => other.baseType === "str",
   toString: () => "Str",
   baseType: "str",
 };
 
 // true if a <: b, false otherwise.
-const fnParamsSub = (a: Type[], b: Type[]): boolean => {
-  // Reuse tuple subtyping logic.
-  const aTuple = tuple(...a);
-  const bTuple = tuple(...b);
+// const fnParamsSub = (a: Type[], b: Type[]): boolean => {
+//   // Reuse tuple subtyping logic.
+//   const aTuple = tuple(...a);
+//   const bTuple = tuple(...b);
 
-  return aTuple.sub(bTuple);
-};
+//   // return aTuple.sub(bTuple);
+// };
 
 // true if a and b represent the exact same type, false otherwise.
 const fnParamsEq = (a: Type[], b: Type[]): boolean => {
@@ -204,20 +204,20 @@ const fn = (params: Type[], returns: Type): FnType => {
     valid,
     params: () => params,
     returns: () => returns,
-    sub: (other) => {
-      if (other.baseType === "unknown") {
-        return true;
-      }
+    // sub: (other) => {
+    //   if (other.baseType === "unknown") {
+    //     return true;
+    //   }
 
-      if (other.baseType !== "fn") {
-        return false;
-      }
+    //   if (other.baseType !== "fn") {
+    //     return false;
+    //   }
 
-      // contravariant on the parameter type, covariant on the return type
-      return (
-        fnParamsSub(other.params(), params) && returns.sub(other.returns())
-      );
-    },
+    //   // contravariant on the parameter type, covariant on the return type
+    //   return (
+    //     fnParamsSub(other.params(), params) && returns.sub(other.returns())
+    //   );
+    // },
     eq: (other) =>
       other.baseType === "fn" &&
       other.params().length === params.length &&
@@ -256,17 +256,17 @@ const array = (contains: Type): ArrayType => {
     valid,
     contains: () => contains,
     eq: (other) => other.baseType === "array" && other.contains().eq(contains),
-    sub: (other) => {
-      if (other.baseType === "unknown") {
-        return true;
-      }
+    // sub: (other) => {
+    //   if (other.baseType === "unknown") {
+    //     return true;
+    //   }
 
-      if (other.baseType !== "array") {
-        return false;
-      }
+    //   if (other.baseType !== "array") {
+    //     return false;
+    //   }
 
-      return contains.sub(other.contains());
-    },
+    //   return contains.sub(other.contains());
+    // },
     toString: () => `${contains}[]`,
     baseType: "array",
   };
@@ -302,23 +302,23 @@ const tuple = (...fields: Type[]): TupleType => {
     valid,
     field: (pos) => fields[pos],
     fields: () => fields,
-    sub: (other: Type) => {
-      if (other.baseType === "unknown") {
-        return true;
-      }
+    // sub: (other: Type) => {
+    //   if (other.baseType === "unknown") {
+    //     return true;
+    //   }
 
-      if (other.baseType !== "tuple") {
-        return false;
-      }
+    //   if (other.baseType !== "tuple") {
+    //     return false;
+    //   }
 
-      // to be a subtype of `other`, this must have at least all
-      // fields of `other` and all types must be subtypes.
-      if (fields.length < other.fields().length) {
-        return false;
-      }
+    //   // to be a subtype of `other`, this must have at least all
+    //   // fields of `other` and all types must be subtypes.
+    //   if (fields.length < other.fields().length) {
+    //     return false;
+    //   }
 
-      return other.fields().every((_, i) => fields[i].sub(other.field(i)));
-    },
+    //   return other.fields().every((_, i) => fields[i].sub(other.field(i)));
+    // },
     eq: (other: Type) =>
       other.baseType === "tuple" &&
       other.fields().length === fields.length &&
@@ -359,21 +359,21 @@ const struct = (shape: Record<string, Type>): StructType => {
     has: (field) => shape.hasOwnProperty(field),
     field: (field) => shape[field],
     fields: () => Object.entries(shape),
-    sub: (other) => {
-      if (other.baseType === "unknown") {
-        return true;
-      }
+    // sub: (other) => {
+    //   if (other.baseType === "unknown") {
+    //     return true;
+    //   }
 
-      if (other.baseType !== "struct") {
-        return false;
-      }
+    //   if (other.baseType !== "struct") {
+    //     return false;
+    //   }
 
-      // To be a subtype of `other`, shape must at least have all the fields of
-      // `other`, and each field must be a subtype of that same field on `other`.
-      return other
-        .fields()
-        .every(([key]) => shape[key] && shape[key].sub(other.field(key)));
-    },
+    //   // To be a subtype of `other`, shape must at least have all the fields of
+    //   // `other`, and each field must be a subtype of that same field on `other`.
+    //   return other
+    //     .fields()
+    //     .every(([key]) => shape[key] && shape[key].sub(other.field(key)));
+    // },
     eq: (other) => {
       if (other.baseType !== "struct") {
         return false;
@@ -425,22 +425,22 @@ const variant = (options: Record<string, Type>): VariantType => {
     get: (name) => options[name],
     options: () => Object.entries(options),
     tags: () => Object.keys(options),
-    sub: (other) => {
-      if (other.baseType === "unknown") {
-        return true;
-      }
+    // sub: (other) => {
+    //   if (other.baseType === "unknown") {
+    //     return true;
+    //   }
 
-      if (other.baseType !== "variant") {
-        return false;
-      }
+    //   if (other.baseType !== "variant") {
+    //     return false;
+    //   }
 
-      // to be a subtype of `other`, this variant must not have components that
-      // `other` does not, and each component must be a subtype of that same
-      // component on `other`.
-      return Object.keys(options).every(
-        (key) => other.has(key) && options[key].sub(other.get(key))
-      );
-    },
+    //   // to be a subtype of `other`, this variant must not have components that
+    //   // `other` does not, and each component must be a subtype of that same
+    //   // component on `other`.
+    //   return Object.keys(options).every(
+    //     (key) => other.has(key) && options[key].sub(other.get(key))
+    //   );
+    // },
     eq: (other) => {
       if (other.baseType !== "variant") {
         return false;
@@ -526,7 +526,7 @@ const cond = (type: Type, predicate: (val: unknown) => boolean): CondType => {
           });
     },
     valid,
-    sub: (other) => other.eq(type), // This type is a subtype only of the type that it wraps around.
+    // sub: (other) => other.eq(type), // This type is a subtype only of the type that it wraps around.
     eq(other) {
       // Because function equality is a dubious concept to begin with, the only
       // form of type equality supported is reference equality.

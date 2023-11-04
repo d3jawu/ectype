@@ -241,6 +241,16 @@ export const bindParseTypeMethodCall = ({
             return Bool;
           })
           .with("eq", handleEq)
+          .with("conform", () => {
+            scope.error({
+              code: "INVALID_SYNTAX",
+              message: "conform cannot be called on a function.",
+              span: memberExp.property.span,
+            });
+
+            // It's not valid, but we still know what type the user meant.
+            return option(fnType);
+          })
           .otherwise(() => {
             throw new Error(`${method} is not a valid fn operation.`);
           })
@@ -336,10 +346,15 @@ export const bindParseTypeMethodCall = ({
 
               const elType = typeCheckExp(el.expression).ectype;
 
-              if (!elType.eq(arrayType.contains())) {
-                throw new Error(
-                  `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`
-                );
+              if (
+                elType.baseType !== "error" &&
+                !elType.eq(arrayType.contains())
+              ) {
+                scope.error({
+                  code: "TYPE_MISMATCH",
+                  message: `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`,
+                  span: el.expression.span,
+                });
               }
             });
 
@@ -375,7 +390,14 @@ export const bindParseTypeMethodCall = ({
       .with({ baseType: "cond" }, (condType) =>
         match(method)
           .with("from", () => {
-            throw new Error(`"from" cannot be used on a conditional type.`);
+            scope.error({
+              code: "INVALID_SYNTAX",
+              message: `"from" cannot be used on a conditional type.`,
+              span: memberExp.property.span,
+            });
+
+            // We still know what type the user meant here.
+            return condType;
           })
           .with("conform", () => {
             if (args.length !== 1) {
@@ -432,9 +454,14 @@ export const bindParseTypeMethodCall = ({
 
             if (!inputType.eq(structType)) {
               // TODO explain incompatibility in error message
-              throw new Error(
-                `Invalid cast to struct type:\nGot:\n${inputType}\nExpected:\n${structType}`
-              );
+              scope.error({
+                code: "TYPE_MISMATCH",
+                message: `Wrong shape for struct type:\nGot:\n${inputType}\nExpected:\n${structType}`,
+                span: literalNode.span, // TODO put error directly on incorrect field(s)
+              });
+
+              // Still safe to return structType, since that's defined elsewhere
+              // and most likely what the user wanted when they called "from".
             }
 
             return structType;
@@ -565,12 +592,17 @@ export const bindParseTypeMethodCall = ({
 
             const valueType = typeCheckExp(value).ectype;
 
-            if (!valueType.eq(variantType.get(key.value))) {
-              throw new Error(
-                `Expected type ${variantType.get(
+            if (
+              valueType.baseType !== "error" &&
+              !valueType.eq(variantType.get(key.value))
+            ) {
+              scope.error({
+                code: "TYPE_MISMATCH",
+                message: `Expected type ${variantType.get(
                   key.value
-                )} for variant option ${key.value} but got ${valueType}`
-              );
+                )} for variant option ${key.value} but got ${valueType}`,
+                span: value.span,
+              });
             }
 
             return variantType;
@@ -605,17 +637,26 @@ export const bindParseTypeMethodCall = ({
               const argType = typeCheckExp(args[0].expression).ectype;
 
               if (argType.baseType !== "type") {
-                throw new Error(
-                  `Only type-values can be cast to Type (got ${argType}).`
-                );
+                scope.error({
+                  code: "TYPE_MISMATCH",
+                  message: `Only type-values can be cast to Type (got ${argType}).`,
+                  span: args[0].expression.span,
+                });
+                // Still safe to return TypeType, since that's likely what the
+                // user meant when they called Type.from.
               }
 
               return TypeType;
             })
             .with("conform", () => {
-              throw new Error(
-                `A value cannot be conformed to Type at runtime.`
-              );
+              scope.error({
+                code: "INVALID_OPERATION",
+                message: `A value cannot be conformed to Type at runtime.`,
+                span: memberExp.property.span,
+              });
+
+              // We still know what type the user meant, even if it's not allowed.
+              return option(TypeType);
             })
             .otherwise(() => {
               throw new Error(`${method} is not a valid method on Type.`);
@@ -811,11 +852,16 @@ export const bindParseTypeMethodCall = ({
 
                   if (i === 0) {
                     seenReturnType = handlerReturnType;
-                  } else if (!seenReturnType.eq(handlerReturnType)) {
+                  } else if (
+                    seenReturnType.baseType !== "error" &&
+                    !seenReturnType.eq(handlerReturnType)
+                  ) {
                     // Ensure that all return types match.
-                    throw new Error(
-                      `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`
-                    );
+                    scope.error({
+                      code: "TYPE_MISMATCH",
+                      message: `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`,
+                      span: handler.span, // TODO this should be on the faulty return, not the whole handler
+                    });
                   }
                 });
 
@@ -893,10 +939,15 @@ export const bindParseTypeMethodCall = ({
     });
 
     const inferredReturnType = inferReturnType(fnNode, paramTypes);
-    if (!inferredReturnType.eq(fnType.returns())) {
-      throw new Error(
-        `Expected function to return ${fnType.returns()} but got ${inferredReturnType}.`
-      );
+    if (
+      inferredReturnType.baseType !== "error" &&
+      !inferredReturnType.eq(fnType.returns())
+    ) {
+      scope.error({
+        code: "TYPE_MISMATCH",
+        message: `Expected function to return ${fnType.returns()} but got ${inferredReturnType}.`,
+        span: fnNode.span, // TODO error should be on faulty return, not the entire function
+      });
     }
   };
 
