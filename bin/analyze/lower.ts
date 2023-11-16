@@ -1,8 +1,18 @@
-import type { Expression, ModuleItem, Pattern } from "@swc/core";
+import type {
+  AssignmentProperty,
+  Expression,
+  ModuleDeclaration,
+  Pattern,
+  Property,
+  SpreadElement,
+  Statement,
+} from "acorn";
 import type {
   ECBlockStatement,
   ECExp,
   ECNode,
+  ECProperty,
+  ECSpreadElement,
   ECTemplateLiteral,
   ECVariableDeclaration,
 } from "../types/ECNode";
@@ -11,11 +21,11 @@ import { match } from "ts-pattern";
 import { ECPattern } from "../types/ECPattern";
 
 // Lowering simplifies some nodes and removes nodes not allowed in Ectype.
-export const lower = (body: ModuleItem[]): ECNode[] =>
+export const lower = (body: (Statement | ModuleDeclaration)[]): ECNode[] =>
   body.map((node) => lowerNode(node));
 
-const lowerNode = (node: ModuleItem): ECNode =>
-  match<ModuleItem, ECNode>(node)
+const lowerNode = (node: Statement | ModuleDeclaration): ECNode =>
+  match<Statement | ModuleDeclaration, ECNode>(node)
     // direct passthroughs
     .with({ type: "DebuggerStatement" }, (node) => node)
     .with({ type: "EmptyStatement" }, (node) => node)
@@ -24,69 +34,75 @@ const lowerNode = (node: ModuleItem): ECNode =>
 
     // statements with rewrites onto Ectype nodes
     .with({ type: "BlockStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECBlockStatement",
-      statements: node.stmts.map((st) => lowerNode(st)),
+      body: node.body.map((st) => lowerNode(st)),
     }))
     .with({ type: "WhileStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECWhileStatement",
       test: lowerExpression(node.test),
       body: lowerNode(node.body),
     }))
     .with({ type: "ForStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECForStatement",
       init:
-        node.init &&
-        (node.init.type === "VariableDeclaration"
-          ? (lowerNode(node.init) as ECVariableDeclaration)
-          : lowerExpression(node.init)),
-      test: node.test && lowerExpression(node.test),
-      update: node.update && lowerExpression(node.update),
+        (node.init &&
+          (node.init.type === "VariableDeclaration"
+            ? (lowerNode(node.init) as ECVariableDeclaration)
+            : lowerExpression(node.init))) ||
+        undefined,
+      test: (node.test && lowerExpression(node.test)) || undefined,
+      update: (node.update && lowerExpression(node.update)) || undefined,
       body: lowerNode(node.body),
     }))
     .with({ type: "IfStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECIfStatement",
       test: lowerExpression(node.test),
       consequent: lowerNode(node.consequent),
-      alternate: node.alternate && lowerNode(node.alternate),
+      alternate: (node.alternate && lowerNode(node.alternate)) || undefined,
     }))
     .with({ type: "ReturnStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECReturnStatement",
-      argument: node.argument && lowerExpression(node.argument),
+      argument: (node.argument && lowerExpression(node.argument)) || undefined,
     }))
     .with({ type: "LabeledStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECLabeledStatement",
       label: node.label,
       body: lowerNode(node.body),
     }))
     .with({ type: "SwitchStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECSwitchStatement",
       discriminant: lowerExpression(node.discriminant),
       cases: node.cases.map((c) => ({
+        ...c,
         type: "ECSwitchCase",
-        span: c.span,
-        test: c.test && lowerExpression(c.test),
+        test: (c.test && lowerExpression(c.test)) || undefined,
         consequent: c.consequent.map((n) => lowerNode(n)),
       })),
     }))
     .with({ type: "TryStatement" }, (node) => ({
-      span: node.span,
+      ...node,
       type: "ECTryStatement",
       block: lowerNode(node.block) as ECBlockStatement,
-      handler: node.handler && {
-        span: node.handler.span,
-        type: "ECCatchClause",
-        param: node.handler.param && lowerPattern(node.handler.param),
-        body: lowerNode(node.handler.body) as ECBlockStatement,
-      },
+      handler:
+        (node.handler && {
+          ...node.handler,
+          type: "ECCatchClause",
+          param:
+            (node.handler.param && lowerPattern(node.handler.param)) ||
+            undefined,
+          body: lowerNode(node.handler.body) as ECBlockStatement,
+        }) ||
+        undefined,
       finalizer:
-        node.finalizer && (lowerNode(node.finalizer) as ECBlockStatement),
+        (node.finalizer && (lowerNode(node.finalizer) as ECBlockStatement)) ||
+        undefined,
     }))
     .with({ type: "VariableDeclaration" }, (node) => {
       if (node.kind === "var") {
@@ -96,28 +112,68 @@ const lowerNode = (node: ModuleItem): ECNode =>
       }
 
       return {
-        span: node.span,
+        ...node,
         type: "ECVariableDeclaration",
         kind: node.kind,
-        declare: node.declare,
         declarations: node.declarations.map((decl) => ({
-          span: decl.span,
+          ...decl,
           type: "ECVariableDeclarator",
           id: lowerPattern(decl.id),
-          init: decl.init && lowerExpression(decl.init),
-          definite: decl.definite,
+          init: (decl.init && lowerExpression(decl.init)) || undefined,
         })),
       };
     })
 
     // import and export
-    .with({ type: "ExportDeclaration" }, (node) => {
-      throw new Error("Export declaration TBD");
-    })
+
     // TODO: check against naming an export "default"?
-    .with({ type: "ExportNamedDeclaration" }, (node) => node)
+    .with({ type: "ExportNamedDeclaration" }, (node) => {
+      if (node.declaration !== null) {
+        throw new Error("Exports with declarations are forbidden in Ectype.");
+      }
+
+      if (node.source !== null) {
+        throw new Error("Re-exports are not yet supported.");
+      }
+
+      return {
+        ...node,
+        type: "ECExportNamedDeclaration",
+        specifiers: node.specifiers.map((spec) => ({
+          ...spec,
+          type: "ECExportSpecifier",
+          exported:
+            spec.exported.type === "Identifier"
+              ? spec.exported.name
+              : String(spec.exported.value),
+          local:
+            spec.local.type === "Identifier"
+              ? spec.local.name
+              : String(spec.local.value),
+        })),
+      };
+    })
     // TODO: check for default imports
-    .with({ type: "ImportDeclaration" }, (node) => node)
+    .with({ type: "ImportDeclaration" }, (node) => ({
+      ...node,
+      type: "ECImportDeclaration",
+      specifiers: node.specifiers.map((spec) => {
+        if (spec.type !== "ImportSpecifier") {
+          throw new Error(`Default and named imports are not yet supported.`);
+        }
+
+        return {
+          ...spec,
+          type: "ECImportSpecifier",
+          imported:
+            spec.imported.type === "Identifier"
+              ? spec.imported.name
+              : String(spec.imported.value),
+          local: spec.local.name,
+        };
+      }),
+      source: String(node.source.value),
+    }))
 
     // unpack expression
     .with({ type: "ExpressionStatement" }, (val) =>
@@ -131,19 +187,16 @@ const lowerNode = (node: ModuleItem): ECNode =>
     .with({ type: "ExportAllDeclaration" }, () => {
       throw new Error("Export-all declarations are forbidden in Ectype.");
     })
-    .with({ type: "ExportDefaultExpression" }, () => {
-      throw new Error("Default exports are forbidden in Ectype.");
-    })
     .with({ type: "ExportDefaultDeclaration" }, () => {
       throw new Error(
         "`export default` is forbidden in Ectype. Use a non-default `export` instead."
       );
     })
     .with({ type: "ForInStatement" }, () => {
-      throw new Error("`for in` is forbidden in Ectype.");
+      throw new Error("`for in` is not currently supported in Ectype.");
     })
     .with({ type: "ForOfStatement" }, () => {
-      throw new Error("`for of` is forbidden in Ectype.");
+      throw new Error("`for of` is not currently supported in Ectype.");
     })
     .with({ type: "FunctionDeclaration" }, () => {
       throw new Error(
@@ -159,54 +212,86 @@ const lowerNode = (node: ModuleItem): ECNode =>
     .with({ type: "ClassDeclaration" }, () => {
       throw new Error("`class` declarations are forbidden in Ectype.");
     })
-    .otherwise(() => {
-      throw new Error(`Invalid node: ${node.type}`);
-    });
+    .exhaustive();
 
 const lowerExpression = (exp: Expression): ECExp =>
   match<Expression, ECExp>(exp)
-    .with({ type: "NullLiteral" }, (exp) => exp)
-    .with({ type: "BooleanLiteral" }, (exp) => exp)
-    .with({ type: "NumericLiteral" }, (exp) => exp)
-    .with({ type: "BigIntLiteral" }, (exp) => exp)
-    .with({ type: "StringLiteral" }, (exp) => ({
-      ...exp,
-      type: "ECStringLiteral",
-    }))
+    .with({ type: "Literal" }, (literal) => {
+      if (typeof literal.value === "boolean") {
+        return {
+          ...literal,
+          type: "ECBooleanLiteral",
+          value: literal.value,
+        };
+      } else if (typeof literal.value === "number") {
+        return {
+          ...literal,
+          type: "ECNumberLiteral",
+          value: literal.value,
+        };
+      } else if (typeof literal.value === "string") {
+        return {
+          ...literal,
+          type: "ECStringLiteral",
+          value: literal.value,
+        };
+      } else if (typeof literal.value === "bigint") {
+        return {
+          ...literal,
+          type: "ECBigIntLiteral",
+          value: literal.value,
+        };
+      } else if (typeof literal.value === "object") {
+        if (literal.regex) {
+          return {
+            ...literal,
+            ...literal.regex,
+            type: "ECRegexp",
+          };
+        } else if (literal.value === null) {
+          return {
+            ...literal,
+            type: "ECNullLiteral",
+          };
+        } else {
+          throw new Error(`Invalid literal object: ${literal}`);
+        }
+      } else {
+        throw new Error(`Invalid literal: ${literal}`);
+      }
+    })
     .with({ type: "TaggedTemplateExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECTaggedTemplateExpression",
       tag: lowerExpression(exp.tag),
-      template: lowerExpression(exp.template) as ECTemplateLiteral,
+      quasi: lowerExpression(exp.quasi) as ECTemplateLiteral,
     }))
     .with({ type: "TemplateLiteral" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECTemplateLiteral",
       expressions: exp.expressions.map((e) => lowerExpression(e)),
       quasis: exp.quasis,
     }))
-    .with({ type: "RegExpLiteral" }, () => {
-      throw new Error("Regexes are not yet implemented.");
-    })
     .with({ type: "ArrayExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECArrayExpression",
       elements: exp.elements.map((el) => {
-        if (!el) {
-          return undefined;
+        if (el === null) {
+          return null;
         }
 
-        return {
-          spread: el.spread,
-          expression: lowerExpression(el.expression),
-        };
+        if (el.type === "SpreadElement") {
+          return lowerSpreadElement(el);
+        }
+
+        return lowerExpression(el);
       }),
     }))
-    // The SWC type definition for an arrow function expression has a "generator" flag, but
-    // it's not syntactically possible for an arrow function to be a generator, so we don't
-    // test for that here.
+    // The type definition for an ArrowFunctionExpression has a "generator" flag,
+    // but it's not syntactically possible for an arrow function to be a generator,
+    // so we don't test for that here.
     .with({ type: "ArrowFunctionExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECArrowFunctionExpression",
       params: exp.params.map((param) => lowerPattern(param)),
       body:
@@ -216,14 +301,14 @@ const lowerExpression = (exp: Expression): ECExp =>
       async: exp.async,
     }))
     .with({ type: "AssignmentExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECAssignmentExpression",
       operator: exp.operator,
       left: lowerPattern(exp.left),
       right: lowerExpression(exp.right),
     }))
     .with({ type: "AwaitExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECAwaitExpression",
       argument: lowerExpression(exp.argument),
     }))
@@ -237,79 +322,92 @@ const lowerExpression = (exp: Expression): ECExp =>
         throw new Error(`\`${exp.operator}\` is forbidden in Ectype.`);
       }
 
+      if (exp.left.type === "PrivateIdentifier") {
+        throw new Error(`Private identifiers are forbidden in Ectype.`);
+      }
+
       return {
-        span: exp.span,
+        ...exp,
         type: "ECBinaryExpression",
         operator: exp.operator,
         left: lowerExpression(exp.left),
         right: lowerExpression(exp.right),
       };
     })
+    .with({ type: "LogicalExpression" }, (exp) => ({
+      ...exp,
+      type: "ECLogicalExpression",
+      left: lowerExpression(exp.left),
+      right: lowerExpression(exp.right),
+    }))
     .with({ type: "CallExpression" }, (exp) => {
       if (exp.callee.type === "Super") {
         throw new Error("`super` is forbidden in Ectype.");
       }
 
+      if (exp.optional) {
+        throw new Error(
+          `Optional function calls with ?.() are forbidden in Ectype.`
+        );
+      }
+
       // js() special function
-      if (exp.callee.type === "Identifier" && exp.callee.value === "js") {
+      if (exp.callee.type === "Identifier" && exp.callee.name === "js") {
         if (exp.arguments.length !== 1 && exp.arguments.length !== 2) {
           throw new Error(
             `Expected 1 or 2 arguments to js() but got ${exp.arguments.length}`
           );
         }
 
-        if (exp.arguments[0].expression.type !== "ArrowFunctionExpression") {
+        if (exp.arguments[0].type !== "ArrowFunctionExpression") {
           throw new Error(`First parameter to js() must be an arrow function.`);
+        }
+
+        if (exp.arguments[1]?.type === "SpreadElement") {
+          throw new Error(`Second parameter to js() cannot be a spread.`);
         }
 
         // Keep the call expression node the same, but don't lower the function body.
 
         return {
-          span: exp.span,
+          ...exp,
           type: "ECCallExpression",
-          callee: { ...exp.callee, type: "ECIdentifier" },
+          callee: lowerExpression(exp.callee),
           arguments: [
             {
-              spread: exp.arguments[0].spread,
-              expression: {
-                ...exp.arguments[0].expression,
-                params: [],
-                // Replace body with a null literal node so it can be valid to TypeScript.
-                // The function body is not read by the type-checker anyway.
-                body: {
-                  type: "NullLiteral",
-                  span: exp.arguments[0].expression.span,
-                },
-                type: "ECArrowFunctionExpression",
+              ...exp.arguments[0],
+              params: [],
+              // Replace body with a null literal node so it can be valid to TypeScript.
+              // The function body is not read by the type-checker anyway.
+              body: {
+                start: exp.arguments[0].body.start,
+                end: exp.arguments[0].body.end,
+                range: exp.arguments[0].body?.range,
+                loc: exp.arguments[0].body?.loc,
+                type: "ECNullLiteral",
               },
+              type: "ECArrowFunctionExpression",
             },
-            ...(exp.arguments[1]
-              ? [
-                  {
-                    spread: exp.arguments[1].spread,
-                    expression: lowerExpression(exp.arguments[1].expression),
-                  },
-                ]
-              : []),
+            lowerExpression(exp.arguments[1]),
           ],
         };
       }
 
       return {
-        span: exp.span,
+        ...exp,
         type: "ECCallExpression",
-        callee:
-          exp.callee.type === "Import"
-            ? exp.callee
-            : lowerExpression(exp.callee),
-        arguments: exp.arguments.map((arg) => ({
-          spread: arg.spread,
-          expression: lowerExpression(arg.expression),
-        })),
+        callee: lowerExpression(exp.callee),
+        arguments: exp.arguments.map((arg) => {
+          if (arg.type === "SpreadElement") {
+            return lowerSpreadElement(arg);
+          } else {
+            return lowerExpression(arg);
+          }
+        }),
       };
     })
     .with({ type: "ConditionalExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECConditionalExpression",
       test: lowerExpression(exp.test),
       consequent: lowerExpression(exp.consequent),
@@ -319,94 +417,58 @@ const lowerExpression = (exp: Expression): ECExp =>
       ...exp,
       type: "ECIdentifier",
     }))
+    .with({ type: "ImportExpression" }, (exp) => ({
+      ...exp,
+      type: "ECImportExpression",
+      source: lowerExpression(exp),
+    }))
     .with({ type: "MemberExpression" }, (exp) => {
       // Computed properties are valid for arrays but not structs, so
       // they are weeded out later when type-checking information is availble.
 
-      if (exp.property.type === "PrivateName") {
-        throw new Error("Private names are forbidden in Ectype.");
+      if (exp.property.type === "PrivateIdentifier") {
+        throw new Error("Private identifiers are forbidden in Ectype.");
+      }
+
+      if (exp.object.type === "Super") {
+        throw new Error("`super` is forbidden in Ectype.");
       }
 
       // TODO: check if member expression is a keyword function, e.g. Type.sub
 
       return {
-        span: exp.span,
+        ...exp,
         type: "ECMemberExpression",
         object: lowerExpression(exp.object),
-        property:
-          exp.property.type === "Identifier"
-            ? exp.property
-            : {
-                span: exp.property.span,
-                type: "ECComputed",
-                expression: lowerExpression(exp.property.expression),
-              },
+        property: lowerExpression(exp.property),
       };
     })
     .with({ type: "ObjectExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECObjectExpression",
       properties: exp.properties.map((prop) => {
         if (prop.type === "SpreadElement") {
-          return {
-            type: "ECSpreadElement",
-            spread: prop.spread,
-            arguments: lowerExpression(prop.arguments),
-          };
+          return lowerSpreadElement(prop);
+        } else {
+          return lowerProperty(prop);
         }
-
-        if (prop.type === "KeyValueProperty") {
-          return {
-            type: "ECKeyValueProperty",
-            key:
-              prop.key.type === "Computed"
-                ? {
-                    span: prop.key.span,
-                    type: "ECComputed",
-                    expression: lowerExpression(prop.key.expression),
-                  }
-                : prop.key,
-            value: lowerExpression(prop.value),
-          };
-        }
-
-        if (prop.type === "AssignmentProperty") {
-          return {
-            type: "ECAssignmentProperty",
-            key: prop.key,
-            value: lowerExpression(prop.value),
-          };
-        }
-
-        if (prop.type === "GetterProperty" || prop.type === "SetterProperty") {
-          throw new Error(
-            `Getter and setter properties are forbidden in Ectype.`
-          );
-        }
-
-        if (prop.type === "MethodProperty") {
-          throw new Error(
-            "Object methods are forbidden in Ectype. Use an arrow function member instead."
-          );
-        }
-
-        if (prop.type === "Identifier") {
-          return prop;
-        }
-
-        prop;
-        throw new Error("Unreachable (prop has type never)");
       }),
     }))
-    .with({ type: "ParenthesisExpression" }, (exp) =>
+    .with({ type: "ParenthesizedExpression" }, (exp) =>
       lowerExpression(exp.expression)
     )
     .with({ type: "SequenceExpression" }, (exp) => ({
-      span: exp.span,
+      ...exp,
       type: "ECSequenceExpression",
       expressions: exp.expressions.map((e) => lowerExpression(e)),
     }))
     .with({ type: "UnaryExpression" }, (exp) => {
+      if (!exp.prefix) {
+        throw new Error(
+          `Postfix operators are forbidden in Ectype (got ${exp.operator}).`
+        );
+      }
+
       if (
         exp.operator === "typeof" ||
         exp.operator === "void" ||
@@ -416,7 +478,7 @@ const lowerExpression = (exp: Expression): ECExp =>
       }
 
       return {
-        span: exp.span,
+        ...exp,
         type: "ECUnaryExpression",
         operator: exp.operator,
         argument: lowerExpression(exp.argument),
@@ -438,16 +500,10 @@ const lowerExpression = (exp: Expression): ECExp =>
     .with({ type: "NewExpression" }, () => {
       throw new Error("`new` is forbidden in Ectype.");
     })
-    .with({ type: "OptionalChainingExpression" }, () => {
+    .with({ type: "ChainExpression" }, () => {
       throw new Error(
         "Optional chain `?.` expressions are forbidden in Ectype."
       );
-    })
-    .with({ type: "PrivateName" }, () => {
-      throw new Error("Private names are not currently supported in Ectype.");
-    })
-    .with({ type: "SuperPropExpression" }, () => {
-      throw new Error("Super props are forbidden in Ectype.");
     })
     .with({ type: "ThisExpression" }, () => {
       throw new Error("`this` is forbidden in Ectype.");
@@ -458,75 +514,109 @@ const lowerExpression = (exp: Expression): ECExp =>
     .with({ type: "YieldExpression" }, () => {
       throw new Error("Yield expressions are forbidden in Ectype.");
     })
-    .otherwise(() => {
-      throw new Error(`Invalid expression node: ${exp.type}`);
-    });
+    .exhaustive();
 
 const lowerPattern = (pattern: Pattern): ECPattern =>
   match<Pattern, ECPattern>(pattern)
-    // Identifier is treated as an expression (lowerExpression will turn it into an ECIdentifier).
-    .with({ type: "ArrayPattern" }, (p) => ({
-      span: p.span,
-      type: "ECArrayPattern",
-      elements: p.elements.map((el) => el && lowerPattern(el)),
-      optional: p.optional,
+    .with({ type: "Identifier" }, (pat) => ({
+      ...pat,
+      type: "ECIdentifier",
     }))
-    .with({ type: "RestElement" }, (p) => ({
-      span: p.span,
-      type: "ECRestElement",
-      rest: p.rest,
-      argument: lowerPattern(p.argument),
-    }))
-    .with({ type: "ObjectPattern" }, (p) => ({
-      span: p.span,
+    .with({ type: "MemberExpression" }, (pat) => {
+      // This is the same behavior lowering a MemberExpression node, but I
+      // think they might diverge later.
+      if (pat.property.type === "PrivateIdentifier") {
+        throw new Error("Private identifiers are forbidden in Ectype.");
+      }
+
+      if (pat.object.type === "Super") {
+        throw new Error("`super` is forbidden in Ectype.");
+      }
+
+      return {
+        ...pat,
+        type: "ECMemberExpression",
+        object: lowerExpression(pat.object),
+        property: lowerExpression(pat.property),
+      };
+    })
+    .with({ type: "ObjectPattern" }, (pat) => ({
+      ...pat,
       type: "ECObjectPattern",
-      properties: p.properties.map((prop) => {
-        if (prop.type === "AssignmentPatternProperty") {
+      properties: pat.properties.map((prop) => {
+        if (prop.type === "Property") {
+          return lowerProperty(prop);
+        } else if (prop.type === "RestElement") {
           return {
-            span: prop.span,
-            type: "ECAssignmentPatternProperty",
-            key: prop.key,
-            value: prop.value && lowerExpression(prop.value),
-          };
-        }
-
-        if (prop.type === "KeyValuePatternProperty") {
-          return {
-            type: "ECKeyValuePatternProperty",
-            key:
-              prop.key.type === "Computed"
-                ? {
-                    span: prop.key.span,
-                    type: "ECComputed",
-                    expression: lowerExpression(prop.key.expression),
-                  }
-                : prop.key,
-            value: lowerPattern(prop.value),
-          };
-        }
-
-        if (prop.type === "RestElement") {
-          return {
-            span: prop.span,
+            ...prop,
             type: "ECRestElement",
-            rest: prop.rest,
             argument: lowerPattern(prop.argument),
           };
         }
 
         prop;
-        throw new Error(`Unreachable (prop has type never)`);
+        throw new Error("Unreachable (prop has type never)");
       }),
-      optional: p.optional,
     }))
-    .with({ type: "AssignmentPattern" }, (p) => ({
-      span: p.span,
+    .with({ type: "ArrayPattern" }, (pat) => ({
+      ...pat,
+      type: "ECArrayPattern",
+      elements: pat.elements.map((el) => {
+        if (el === null) {
+          return null;
+        }
+
+        return lowerPattern(el);
+      }),
+    }))
+    .with({ type: "RestElement" }, (pat) => ({
+      ...pat,
+      type: "ECRestElement",
+      argument: lowerPattern(pat.argument),
+    }))
+    .with({ type: "AssignmentPattern" }, (pat) => ({
+      ...pat,
       type: "ECAssignmentPattern",
-      left: lowerPattern(p.left),
-      right: lowerExpression(p.right),
+      left: lowerPattern(pat.left),
+      right: lowerExpression(pat.right),
     }))
-    .with({ type: "Invalid" }, (p) => {
-      throw new Error(`Invalid pattern at ${JSON.stringify(p.span)}`);
-    })
-    // otherwise, pattern is an expression
-    .otherwise(() => lowerExpression(pattern as Expression));
+    .exhaustive();
+
+// Some reusable handlers.
+
+const lowerProperty = (prop: Property | AssignmentProperty): ECProperty => {
+  if (prop.kind === "get" || prop.kind === "set") {
+    throw new Error(`${prop.kind}ters are forbidden in Ectype.`);
+  }
+
+  if (prop.method) {
+    throw new Error(
+      "Object methods are forbidden in Ectype. Use an arrow function expression instead."
+    );
+  }
+
+  if (prop.computed) {
+    throw new Error(
+      "Computed object field accesses are currently forbidden in Ectype."
+    );
+  }
+
+  return {
+    ...prop,
+    type: "ECProperty",
+    key: lowerExpression(prop.key),
+    value:
+      prop.value.type === "ObjectPattern" ||
+      prop.value.type === "RestElement" ||
+      prop.value.type === "ArrayPattern" ||
+      prop.value.type === "AssignmentPattern"
+        ? lowerPattern(prop.value)
+        : lowerExpression(prop.value),
+  };
+};
+
+const lowerSpreadElement = (el: SpreadElement): ECSpreadElement => ({
+  ...el,
+  type: "ECSpreadElement",
+  argument: lowerExpression(el.argument),
+});

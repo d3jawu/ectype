@@ -26,7 +26,7 @@ export type Typed<T> = //
         [K in keyof T]: Typed<T[K]>;
       } & { ectype: Type }
     : // Array of expressions
-    T extends ECExp[]
+    T extends object[]
     ? Typed<T[0]>[]
     : // Any object (which might contain expressions within it), e.g. ECStatement
     T extends object

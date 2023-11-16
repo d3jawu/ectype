@@ -1,6 +1,5 @@
 import type { Type } from "../../core/core.js";
 
-import { parseFileSync } from "@swc/core";
 import { lower } from "./lower.js";
 import { typeCheck } from "./typeCheck/typeCheck.js";
 import { typeValFrom } from "./typeValFrom.js";
@@ -9,6 +8,10 @@ import * as core from "../../core/core.js";
 import { keyword } from "../../core/internal.js";
 
 import { Error, Warning } from "../types/Error.js";
+
+import { Comment, parse } from "acorn";
+
+import { readFileSync } from "fs";
 
 // Core type map, used for introducing Ectype core types into a scope.
 export const coreTypeMap = Object.entries(core).reduce(
@@ -44,13 +47,23 @@ export const analyzeFile = (
     return null;
   }
 
-  const { body: ast } = parseFileSync(path);
+  const comments: Comment[] = [];
+
+  const source = readFileSync(path).toString();
+
+  const { body: ast } = parse(source, {
+    ecmaVersion: "latest",
+    sourceType: "module",
+    onComment: comments,
+    locations: true,
+  });
 
   // If file doesn't begin with a string, it can't be an Ectype file (no directive).
   if (
     ast.length === 0 ||
     ast[0].type !== "ExpressionStatement" ||
-    ast[0].expression.type !== "StringLiteral"
+    ast[0].expression.type !== "Literal" ||
+    typeof ast[0].expression.value !== "string"
   ) {
     return null;
   }
@@ -63,7 +76,8 @@ export const analyzeFile = (
     if (
       ast.length === 1 ||
       ast[1].type !== "ExpressionStatement" ||
-      ast[1].expression.type !== "StringLiteral"
+      ast[1].expression.type !== "Literal" ||
+      typeof ast[1].expression.value !== "string"
     ) {
       return null;
     }
