@@ -1,24 +1,14 @@
 import type {
   AssignmentOperator,
-  BigIntLiteral,
-  BooleanLiteral,
   BreakStatement,
   ContinueStatement,
   DebuggerStatement,
   EmptyStatement,
-  ExportNamedDeclaration,
-  HasSpan,
   Identifier,
-  Import,
-  ImportDeclaration,
-  ImportSpecifier,
+  LogicalOperator,
   Node,
-  NullLiteral,
-  NumericLiteral,
-  Span,
-  StringLiteral,
   TemplateElement,
-} from "@swc/core";
+} from "acorn";
 
 import type { Type } from "../../core/core";
 import type { ECPattern } from "./ECPattern";
@@ -28,11 +18,11 @@ export type ECNode = ECExp | ECStatement;
 export type ECStatement =
   | DebuggerStatement
   | EmptyStatement
-  | ECBlockStatement
   | BreakStatement
   | ContinueStatement
-  | ExportNamedDeclaration
-  | ImportDeclaration
+  | ECExportNamedDeclaration
+  | ECImportDeclaration
+  | ECBlockStatement
   | ECVariableDeclaration
   | ECForStatement
   | ECSwitchStatement
@@ -42,62 +32,71 @@ export type ECStatement =
   | ECReturnStatement
   | ECLabeledStatement;
 
-// Ectype versions of SWC statement nodes.
-
-export interface ECBlockStatement extends Node, HasSpan {
-  type: "ECBlockStatement";
-  statements: ECNode[];
+export interface ECExportNamedDeclaration extends Node {
+  type: "ECExportNamedDeclaration";
+  specifiers: Array<ECExportSpecifier>;
 }
 
-export interface ECWhileStatement extends Node, HasSpan {
+export interface ECExportSpecifier extends Node {
+  type: "ECExportSpecifier";
+  exported: string;
+  local: string;
+}
+
+export interface ECBlockStatement extends Node {
+  type: "ECBlockStatement";
+  body: ECNode[];
+}
+
+export interface ECWhileStatement extends Node {
   type: "ECWhileStatement";
   test: ECExp;
   body: ECNode;
 }
 
-export interface ECIfStatement extends Node, HasSpan {
+export interface ECIfStatement extends Node {
   type: "ECIfStatement";
   test: ECExp;
   consequent: ECNode;
   alternate?: ECNode;
 }
 
-export interface ECReturnStatement extends Node, HasSpan {
+export interface ECReturnStatement extends Node {
   type: "ECReturnStatement";
   argument?: ECExp;
 }
 
-export interface ECLabeledStatement extends Node, HasSpan {
+export interface ECLabeledStatement extends Node {
   type: "ECLabeledStatement";
   label: Identifier;
   body: ECNode;
 }
 
-export interface ECImportDeclaration extends Node, HasSpan {
+export interface ECImportDeclaration extends Node {
   type: "ECImportDeclaration";
-  specifiers: ImportSpecifier[];
-  source: StringLiteral;
-  typeOnly: boolean;
-  asserts?: ECObjectExpression;
+  specifiers: ECImportSpecifier[];
+  source: string;
 }
 
-export interface ECVariableDeclaration extends Node, HasSpan {
+export interface ECImportSpecifier extends Node {
+  type: "ECImportSpecifier";
+  imported: string;
+  local: string;
+}
+
+export interface ECVariableDeclaration extends Node {
   type: "ECVariableDeclaration";
-  kind: ECVariableDeclarationKind;
-  declare: boolean;
+  kind: "let" | "const";
   declarations: ECVariableDeclarator[];
 }
 
-export type ECVariableDeclarationKind = "let" | "const";
-
-export interface ECVariableDeclarator extends Node, HasSpan {
+export interface ECVariableDeclarator extends Node {
   type: "ECVariableDeclarator";
   id: ECPattern;
   init?: ECExp;
-  definite: boolean;
 }
 
-export interface ECForStatement extends Node, HasSpan {
+export interface ECForStatement extends Node {
   type: "ECForStatement";
   init?: ECVariableDeclaration | ECExp;
   test?: ECExp;
@@ -105,13 +104,13 @@ export interface ECForStatement extends Node, HasSpan {
   body: ECNode;
 }
 
-export interface ECSwitchStatement extends Node, HasSpan {
+export interface ECSwitchStatement extends Node {
   type: "ECSwitchStatement";
   discriminant: ECExp;
   cases: ECSwitchCase[];
 }
 
-export interface ECSwitchCase extends Node, HasSpan {
+export interface ECSwitchCase extends Node {
   type: "ECSwitchCase";
   /**
    * Undefined for default case
@@ -120,28 +119,27 @@ export interface ECSwitchCase extends Node, HasSpan {
   consequent: ECNode[];
 }
 
-export interface ECTryStatement extends Node, HasSpan {
+export interface ECTryStatement extends Node {
   type: "ECTryStatement";
   block: ECBlockStatement;
   handler?: ECCatchClause;
   finalizer?: ECBlockStatement;
 }
 
-export interface ECCatchClause extends Node, HasSpan {
+export interface ECCatchClause extends Node {
   type: "ECCatchClause";
-  /**
-   * The param is `undefined` if the catch binding is omitted. E.g., `try { foo() } catch {}`
-   */
+  // param is `undefined` if the catch binding is omitted. E.g., `try { foo() } catch {}`
   param?: ECPattern;
   body: ECBlockStatement;
 }
 
 export type ECExp =
-  | NullLiteral
-  | BooleanLiteral
-  | NumericLiteral
-  | BigIntLiteral
+  | ECNullLiteral
+  | ECBooleanLiteral
+  | ECNumberLiteral
   | ECStringLiteral
+  | ECBigIntLiteral
+  | ECRegexp
   | ECTypeDeclaration
   | ECTypeMethodCall
   | ECJSCall
@@ -153,6 +151,8 @@ export type ECExp =
   | ECBinaryExpression
   | ECCallExpression
   | ECConditionalExpression
+  | ECImportExpression
+  | ECLogicalExpression
   | ECMemberExpression
   | ECObjectExpression
   | ECSequenceExpression
@@ -160,25 +160,22 @@ export type ECExp =
   | ECTemplateLiteral
   | ECUnaryExpression;
 
-// Used to distinguish from swc Identifiers, which are sometimes used in situations where they do not have a type.
-export interface ECIdentifier extends Node, HasSpan {
+export interface ECIdentifier extends Node {
   type: "ECIdentifier";
-  value: string;
-  optional: boolean;
+  name: string;
 }
 
 // Nodes that only appear after type-checking (wrapped in Typed<>).
 
 // Represents a type declaration (e.g. struct({})).
-export interface ECTypeDeclaration extends Node, HasSpan {
+export interface ECTypeDeclaration extends Node {
   type: "ECTypeDeclaration";
   targetType: Type["baseType"];
-  shape: ECExp[];
 }
 
 // Represents a call to a type method (e.g. MyStruct.from).
 // TODO rename to ECTypeMethodCall
-export interface ECTypeMethodCall extends Node, HasSpan {
+export interface ECTypeMethodCall extends Node {
   type: "ECTypeMethodCall";
   targetType: Type["baseType"];
   method: string; // TODO type this more tightly?
@@ -186,43 +183,67 @@ export interface ECTypeMethodCall extends Node, HasSpan {
 }
 
 // Represents a call to the special js() function.
-export interface ECJSCall extends Node, HasSpan {
+export interface ECJSCall extends Node {
   type: "ECJSCall";
   fn: ECArrowFunctionExpression;
 }
 
-// Ectype versions of SWC expression nodes.
+// Ectype versions of expression nodes.
+export interface ECNullLiteral extends Node {
+  type: "ECNullLiteral";
+}
 
-export interface ECStringLiteral extends Node, HasSpan {
+export interface ECBooleanLiteral extends Node {
+  type: "ECBooleanLiteral";
+  value: boolean;
+}
+
+export interface ECNumberLiteral extends Node {
+  type: "ECNumberLiteral";
+  value: number;
+}
+
+export interface ECBigIntLiteral extends Node {
+  type: "ECBigIntLiteral";
+  value: bigint;
+}
+
+export interface ECStringLiteral extends Node {
   type: "ECStringLiteral";
   value: string;
-  raw?: string;
 }
 
-export interface ECArrayExpression extends Node, HasSpan {
+export interface ECRegexp extends Node {
+  type: "ECRegexp";
+  pattern: string;
+  flags: string;
+}
+
+export interface ECSpreadElement extends Node {
+  type: "ECSpreadElement";
+  argument: ECExp;
+}
+
+export interface ECArrayExpression extends Node {
   type: "ECArrayExpression";
-  elements: (ECExprOrSpread | undefined)[];
-}
-export interface ECExprOrSpread {
-  spread?: Span;
-  expression: ECExp;
+  elements: (ECExp | ECSpreadElement | null)[];
 }
 
-export interface ECArrowFunctionExpression extends Node, HasSpan {
+export interface ECArrowFunctionExpression extends Node {
   type: "ECArrowFunctionExpression";
   params: ECPattern[];
   body: ECBlockStatement | ECExp;
   async: boolean;
 }
 
-export interface ECAssignmentExpression extends Node, HasSpan {
+export interface ECAssignmentExpression extends Node {
   type: "ECAssignmentExpression";
   operator: AssignmentOperator;
   left: ECPattern;
   right: ECExp;
 }
 
-export interface ECAwaitExpression extends Node, HasSpan {
+export interface ECAwaitExpression extends Node {
   type: "ECAwaitExpression";
   argument: ECExp;
 }
@@ -245,91 +266,73 @@ export type ECBinaryOperator =
   | "|"
   | "^"
   | "&"
-  | "||"
-  | "&&"
-  | "**"
-  | "??";
+  | "**";
 
-export interface ECBinaryExpression extends Node, HasSpan {
+export interface ECBinaryExpression extends Node {
   type: "ECBinaryExpression";
   operator: ECBinaryOperator;
   left: ECExp;
   right: ECExp;
 }
 
-export interface ECCallExpression extends Node, HasSpan {
+export interface ECLogicalExpression extends Node {
+  type: "ECLogicalExpression";
+  operator: LogicalOperator;
+  left: ECExp;
+  right: ECExp;
+}
+
+export interface ECCallExpression extends Node {
   type: "ECCallExpression";
-  callee: Import | ECExp;
-  arguments: ECArgument[];
+  callee: ECExp;
+  arguments: (ECExp | ECSpreadElement)[];
 }
 
-export interface ECArgument {
-  spread?: Span;
-  expression: ECExp;
-}
-
-export interface ECConditionalExpression extends Node, HasSpan {
+export interface ECConditionalExpression extends Node {
   type: "ECConditionalExpression";
   test: ECExp;
   consequent: ECExp;
   alternate: ECExp;
 }
 
-export interface ECMemberExpression extends Node, HasSpan {
+export interface ECImportExpression extends Node {
+  type: "ECImportExpression";
+  source: ECExp;
+}
+
+export interface ECMemberExpression extends Node {
   type: "ECMemberExpression";
   object: ECExp;
-  property: Identifier | ECComputedPropName;
+  property: ECExp; // Must be ECIdentifier if computed is true.
+  computed: boolean;
 }
 
-export interface ECComputedPropName extends Node, HasSpan {
-  type: "ECComputed";
-  expression: ECExp;
-}
-
-export interface ECObjectExpression extends Node, HasSpan {
+export interface ECObjectExpression extends Node {
   type: "ECObjectExpression";
   properties: (ECSpreadElement | ECProperty)[];
 }
 
-export interface ECSpreadElement extends Node {
-  type: "ECSpreadElement";
-  spread: Span;
-  arguments: ECExp;
+export interface ECProperty extends Node {
+  type: "ECProperty";
+  key: ECExp;
+  value: ECExp | ECPattern;
+  method: boolean;
+  shorthand: boolean;
+  computed: boolean;
 }
 
-export type ECProperty = Identifier | ECKeyValueProperty | ECAssignmentProperty;
-
-export interface ECKeyValueProperty extends Node {
-  type: "ECKeyValueProperty";
-  key: ECPropertyName;
-  value: ECExp;
-}
-
-export interface ECAssignmentProperty extends Node {
-  type: "ECAssignmentProperty";
-  key: Identifier;
-  value: ECExp;
-}
-
-export type ECPropertyName =
-  | Identifier
-  | StringLiteral
-  | NumericLiteral
-  | ECComputedPropName
-  | BigIntLiteral;
-
-export interface ECSequenceExpression extends Node, HasSpan {
+export interface ECSequenceExpression extends Node {
   type: "ECSequenceExpression";
   expressions: ECExp[];
 }
 
-export interface ECTaggedTemplateExpression extends Node, HasSpan {
+export interface ECTaggedTemplateExpression extends Node {
   type: "ECTaggedTemplateExpression";
   tag: ECExp;
-  template: ECTemplateLiteral;
+  quasi: ECTemplateLiteral;
 }
 
-export interface ECTemplateLiteral extends Node, HasSpan {
+export interface ECTemplateLiteral extends Node {
   type: "ECTemplateLiteral";
   expressions: ECExp[];
   quasis: TemplateElement[];
@@ -337,7 +340,7 @@ export interface ECTemplateLiteral extends Node, HasSpan {
 
 export type ECUnaryOperator = "-" | "+" | "!" | "~";
 
-export interface ECUnaryExpression extends Node, HasSpan {
+export interface ECUnaryExpression extends Node {
   type: "ECUnaryExpression";
   operator: ECUnaryOperator;
   argument: ECExp;

@@ -11,11 +11,14 @@
     "test": "node dist/test/test.js",
     "check": "node dist/bin/ectype.js check"
   },
-  "files": ["dist/**/*", "!dist/test"],
+  "files": [
+    "dist/**/*",
+    "!dist/test"
+  ],
   "bin": {
     "ectype": "dist/bin/ectype.js"
   },
-  "author": "",
+  "author": "Holly Wu",
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/dejawu/ectype"
@@ -23,8 +26,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "acorn": "^8.11.2",
     "chalk": "^5.1.2",
-    "swc": "^1.0.11",
     "ts-pattern": "^4.2.2",
     "typescript": "^4.9.3"
   },

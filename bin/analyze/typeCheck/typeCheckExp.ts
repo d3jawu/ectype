@@ -1,9 +1,9 @@
 import type {
-  ECArgument,
   ECAssignmentExpression,
   ECBinaryOperator,
   ECCallExpression,
   ECExp,
+  ECIdentifier,
   ECJSCall,
   ECNode,
   ECTypeDeclaration,
@@ -34,7 +34,6 @@ import { bindParseTypeMethodCall } from "./parseTypeMethodCall.js";
 import { typeValFrom } from "../typeValFrom.js";
 
 import { match } from "ts-pattern";
-import { ECPattern } from "../../types/ECPattern.js";
 
 export const bindTypeCheckExp = ({
   scope,
@@ -46,20 +45,22 @@ export const bindTypeCheckExp = ({
   const typeCheckExp = (node: ECExp): TypedExp =>
     match<ECExp, TypedExp>(node)
       // TODO BigInt needs its own type.
-      .with({ type: "BigIntLiteral" }, (node) => ({ ...node, ectype: Num }))
-      .with({ type: "BooleanLiteral" }, (node) => ({ ...node, ectype: Bool }))
-      .with({ type: "NullLiteral" }, (node) => ({ ...node, ectype: Null }))
-      .with({ type: "NumericLiteral" }, (node) => ({ ...node, ectype: Num }))
+      .with({ type: "ECNullLiteral" }, (node) => ({ ...node, ectype: Null }))
+      .with({ type: "ECBooleanLiteral" }, (node) => ({ ...node, ectype: Bool }))
+      .with({ type: "ECNumberLiteral" }, (node) => ({ ...node, ectype: Num }))
       .with({ type: "ECStringLiteral" }, (node) => ({ ...node, ectype: Str }))
+      .with({ type: "ECBigIntLiteral" }, (node) => ({ ...node, ectype: Num }))
       .with({ type: "ECIdentifier" }, (node) => {
-        const type = scope.current.get(node.value);
+        const type = scope.current.get(node.name);
 
         if (type.baseType === "error") {
-          scope.error({
-            code: "UNDEFINED_VARIABLE",
-            message: `${node.value} is not defined.`,
-            span: node.span,
-          });
+          scope.error(
+            {
+              code: "UNDEFINED_VARIABLE",
+              message: `${node.name} is not defined.`,
+            },
+            node
+          );
         }
 
         return {
@@ -70,85 +71,63 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECAssignmentExpression" },
         (node): Typed<ECAssignmentExpression> => {
-          return match<ECPattern, Typed<ECAssignmentExpression>>(node.left)
-            .with({ type: "ECIdentifier" }, (lhs) => {
-              const left = typeCheckExp(lhs);
-              const leftType = left.ectype;
+          if (node.left.type !== "ECIdentifier") {
+            scope.error(
+              {
+                code: "UNIMPLEMENTED",
+                message: "Pattern assignments are not yet supported.",
+              },
+              node.left
+            );
 
-              const right = typeCheckExp(node.right);
-              const rightType = right.ectype;
+            return {
+              ...node,
+              // Just pretend it was an identifier, to avoid having to check the whole pattern.
+              // This will go away once pattern support is implemented.
+              left: {
+                ...node.left,
+                type: "ECIdentifier",
+                name: "Error",
+                ectype: ErrorType,
+              },
+              right: typeCheckExp(node.right),
+              ectype: ErrorType,
+            };
+          }
 
-              let ectype: Type;
-              if (
-                leftType.baseType === "error" &&
-                rightType.baseType === "error"
-              ) {
-                // If both sides have error types, we have no choice but to return an error type for this node.
-                ectype = ErrorType;
-              } else if (leftType.baseType === "error") {
-                ectype = rightType;
-              } else if (rightType.baseType === "error") {
-                ectype = leftType;
-              } else {
-                if (!rightType.eq(leftType)) {
-                  scope.error({
-                    code: "TYPE_MISMATCH",
-                    message: `Got ${rightType} but variable ${lhs.value} has type ${leftType}.`,
-                    span: node.span,
-                  });
-                }
-                // If the types don't match, use the RHS (since that's what the exp evaluates to).
-                ectype = rightType;
-              }
+          const lhs = typeCheckExp(node.left);
+          const leftType = lhs.ectype;
+          const rhs = typeCheckExp(node.right);
+          const rightType = rhs.ectype;
 
-              return {
-                ...node,
-                left,
-                right,
-                ectype,
-              };
-            })
-            .with({ type: "ECMemberExpression" }, (lhs) => {
-              const left = typeCheckExp(lhs);
-              const leftType = left.ectype;
-
-              const right = typeCheckExp(node.right);
-              const rightType = right.ectype;
-
-              let ectype: Type;
-              if (
-                leftType.baseType === "error" &&
-                rightType.baseType === "error"
-              ) {
-                // If both sides have error types, we have no choice but to return an error type for this node.
-                ectype = ErrorType;
-              } else if (leftType.baseType === "error") {
-                ectype = rightType;
-              } else if (rightType.baseType === "error") {
-                ectype = leftType;
-              } else {
-                if (!rightType.eq(leftType)) {
-                  scope.error({
-                    code: "TYPE_MISMATCH",
-                    message: `Expected ${leftType} but got ${rightType}.`,
-                    span: node.span,
-                  });
-                }
-                ectype = rightType;
-              }
-
-              return {
-                ...node,
-                left,
-                right,
-                ectype,
-              };
-            })
-            .otherwise(() => {
-              throw new Error(
-                `Assignments to ${node.left.type} are not allowed.`
+          let ectype: Type;
+          if (leftType.baseType === "error" && rightType.baseType === "error") {
+            // If both sides have error types, we have no choice but to return an error type for this node.
+            ectype = ErrorType;
+          } else if (leftType.baseType === "error") {
+            ectype = rightType;
+          } else if (rightType.baseType === "error") {
+            ectype = leftType;
+          } else {
+            if (!rightType.eq(leftType)) {
+              scope.error(
+                {
+                  code: "TYPE_MISMATCH",
+                  message: `Got ${rightType} but variable ${node.left.name} has type ${leftType}.`,
+                },
+                node.right
               );
-            });
+            }
+            // If the types don't match, use the RHS (since that's what the exp evaluates to).
+            ectype = rightType;
+          }
+
+          return {
+            ...node,
+            left: typeCheckExp(node.left) as Typed<ECIdentifier>,
+            right: typeCheckExp(node.right),
+            ectype: ErrorType,
+          };
         }
       )
       .with({ type: "ECAwaitExpression" }, () => {
@@ -172,69 +151,60 @@ export const bindTypeCheckExp = ({
                 rightType.baseType !== "error" &&
                 !leftType.eq(rightType)
               ) {
-                scope.error({
-                  code: "TYPE_MISMATCH",
-                  message: `Cannot compare differing types ${leftType} and ${rightType}.`,
-                  span: node.span,
-                });
+                scope.error(
+                  {
+                    code: "TYPE_MISMATCH",
+                    message: `Cannot compare differing types ${leftType} and ${rightType}.`,
+                  },
+                  node
+                );
               }
 
               if (
                 !["bool", "num", "str", "error"].includes(leftType.baseType)
               ) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${leftType} cannot be used with ${node.operator}.`,
-                  span: left.span,
-                });
+                scope.error(
+                  {
+                    code: "INVALID_OPERATION",
+                    message: `${leftType} cannot be used with ${node.operator}.`,
+                  },
+                  left
+                );
               }
 
               if (
                 !["bool", "num", "str", "error"].includes(rightType.baseType)
               ) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${rightType} cannot be used with ${node.operator}.`,
-                  span: right.span,
-                });
-              }
-
-              return Bool;
-            })
-            .with("&&", "||", () => {
-              if (leftType.baseType !== "error" && !leftType.eq(Bool)) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${leftType} cannot be used with ${node.operator} (must be Bool).`,
-                  span: left.span,
-                });
-              }
-
-              if (rightType.baseType !== "error" && !rightType.eq(Bool)) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${rightType} cannot be used with ${node.operator} (must be Bool).`,
-                  span: right.span,
-                });
+                scope.error(
+                  {
+                    code: "INVALID_OPERATION",
+                    message: `${rightType} cannot be used with ${node.operator}.`,
+                  },
+                  right
+                );
               }
 
               return Bool;
             })
             .with("<", "<=", ">", ">=", () => {
               if (leftType.baseType !== "error" && !leftType.eq(Num)) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${leftType} cannot be used with ${node.operator} (must be Num).`,
-                  span: left.span,
-                });
+                scope.error(
+                  {
+                    code: "INVALID_OPERATION",
+                    message: `${leftType} cannot be used with ${node.operator} (must be Num).`,
+                  },
+                  left
+                );
               }
 
               if (rightType.baseType !== "error" && !rightType.eq(Num)) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${rightType} cannot be used with ${node.operator} (must be Num).`,
-                  span: right.span,
-                });
+                scope.error(
+                  {
+                    code: "INVALID_OPERATION",
+                    message: `${rightType} cannot be used with ${node.operator} (must be Num).`,
+                  },
+                  left
+                );
               }
 
               return Bool;
@@ -245,11 +215,13 @@ export const bindTypeCheckExp = ({
                 !leftType.eq(Num) &&
                 !leftType.eq(Str)
               ) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${leftType} cannot be used with ${node.operator} (must be Num or Str).`,
-                  span: left.span,
-                });
+                scope.error(
+                  {
+                    code: "INVALID_OPERATION",
+                    message: `${leftType} cannot be used with ${node.operator} (must be Num or Str).`,
+                  },
+                  left
+                );
               }
 
               if (
@@ -257,11 +229,13 @@ export const bindTypeCheckExp = ({
                 !rightType.eq(Num) &&
                 !rightType.eq(Str)
               ) {
-                scope.error({
-                  code: "INVALID_OPERATION",
-                  message: `${rightType} cannot be used with ${node.operator} (must be Num or Str).`,
-                  span: right.span,
-                });
+                scope.error(
+                  {
+                    code: "INVALID_OPERATION",
+                    message: `${rightType} cannot be used with ${node.operator} (must be Num or Str).`,
+                  },
+                  right
+                );
               }
 
               if (
@@ -269,11 +243,13 @@ export const bindTypeCheckExp = ({
                 rightType.baseType !== "error" &&
                 !leftType.eq(rightType)
               ) {
-                scope.error({
-                  code: "TYPE_MISMATCH",
-                  message: `Types on both sides of '+' must match: got ${leftType} and ${rightType}.`,
-                  span: node.span,
-                });
+                scope.error(
+                  {
+                    code: "TYPE_MISMATCH",
+                    message: `Types on both sides of '+' must match: got ${leftType} and ${rightType}.`,
+                  },
+                  node
+                );
 
                 // If the types don't match, the number will be coerced to a string.
                 return Str;
@@ -295,28 +271,63 @@ export const bindTypeCheckExp = ({
               ">>>",
               () => {
                 if (leftType.baseType !== "error" && !leftType.eq(Num)) {
-                  scope.error({
-                    code: "INVALID_OPERATION",
-                    message: `${leftType.baseType} cannot be used with ${node.operator} (must be Num).`,
-                    span: left.span,
-                  });
+                  scope.error(
+                    {
+                      code: "INVALID_OPERATION",
+                      message: `${leftType.baseType} cannot be used with ${node.operator} (must be Num).`,
+                    },
+                    left
+                  );
                 }
 
                 if (rightType.baseType !== "error" && !rightType.eq(Num)) {
-                  scope.error({
-                    code: "INVALID_OPERATION",
-                    message: `${rightType.baseType} cannot be used with ${node.operator} (must be Num).`,
-                    span: right.span,
-                  });
+                  scope.error(
+                    {
+                      code: "INVALID_OPERATION",
+                      message: `${rightType.baseType} cannot be used with ${node.operator} (must be Num).`,
+                    },
+                    right
+                  );
                 }
 
                 return Num;
               }
             )
-            .with("??", () => {
-              throw new Error("`??` is forbidden in Ectype.");
-            })
             .exhaustive(),
+        };
+      })
+      .with({ type: "ECLogicalExpression" }, (node) => {
+        const left = typeCheckExp(node.left);
+        const leftType = left.ectype;
+
+        const right = typeCheckExp(node.right);
+        const rightType = right.ectype;
+
+        if (leftType.baseType !== "error" && !leftType.eq(Bool)) {
+          scope.error(
+            {
+              code: "INVALID_OPERATION",
+              message: `${leftType} cannot be used with ${node.operator} (must be Bool).`,
+            },
+            left
+          );
+        }
+
+        if (rightType.baseType !== "error" && !rightType.eq(Bool)) {
+          scope.error(
+            {
+              code: "INVALID_OPERATION",
+              message: `${rightType} cannot be used with ${node.operator} (must be Bool).`,
+            },
+            right
+          );
+        }
+
+        return {
+          ...node,
+          left,
+          right,
+          ectype: Bool,
         };
       })
       .with(
@@ -331,34 +342,29 @@ export const bindTypeCheckExp = ({
           // There's a lot going on here. Because Ectype "keywords" are implemented as functions,
           // the Call Expression handler has extra logic for handling calls to these special cases.
 
-          if (node.callee.type === "Import") {
-            throw new Error(`import() is not supported at this time.`);
-          }
-
           // Check if call was to the special js() function
           if (
             node.callee.type === "ECIdentifier" &&
-            node.callee.value === "js"
+            node.callee.name === "js"
           ) {
             if (node.arguments.length <= 0 || node.arguments.length > 2) {
               throw new Error(`js() expects one or two arguments.`);
             }
 
-            if (
-              node.arguments[0].expression.type !== "ECArrowFunctionExpression"
-            ) {
+            if (node.arguments[0].type !== "ECArrowFunctionExpression") {
               throw new Error(
                 `First js() argument must be an arrow function literal.`
               );
             }
 
             return {
-              span: node.span,
+              ...node,
               type: "ECJSCall",
-              fn: node.arguments[0].expression,
-              ectype: node.arguments[1]
-                ? resolveTypeExp(node.arguments[1].expression)
-                : Null,
+              fn: node.arguments[0],
+              ectype:
+                node.arguments[1].type === "ECSpreadElement"
+                  ? ErrorType
+                  : resolveTypeExp(node.arguments[1]),
             };
           }
 
@@ -385,10 +391,14 @@ export const bindTypeCheckExp = ({
               callee: typedFn,
               // We don't have parameter types to check the args against, but we
               // can still check the argrument expressions themselves.
-              arguments: node.arguments.map((arg) => ({
-                ...arg,
-                expression: typeCheckExp(arg.expression),
-              })),
+              arguments: node.arguments.map((arg) =>
+                arg.type === "ECSpreadElement"
+                  ? {
+                      ...arg,
+                      argument: typeCheckExp(arg.argument),
+                    }
+                  : typeCheckExp(arg)
+              ),
               ectype: ErrorType,
             };
           }
@@ -411,28 +421,38 @@ export const bindTypeCheckExp = ({
           }
 
           // Check argument types.
-          const typedArgs: Typed<ECArgument>[] = node.arguments.map(
-            (arg, i) => {
-              const typedArg = typeCheckExp(arg.expression);
-              const argType = typedArg.ectype;
-
-              if (
-                argType.baseType !== "error" &&
-                !argType.eq(fnTypeParams[i])
-              ) {
-                scope.error({
-                  code: "TYPE_MISMATCH",
-                  message: `Argument ${i} (of type ${argType}) does not match expected type ${fnTypeParams[i]}`,
-                  span: arg.expression.span,
-                });
-              }
+          const typedArgs = node.arguments.map((arg, i) => {
+            if (arg.type === "ECSpreadElement") {
+              scope.error(
+                {
+                  code: "UNIMPLEMENTED",
+                  message:
+                    "Spread elements in function calls are not yet supported.",
+                },
+                arg
+              );
 
               return {
                 ...arg,
-                expression: typedArg,
+                argument: typeCheckExp(arg.argument),
               };
             }
-          );
+
+            const typedArg = typeCheckExp(arg);
+            const argType = typedArg.ectype;
+
+            if (argType.baseType !== "error" && !argType.eq(fnTypeParams[i])) {
+              scope.error(
+                {
+                  code: "TYPE_MISMATCH",
+                  message: `Argument ${i} (of type ${argType}) does not match expected type ${fnTypeParams[i]}`,
+                },
+                arg
+              );
+            }
+
+            return typedArg;
+          });
 
           // If return type is a Type, try to resolve it.
           const returnBaseType = fnType.returns().baseType;
@@ -456,11 +476,13 @@ export const bindTypeCheckExp = ({
         const test = typeCheckExp(node.test);
         const testType = test.ectype;
         if (testType.baseType !== "error" && !testType.eq(Bool)) {
-          scope.error({
-            code: "TYPE_MISMATCH",
-            message: `Condition for ternary expression must be a Bool.`,
-            span: node.test.span,
-          });
+          scope.error(
+            {
+              code: "TYPE_MISMATCH",
+              message: `Condition for ternary expression must be a Bool.`,
+            },
+            node.test
+          );
         }
 
         const consequent = typeCheckExp(node.consequent);
@@ -473,11 +495,13 @@ export const bindTypeCheckExp = ({
           alternateType.baseType !== "error" &&
           !consequentType.eq(alternateType)
         ) {
-          scope.error({
-            code: "TYPE_MISMATCH",
-            message: `Types for ternary expression results must match.`,
-            span: node.span,
-          });
+          scope.error(
+            {
+              code: "TYPE_MISMATCH",
+              message: `Types for ternary expression results must match.`,
+            },
+            node
+          );
         }
 
         return {
@@ -495,34 +519,75 @@ export const bindTypeCheckExp = ({
         return {
           ...node,
           object: target,
-          property:
-            node.property.type === "Identifier"
-              ? node.property
-              : {
-                  ...node.property,
-                  expression: typeCheckExp(node.property.expression),
-                },
+          property: typeCheckExp(node.property),
           ectype: match<Type, Type>(targetType)
             .with({ baseType: "struct" }, (structType) => {
               // Read on a struct value.
-              if (node.property.type === "ECComputed") {
-                throw new Error("Bracket accesses on a struct are forbidden.");
+              if (node.computed) {
+                scope.error(
+                  {
+                    code: "INVALID_SYNTAX",
+                    message: "Bracket accesses on a struct are forbidden.",
+                  },
+                  node
+                );
+
+                return ErrorType;
               }
 
-              if (!structType.has(node.property.value)) {
+              if (node.property.type !== "ECIdentifier") {
+                scope.error(
+                  {
+                    code: "INVALID_SYNTAX",
+                    message: "Property on struct must be an identifier.",
+                  },
+                  node.property
+                );
+
+                return ErrorType;
+              }
+
+              if (!structType.has(node.property.name)) {
                 throw new Error(
-                  `Type ${targetType} has no field ${node.property.value}.`
+                  `Type ${targetType} has no field ${node.property.name}.`
                 );
               }
 
-              return structType.field(node.property.value);
+              return structType.field(node.property.name);
             })
             .with({ baseType: "array" }, (arrayType) => {
-              if (node.property.type === "Identifier") {
+              if (node.computed) {
+                // field access; must be a number.
+
+                const indexType = typeCheckExp(node.property).ectype;
+
+                if (indexType.baseType !== "error" && !indexType.eq(Num)) {
+                  scope.error(
+                    {
+                      code: "TYPE_MISMATCH",
+                      message: `Array index must be a nunmber.`,
+                    },
+                    node.property
+                  );
+                }
+
+                return arrayType.contains();
+              } else {
                 // must be an array member like length, map, etc.
+                if (node.property.type !== "ECIdentifier") {
+                  scope.error(
+                    {
+                      code: "INVALID_SYNTAX",
+                      message: "Array member must be an identifier.",
+                    },
+                    node.property
+                  );
+
+                  return ErrorType;
+                }
 
                 return (
-                  match(node.property.value)
+                  match(node.property.name)
                     // TODO somehow generate string methods from the TypeScript definition.
                     .with("length", () => Num)
                     .with("includes", () => fn([Str], Bool))
@@ -533,41 +598,26 @@ export const bindTypeCheckExp = ({
                       );
                     })
                 );
-              } else if (node.property.type === "ECComputed") {
-                // field access; must be a number.
-
-                const indexType = typeCheckExp(node.property.expression).ectype;
-
-                if (indexType.baseType !== "error" && !indexType.eq(Num)) {
-                  scope.error({
-                    code: "TYPE_MISMATCH",
-                    message: `Array index must be a nunmber.`,
-                    span: node.property.span,
-                  });
-                }
-
-                return arrayType.contains();
               }
-
-              node.property;
-              throw new Error(`Unreachable (node.property has type never)`);
             })
             .with({ baseType: "variant" }, (variantType) => {
-              scope.error({
-                code: "INVALID_OPERATION",
-                message: `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`,
-                span: node.property.span,
-              });
+              scope.error(
+                {
+                  code: "INVALID_OPERATION",
+                  message: `Property accesses on a variant instance are forbidden. (Did you mean to call a variant instance method instead?)`,
+                },
+                node.property
+              );
 
               return ErrorType;
             })
             .with({ baseType: "num" }, () => {
               const nodeType = node.property.type;
-              if (nodeType !== "Identifier") {
+              if (nodeType !== "ECIdentifier") {
                 throw new Error("Bracket accesses on a number are forbidden.");
               }
 
-              return match(node.property.value)
+              return match(node.property.name)
                 .with("toString", () => fn([], Str))
                 .otherwise(() => {
                   throw new Error(
@@ -582,11 +632,18 @@ export const bindTypeCheckExp = ({
               throw new Error(`Type methods must be called.`);
             })
             .with({ baseType: "str" }, () => {
-              if (node.property.type === "ECComputed") {
+              if (node.computed) {
                 // Bracket access
                 return Str;
               } else {
-                const method = node.property.value;
+                if (node.property.type !== "ECIdentifier") {
+                  // Must be identifier if node.computed is false
+                  throw new Error(
+                    "Property must be identifier when node is computed (internal error)"
+                  );
+                }
+
+                const method = node.property.name;
                 return match(method)
                   .with("includes", () => fn([Str], Bool))
                   .otherwise(() => {
@@ -597,19 +654,30 @@ export const bindTypeCheckExp = ({
               }
             })
             .with({ baseType: "tuple" }, (targetType) => {
-              if (node.property.type !== "ECComputed") {
-                throw new Error(
-                  `Only bracket accesses are permitted on tuples.`
+              if (node.computed) {
+                scope.error(
+                  {
+                    code: "INVALID_SYNTAX",
+                    message: `Only bracket accesses are permitted on tuples.`,
+                  },
+                  node
                 );
+
+                return ErrorType;
               }
 
-              if (node.property.expression.type !== "NumericLiteral") {
-                throw new Error(
-                  `Tuple index must be a number literal (tuple indexes cannot be accessed with expressions).`
+              if (node.property.type !== "ECNumberLiteral") {
+                scope.error(
+                  {
+                    code: "INVALID_SYNTAX",
+                    message: `Tuple index must be a number literal (tuple indexes cannot be accessed with expressions).`,
+                  },
+                  node.property
                 );
+                return ErrorType;
               }
 
-              const index = node.property.expression.value;
+              const index = node.property.value;
               if (index < 0 || index >= targetType.fields().length) {
                 throw new Error(
                   `${index} is not a valid index on ${targetType}.`
@@ -663,15 +731,46 @@ export const bindTypeCheckExp = ({
         );
       })
       .with({ type: "ECObjectExpression" }, (node) => {
-        scope.error({
-          code: "INVALID_SYNTAX",
-          message: `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`,
-          span: node.span,
-        });
+        scope.error(
+          {
+            code: "INVALID_SYNTAX",
+            message: `Bare object expressions are not permitted in Ectype; they must be attached to a struct or variant type.`,
+          },
+          node
+        );
 
         return {
           ...node,
           properties: [], // TODO something more intelligent with the internals
+          ectype: ErrorType,
+        };
+      })
+      .with({ type: "ECImportExpression" }, (node) => {
+        scope.error(
+          {
+            code: "UNIMPLEMENTED",
+            message: "Import expressions are not yet supported.",
+          },
+          node
+        );
+
+        return {
+          ...node,
+          source: typeCheckExp(node.source),
+          ectype: ErrorType,
+        };
+      })
+      .with({ type: "ECRegexp" }, (node) => {
+        scope.error(
+          {
+            code: "UNIMPLEMENTED",
+            message: "Regexes are not yet supported.",
+          },
+          node
+        );
+
+        return {
+          ...node,
           ectype: ErrorType,
         };
       })
@@ -695,7 +794,7 @@ export const bindTypeCheckExp = ({
   const resolveTypeExp = (node: ECExp): Type =>
     match<ECExp, Type>(node)
       .with({ type: "ECIdentifier" }, (node) =>
-        match(node.value)
+        match(node.name)
           .with("Unknown", () => Unknown)
           .with("Null", () => Null)
           .with("Bool", () => Bool)
@@ -704,14 +803,14 @@ export const bindTypeCheckExp = ({
           .with("Type", () => TypeType)
           .otherwise(() => {
             // Try resolving the identifier as a type variable.
-            const maybeType = scope.current.get(node.value);
+            const maybeType = scope.current.get(node.name);
 
             if (maybeType === null) {
-              throw new Error(`${node.value} is not defined.`);
+              throw new Error(`${node.name} is not defined.`);
             }
 
             if (maybeType.baseType !== "type") {
-              throw new Error(`${node.value} is not a type-value.`);
+              throw new Error(`${node.name} is not a type-value.`);
             }
 
             return maybeType.type();

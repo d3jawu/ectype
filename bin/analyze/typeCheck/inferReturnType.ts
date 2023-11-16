@@ -34,14 +34,14 @@ export const bindInferReturnType = ({
         );
       }
 
-      scope.current.set(param.value, paramTypes[param.value]);
+      scope.current.set(param.name, paramTypes[param.name]);
     });
 
     let inferredType: Type;
     if (fnNode.body.type === "ECBlockStatement") {
       typeCheckNode(fnNode.body);
 
-      const statements = fnNode.body.statements;
+      const statements = fnNode.body.body;
       if (statements.length === 0) {
         throw new Error(
           `Function body cannot be empty (it must return a value).`

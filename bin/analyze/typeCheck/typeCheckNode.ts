@@ -29,36 +29,35 @@ export const bindTypeCheckNode = ({
         { type: "EmptyStatement" },
         () => {}
       )
-      .with({ type: "ImportDeclaration" }, (node) => {
+      .with({ type: "ECImportDeclaration" }, (node) => {
         // Bypass imports from ectype itself
-        if (node.source.value === "ectype") {
+        if (node.source === "ectype") {
           node.specifiers.forEach((specifier) => {
-            scope.current.set(
-              specifier.local.value,
-              coreTypeMap[specifier.local.value]
-            );
+            scope.current.set(specifier.local, coreTypeMap[specifier.local]);
           });
 
           return;
         }
 
+        if (typeof node.source !== "string") {
+          throw new Error(
+            "How is it even possible to have a non-string import path. This throw only exists to make TypeScript happy"
+          );
+        }
+
         // For now, just don't check packages (since no packages that use Ectype exist.)
-        if (
-          !node.source.value.startsWith(".") &&
-          !node.source.value.startsWith("/")
-        ) {
+        if (!node.source.startsWith(".") && !node.source.startsWith("/")) {
           return;
         }
 
         const result = (() => {
           try {
-            return analyzeFile(joinPaths(dirname(path), node.source.value));
+            return analyzeFile(joinPaths(dirname(path), node.source));
           } catch (cause) {
             throw new Error(
-              `Failed to import ${joinPaths(
-                dirname(path),
-                node.source.value
-              )} (as ${node.source.value}) from ${path}`,
+              `Failed to import ${joinPaths(dirname(path), node.source)} (as ${
+                node.source
+              }) from ${path}`,
               { cause }
             );
           }
@@ -74,58 +73,32 @@ export const bindTypeCheckNode = ({
         scope.importWarnings(warnings);
 
         node.specifiers.forEach((specifier) => {
-          if (specifier.type === "ImportDefaultSpecifier") {
-            throw new Error(`Default imports are not yet implemented.`);
-          }
-
-          if (specifier.type === "ImportNamespaceSpecifier") {
-            throw new Error(`Namespace imports are not yet implemented.`);
-          }
-
-          const remoteName = specifier.imported
-            ? specifier.imported.value
-            : specifier.local.value;
-          const localName = specifier.local.value;
+          const remoteName = specifier.imported;
+          const localName = specifier.local;
 
           if (!importedTypes[remoteName]) {
-            throw new Error(
-              `${remoteName} is not exported by ${node.source.value}.`
-            );
+            throw new Error(`${remoteName} is not exported by ${node.source}.`);
           }
 
           scope.current.set(localName, importedTypes[remoteName]);
         });
       })
-      .with({ type: "ExportNamedDeclaration" }, (node) => {
-        if (node.source !== null) {
-          throw new Error(`Re-exports are not yet supported.`);
-        }
-
+      .with({ type: "ECExportNamedDeclaration" }, (node) => {
         node.specifiers.forEach((specifier) => {
-          if (specifier.type === "ExportDefaultSpecifier") {
-            throw new Error(`Default exports are forbidden in Ectype.`);
-          }
-
-          if (specifier.type === "ExportNamespaceSpecifier") {
-            throw new Error(`Namespace exports are not yet implemented.`);
-          }
-
-          const exportedType = scope.current.get(specifier.orig.value);
+          const exportedType = scope.current.get(specifier.local);
           if (exportedType === null) {
             throw new Error(
-              `Could not export ${specifier.orig.value} because it is not defined.`
+              `Could not export ${specifier.local} because it is not defined.`
             );
           }
 
-          const exportedName = specifier.exported
-            ? specifier.exported.value
-            : specifier.orig.value;
+          const exportedName = specifier.exported;
 
           exports[exportedName] = exportedType;
         });
       })
       .with({ type: "ECBlockStatement" }, (node) => {
-        node.statements.forEach((st) => typeCheckNode(st));
+        node.body.forEach((st) => typeCheckNode(st));
       })
       .with({ type: "ECForStatement" }, (node) => {
         if (node.init && node.init.type !== "ECVariableDeclaration") {
@@ -136,11 +109,13 @@ export const bindTypeCheckNode = ({
           const testType = typeCheckExp(node.test).ectype;
 
           if (testType.baseType !== "error" && !testType.eq(Bool)) {
-            scope.error({
-              code: "TYPE_MISMATCH",
-              message: `Condition for for-loop must be a Bool.`,
-              span: node.test.span,
-            });
+            scope.error(
+              {
+                code: "TYPE_MISMATCH",
+                message: `Condition for for-loop must be a Bool.`,
+              },
+              node.test
+            );
           }
         }
 
@@ -153,11 +128,13 @@ export const bindTypeCheckNode = ({
       .with({ type: "ECIfStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
         if (testType.baseType !== "error" && !testType.eq(Bool)) {
-          scope.error({
-            code: "TYPE_MISMATCH",
-            message: `Condition for if-statement must be a Bool.`,
-            span: node.test.span,
-          });
+          scope.error(
+            {
+              code: "TYPE_MISMATCH",
+              message: `Condition for if-statement must be a Bool.`,
+            },
+            node.test
+          );
         }
 
         typeCheckNode(node.consequent);
@@ -184,11 +161,13 @@ export const bindTypeCheckNode = ({
               scope.current.inferredReturnType.baseType !== "error" &&
               !scope.current.inferredReturnType.eq(returnedType)
             ) {
-              scope.error({
-                code: "TYPE_MISMATCH",
-                message: `Function has inconsistent return types: got ${returnedType} but previously saw ${scope.current.inferredReturnType}.`,
-                span: node.argument.span,
-              });
+              scope.error(
+                {
+                  code: "TYPE_MISMATCH",
+                  message: `Function has inconsistent return types: got ${returnedType} but previously saw ${scope.current.inferredReturnType}.`,
+                },
+                node.argument
+              );
             }
           }
         }
@@ -228,7 +207,7 @@ export const bindTypeCheckNode = ({
           }
 
           const ident: string = match(decl.id)
-            .with({ type: "ECIdentifier" }, (id) => id.value)
+            .with({ type: "ECIdentifier" }, (id) => id.name)
             .otherwise(() => {
               throw new Error(
                 `Declarations with ${decl.id.type} are not yet supported.`
@@ -247,11 +226,13 @@ export const bindTypeCheckNode = ({
       .with({ type: "ECWhileStatement" }, (node) => {
         const testType = typeCheckExp(node.test).ectype;
         if (testType.baseType !== "error" && !testType.eq(Bool)) {
-          scope.error({
-            code: "TYPE_MISMATCH",
-            message: `Condition for while-statement must be a Bool.`,
-            span: node.test.span,
-          });
+          scope.error(
+            {
+              code: "TYPE_MISMATCH",
+              message: `Condition for while-statement must be a Bool.`,
+            },
+            node.test
+          );
         }
 
         typeCheckNode(node.body);

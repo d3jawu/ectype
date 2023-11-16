@@ -6,6 +6,7 @@ import type { Error, Warning } from "../../types/Error.js";
 
 import { SymbolTable } from "../SymbolTable.js";
 
+import { Node } from "acorn";
 import { bindTypeCheckNode } from "./typeCheckNode.js";
 
 type ErrorMap = Record<string, Error[]>;
@@ -13,9 +14,9 @@ type WarningMap = Record<string, Warning[]>;
 
 export type Scope = {
   current: SymbolTable;
-  error: (err: Error) => void;
+  error: (err: Omit<Error, "start" | "end" | "loc">, node: Node) => void;
   importErrors: (errs: ErrorMap) => void;
-  warning: (warn: Warning) => void;
+  warning: (warn: Omit<Warning, "start" | "end" | "loc">, node: Node) => void;
   importWarnings: (warns: WarningMap) => void;
 };
 
@@ -39,8 +40,13 @@ export const typeCheck = (
   // Scope is used as a makeshift "pointer": it serves as a handle to `current`.
   const scope: Scope = {
     current: new SymbolTable(null),
-    error: (err) => {
-      errors[path].push(err);
+    error: (err, node) => {
+      errors[path].push({
+        ...err,
+        start: node.start,
+        end: node.end,
+        loc: node.loc || undefined,
+      });
     },
     importErrors: (incoming) => {
       // Merge order *shouldn't* matter because a file should have the same errors each time.
@@ -49,8 +55,13 @@ export const typeCheck = (
         ...incoming,
       };
     },
-    warning: (warn) => {
-      warnings[path].push(warn);
+    warning: (warn, node) => {
+      warnings[path].push({
+        ...warn,
+        start: node.start,
+        end: node.end,
+        loc: node.loc || undefined,
+      });
     },
     importWarnings: (incoming) => {
       warnings = {

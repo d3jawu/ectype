@@ -2,7 +2,6 @@ import type { Type } from "../../../core/core";
 import type {
   ECCallExpression,
   ECExp,
-  ECExprOrSpread,
   ECTypeDeclaration,
 } from "../../types/ECNode";
 import type { Typed } from "../../types/Typed";
@@ -27,6 +26,8 @@ import { Scope } from "./typeCheck";
 import { bindInferReturnType } from "./inferReturnType.js";
 
 import { match } from "ts-pattern";
+import { ErrorType } from "../../../core/internal.js";
+import { disallowPattern } from "./disallowPattern.js";
 
 // TODO derive this from the exports on core.js, instead of hard-coding?
 const isTypeName = (name: string): boolean =>
@@ -49,12 +50,12 @@ export const bindParseTypeDeclaration = ({
   ): Typed<ECTypeDeclaration> | null => {
     if (
       callExp.callee.type !== "ECIdentifier" ||
-      !isTypeName(callExp.callee.value)
+      !isTypeName(callExp.callee.name)
     ) {
       return null;
     }
 
-    const targetType = callExp.callee.value;
+    const targetType = callExp.callee.name;
 
     const args = callExp.arguments;
 
@@ -66,25 +67,72 @@ export const bindParseTypeDeclaration = ({
           );
         }
 
-        const paramsNode = args[0].expression;
+        const params = args[0];
 
-        if (paramsNode.type !== "ECArrayExpression") {
+        if (params.type !== "ECArrayExpression") {
           throw new Error(`First argument to fn() must be an array literal.`);
         }
 
-        const returnsNode = args[1].expression;
+        const returns = args[1];
 
-        const paramTypes = (<ECExprOrSpread[]>(
-          paramsNode.elements.filter((el) => !!el)
-        )).map((el) => resolveTypeExp(el.expression));
-        const returnType = resolveTypeExp(returnsNode);
+        let returnType: Type;
+        if (returns.type === "ECSpreadElement") {
+          scope.error(
+            {
+              code: "INVALID_SYNTAX",
+              message: "Return type for fn() cannot be a spread expression.",
+            },
+            returns
+          );
+          returnType = ErrorType;
+        } else {
+          returnType = resolveTypeExp(returns);
+        }
+
+        const paramTypes: Type[] = params.elements.map((el) => {
+          if (el === null) {
+            scope.error(
+              {
+                code: "INVALID_SYNTAX",
+                message: "Invalid parameter.",
+              },
+              returns
+            );
+            return ErrorType;
+          }
+
+          if (el.type === "ECSpreadElement") {
+            scope.error(
+              {
+                code: "INVALID_SYNTAX",
+                message:
+                  "Parameter type for fn() cannot be a spread expression.",
+              },
+              el
+            );
+            return ErrorType;
+          }
+
+          return resolveTypeExp(el);
+        });
 
         return typeValFrom(fn(paramTypes, returnType));
       })
       .with("tuple", () => {
-        const entryTypes = args
-          .map((arg) => arg.expression)
-          .map((arg) => resolveTypeExp(arg));
+        const entryTypes = args.map((arg) => {
+          if (arg.type === "ECSpreadElement") {
+            scope.error(
+              {
+                code: "INVALID_SYNTAX",
+                message: "Entry type for tuple cannot be a spread expression.",
+              },
+              arg
+            );
+            return ErrorType;
+          }
+
+          return resolveTypeExp(arg);
+        });
 
         return typeValFrom(tuple(...entryTypes));
       })
@@ -97,17 +145,17 @@ export const bindParseTypeDeclaration = ({
 
         const containsNode = args[0];
 
-        if (containsNode.spread) {
+        if (containsNode.type === "ECSpreadElement") {
           throw new Error(`Spread arguments are not allowed in array().`);
         }
 
-        const argType = typeCheckExp(containsNode.expression).ectype;
+        const argType = typeCheckExp(containsNode).ectype;
 
         if (argType.baseType !== "type") {
           throw new Error(`array() parameter must be a type.`);
         }
 
-        const resolvedType = resolveTypeExp(containsNode.expression);
+        const resolvedType = resolveTypeExp(containsNode);
 
         return typeValFrom(array(resolvedType));
       })
@@ -118,7 +166,7 @@ export const bindParseTypeDeclaration = ({
           );
         }
 
-        const optionsNode = args[0].expression;
+        const optionsNode = args[0];
 
         if (optionsNode.type !== "ECObjectExpression") {
           throw new Error(`Argument to struct() must be an object literal.`);
@@ -126,25 +174,62 @@ export const bindParseTypeDeclaration = ({
 
         const options = optionsNode.properties.reduce(
           (acc: Record<string, Type>, prop) => {
-            if (prop.type !== "ECKeyValueProperty") {
-              throw new Error(
-                `${prop.type} in variant options is not yet supported.`
+            if (prop.type === "ECSpreadElement") {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: "Variant tag cannot be a spread property.",
+                },
+                prop
+              );
+              return acc;
+            }
+
+            if (prop.key.type !== "ECIdentifier") {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: `Variant tag must be an identifier.`,
+                },
+                prop
+              );
+              return acc;
+            }
+
+            if (prop.computed) {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: "Variant tag cannot be a computed value.",
+                },
+                prop
               );
             }
 
-            if (prop.key.type !== "Identifier") {
-              throw new Error(
-                `Cannot use ${prop.key.type} as key in variant options.`
+            if (prop.key.name[0] !== prop.key.name[0].toUpperCase()) {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: `variant tag ${prop.key.name} must begin with an uppercase letter.`,
+                },
+                prop.key
               );
+              return acc;
             }
 
-            if (prop.key.value[0] !== prop.key.value[0].toUpperCase()) {
-              throw new Error(
-                `variant option ${prop.key.value} must begin with an uppercase letter.`
+            const value = disallowPattern(prop.value);
+            if (!value) {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: "A variant tag type cannot be a pattern.",
+                },
+                prop.value
               );
+              return acc;
             }
 
-            acc[prop.key.value] = resolveTypeExp(prop.value);
+            acc[prop.key.name] = resolveTypeExp(value);
 
             return acc;
           },
@@ -160,7 +245,7 @@ export const bindParseTypeDeclaration = ({
           );
         }
 
-        const shapeNode = args[0].expression;
+        const shapeNode = args[0];
 
         if (shapeNode.type !== "ECObjectExpression") {
           throw new Error(`struct() parameter must be an object literal.`);
@@ -168,19 +253,48 @@ export const bindParseTypeDeclaration = ({
 
         const shape = shapeNode.properties.reduce(
           (acc: Record<string, Type>, prop) => {
-            if (prop.type !== "ECKeyValueProperty") {
-              throw new Error(
-                `${prop.type} in struct shapes is not yet supported.`
+            if (prop.type === "ECSpreadElement") {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message:
+                    "Spread elements are not allowed in a struct definition.",
+                },
+                prop
               );
+              return acc;
             }
 
-            if (prop.key.type !== "Identifier") {
+            if (prop.computed) {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: "Struct type keys cannot be computed.",
+                },
+                prop
+              );
+              return acc;
+            }
+
+            if (prop.key.type !== "ECIdentifier") {
               throw new Error(
                 `Cannot use ${prop.key.type} as key in struct shape.`
               );
             }
 
-            acc[prop.key.value] = resolveTypeExp(prop.value);
+            const value = disallowPattern(prop.value);
+            if (!value) {
+              scope.error(
+                {
+                  code: "INVALID_SYNTAX",
+                  message: "A struct value cannot be a pattern.",
+                },
+                prop.value
+              );
+              return acc;
+            }
+
+            acc[prop.key.name] = resolveTypeExp(value);
 
             return acc;
           },
@@ -196,9 +310,20 @@ export const bindParseTypeDeclaration = ({
           );
         }
 
-        const parentType = resolveTypeExp(args[0].expression);
+        if (args[0].type === "ECSpreadElement") {
+          scope.error(
+            {
+              code: "INVALID_SYNTAX",
+              message: "cond() parent type cannot be a spread expression.",
+            },
+            args[0]
+          );
+          return ErrorType;
+        }
 
-        const predicate = args[1].expression;
+        const parentType = resolveTypeExp(args[0]);
+
+        const predicate = args[1];
         if (predicate.type !== "ECArrowFunctionExpression") {
           throw new Error(`cond() predicate must be a function.`);
         }
@@ -211,7 +336,7 @@ export const bindParseTypeDeclaration = ({
 
           const param = predicate.params[0];
 
-          predicateParams[param.value] = parentType;
+          predicateParams[param.name] = parentType;
         } else if (predicate.params.length > 1) {
           throw new Error(
             `cond() predicate can take at most one param (got ${predicate.params.length}).`
@@ -223,11 +348,13 @@ export const bindParseTypeDeclaration = ({
           inferredReturnType.baseType !== "error" &&
           !inferredReturnType.eq(Bool)
         ) {
-          scope.error({
-            code: "TYPE_MISMATCH",
-            message: "cond() predicate must return a boolean.",
-            span: predicate.span, // TODO this should be on the return statements themselves, not the whole function
-          });
+          scope.error(
+            {
+              code: "TYPE_MISMATCH",
+              message: "cond() predicate must return a boolean.",
+            },
+            predicate
+          ); // TODO this should be on the return statements themselves, not the whole function
         }
 
         return typeValFrom(
@@ -241,10 +368,9 @@ export const bindParseTypeDeclaration = ({
       });
 
     return {
-      span: callExp.span,
+      ...callExp,
       type: "ECTypeDeclaration",
       targetType: targetType as Type["baseType"],
-      shape: args.map((arg) => arg.expression),
       ectype,
     };
   };

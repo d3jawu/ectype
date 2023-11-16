@@ -1,72 +1,36 @@
+import type { Node } from "acorn";
 import type {
-  BigIntLiteral,
-  BindingIdentifier,
-  HasSpan,
-  Identifier,
-  Node,
-  NumericLiteral,
-  Span,
-  StringLiteral,
-} from "@swc/core";
-
-import type { ECExp } from "./ECNode";
+  ECExp,
+  ECIdentifier,
+  ECMemberExpression,
+  ECProperty,
+} from "./ECNode";
 
 export type ECPattern =
-  | BindingIdentifier
+  | ECIdentifier
+  | ECMemberExpression
+  | ECObjectPattern
   | ECArrayPattern
   | ECRestElement
-  | ECObjectPattern
-  | ECAssignmentPattern
-  | ECExp;
+  | ECAssignmentPattern;
 
-export interface ECArrayPattern extends Node, HasSpan {
-  type: "ECArrayPattern";
-  elements: (ECPattern | undefined)[];
-  optional: boolean;
+export interface ECObjectPattern extends Node {
+  type: "ECObjectPattern";
+  // This breaks from acorn's AST, which has ECAssignmentProperty here.
+  properties: (ECProperty | ECRestElement)[];
 }
 
-export interface ECRestElement extends Node, HasSpan {
+export interface ECArrayPattern extends Node {
+  type: "ECArrayPattern";
+  elements: (ECPattern | null)[];
+}
+
+export interface ECRestElement extends Node {
   type: "ECRestElement";
-  rest: Span;
   argument: ECPattern;
 }
 
-export interface ECObjectPattern extends Node, HasSpan {
-  type: "ECObjectPattern";
-  properties: ECObjectPatternProperty[];
-  optional: boolean;
-}
-
-export type ECObjectPatternProperty =
-  | ECKeyValuePatternProperty
-  | ECAssignmentPatternProperty
-  | ECRestElement;
-
-export interface ECKeyValuePatternProperty extends Node {
-  type: "ECKeyValuePatternProperty";
-  key: ECPropertyName;
-  value: ECPattern;
-}
-
-export type ECPropertyName =
-  | Identifier
-  | StringLiteral
-  | NumericLiteral
-  | ECComputedPropName
-  | BigIntLiteral;
-
-export interface ECComputedPropName extends Node, HasSpan {
-  type: "ECComputed";
-  expression: ECExp;
-}
-
-export interface ECAssignmentPatternProperty extends Node, HasSpan {
-  type: "ECAssignmentPatternProperty";
-  key: Identifier;
-  value?: ECExp;
-}
-
-export interface ECAssignmentPattern extends Node, HasSpan {
+export interface ECAssignmentPattern extends Node {
   type: "ECAssignmentPattern";
   left: ECPattern;
   right: ECExp;
