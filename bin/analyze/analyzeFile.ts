@@ -7,7 +7,7 @@ import { typeValFrom } from "./typeValFrom.js";
 import * as core from "../../core/core.js";
 import { keyword } from "../../core/internal.js";
 
-import { ErrorSpan } from "../types/Error.js";
+import type { ErrorSpan } from "../types/Error.js";
 
 import { Comment, parse } from "acorn";
 
@@ -98,7 +98,27 @@ export const analyzeFile = (
 
   // Only type-check a file if it is declared as an ectype file.
   if (initialString === "use ectype") {
-    const lowered = lower(ast);
+    const lowered = (() => {
+      try {
+        return lower(ast);
+      } catch (e) {
+        if (e !== null && typeof e === "object" && "code" in e) {
+          return e as ErrorSpan;
+        }
+
+        throw e;
+      }
+    })();
+
+    if ("code" in lowered) {
+      return {
+        exports: {},
+        errors: {
+          [path]: [lowered],
+        },
+      };
+    }
+
     return typeCheck(lowered, path);
   }
 

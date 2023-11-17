@@ -12,14 +12,14 @@ export type ErrorSpan = {
 };
 
 export type ErrorMeta = {
-  UNDEFINED_VARIABLE: {
-    name: string;
-  };
   UNIMPLEMENTED: {
     features: string; // plural
   };
   FORBIDDEN: {
     behavior: string;
+  };
+  UNDEFINED_VARIABLE: {
+    name: string;
   };
   NOT_ALLOWED_HERE: {
     syntax: "computed field" | "spread element" | "destructuring pattern";
@@ -83,12 +83,13 @@ export type ErrorMeta = {
   VARIANT_TAG_NAME: {
     received: string;
   };
+  INVALID_JS: {};
 };
 
 export const errorTemplates: Record<keyof ErrorMeta, string> = {
-  UNDEFINED_VARIABLE: "$name is not defined.",
   UNIMPLEMENTED: "$features are not yet supported",
   FORBIDDEN: "$behavior is forbidden",
+  UNDEFINED_VARIABLE: "$name is not defined.",
   NOT_ALLOWED_HERE: "a $syntax is not allowed here",
   CONDITION_TYPE_MISMATCH:
     "condition for $structure must be a Bool but got $received",
@@ -109,4 +110,5 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
   FROM_TYPE_MISMATCH: "from() expected $expected but got $received",
   INVALID_TYPE_METHOD: "$name is not a valid $baseType method",
   VARIANT_TAG_NAME: "variant tag $received is invalid",
+  INVALID_JS: "call to js() is invalid",
 };

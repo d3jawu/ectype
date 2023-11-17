@@ -85,8 +85,7 @@ try {
           chalk.bgCyan(relative(dirname(entryPoint), path)),
           chalk.bgMagenta(`${start.line}:${start.column}`),
           chalk.bgRed(`E:${code}`),
-          errorMessage(code, meta, remark),
-          "\n",
+          errorMessage(code, meta, remark) + ":\n",
         ].join(" ")
       );
 

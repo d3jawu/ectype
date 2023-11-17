@@ -2,6 +2,7 @@ import type {
   AssignmentProperty,
   Expression,
   ModuleDeclaration,
+  Node,
   Pattern,
   Property,
   SpreadElement,
@@ -19,6 +20,37 @@ import type {
 
 import { match } from "ts-pattern";
 import { ECPattern } from "../types/ECPattern";
+import type { ErrorSpan } from "../types/Error.js";
+
+const forbiddenError = (
+  behavior: string,
+  node: Node,
+  remark?: string
+): ErrorSpan => ({
+  code: "FORBIDDEN",
+  meta: {
+    behavior,
+  },
+  start: node.start,
+  end: node.end,
+  loc: node.loc || undefined,
+  remark,
+});
+
+const unimplementedError = (
+  features: string,
+  node: Node,
+  remark?: string
+): ErrorSpan => ({
+  code: "UNIMPLEMENTED",
+  meta: {
+    features,
+  },
+  start: node.start,
+  end: node.end,
+  loc: node.loc || undefined,
+  remark,
+});
 
 // Lowering simplifies some nodes and removes nodes not allowed in Ectype.
 export const lower = (body: (Statement | ModuleDeclaration)[]): ECNode[] =>
@@ -106,9 +138,7 @@ const lowerNode = (node: Statement | ModuleDeclaration): ECNode =>
     }))
     .with({ type: "VariableDeclaration" }, (node) => {
       if (node.kind === "var") {
-        throw new Error(
-          "`var` is forbidden in Ectype. Use `const` or `let` instead."
-        );
+        throw forbiddenError('"var"', node);
       }
 
       return {
@@ -129,11 +159,11 @@ const lowerNode = (node: Statement | ModuleDeclaration): ECNode =>
     // TODO: check against naming an export "default"?
     .with({ type: "ExportNamedDeclaration" }, (node) => {
       if (node.declaration !== null) {
-        throw new Error("Exports with declarations are forbidden in Ectype.");
+        throw unimplementedError("exports with declarations", node);
       }
 
       if (node.source !== null) {
-        throw new Error("Re-exports are not yet supported.");
+        throw unimplementedError("re-exports", node);
       }
 
       return {
@@ -159,7 +189,7 @@ const lowerNode = (node: Statement | ModuleDeclaration): ECNode =>
       type: "ECImportDeclaration",
       specifiers: node.specifiers.map((spec) => {
         if (spec.type !== "ImportSpecifier") {
-          throw new Error(`Default and named imports are not yet supported.`);
+          throw unimplementedError(`default and named imports`, spec);
         }
 
         return {
@@ -182,35 +212,31 @@ const lowerNode = (node: Statement | ModuleDeclaration): ECNode =>
 
     // forbidden statements
     .with({ type: "DoWhileStatement" }, () => {
-      throw new Error("Do-while statements are forbidden in Ectype.");
+      throw forbiddenError("do-while", node);
     })
     .with({ type: "ExportAllDeclaration" }, () => {
-      throw new Error("Export-all declarations are forbidden in Ectype.");
+      throw forbiddenError("export-all", node);
     })
     .with({ type: "ExportDefaultDeclaration" }, () => {
-      throw new Error(
-        "`export default` is forbidden in Ectype. Use a non-default `export` instead."
-      );
+      throw forbiddenError('"export default"', node);
     })
     .with({ type: "ForInStatement" }, () => {
-      throw new Error("`for in` is not currently supported in Ectype.");
+      throw unimplementedError('"for in" loops', node);
     })
     .with({ type: "ForOfStatement" }, () => {
-      throw new Error("`for of` is not currently supported in Ectype.");
+      throw unimplementedError('"for of" loops', node);
     })
     .with({ type: "FunctionDeclaration" }, () => {
-      throw new Error(
-        "`function` declarations are forbidden in Ectype. Use an arrow function () => {} instead."
-      );
+      throw forbiddenError("function", node, "use an arrow function instead");
     })
     .with({ type: "ThrowStatement" }, () => {
-      throw new Error("`throw` is forbidden in Ectype.");
+      throw forbiddenError('"throw"', node);
     })
     .with({ type: "WithStatement" }, () => {
-      throw new Error("`with` is forbidden in Ectype.");
+      throw forbiddenError('"with"', node);
     })
     .with({ type: "ClassDeclaration" }, () => {
-      throw new Error("`class` declarations are forbidden in Ectype.");
+      throw forbiddenError("class declarations", node);
     })
     .exhaustive();
 
@@ -319,11 +345,11 @@ const lowerExpression = (exp: Expression): ECExp =>
         exp.operator === "in" ||
         exp.operator === "instanceof"
       ) {
-        throw new Error(`\`${exp.operator}\` is forbidden in Ectype.`);
+        throw forbiddenError(`"${exp.operator}"`, exp);
       }
 
       if (exp.left.type === "PrivateIdentifier") {
-        throw new Error(`Private identifiers are forbidden in Ectype.`);
+        throw forbiddenError("using private identifiers", exp.left);
       }
 
       return {
@@ -342,29 +368,50 @@ const lowerExpression = (exp: Expression): ECExp =>
     }))
     .with({ type: "CallExpression" }, (exp) => {
       if (exp.callee.type === "Super") {
-        throw new Error("`super` is forbidden in Ectype.");
+        throw forbiddenError('"super"', exp.callee);
       }
 
       if (exp.optional) {
-        throw new Error(
-          `Optional function calls with ?.() are forbidden in Ectype.`
-        );
+        throw forbiddenError("optional function calls", exp);
       }
 
       // js() special function
       if (exp.callee.type === "Identifier" && exp.callee.name === "js") {
         if (exp.arguments.length !== 1 && exp.arguments.length !== 2) {
-          throw new Error(
-            `Expected 1 or 2 arguments to js() but got ${exp.arguments.length}`
-          );
+          throw {
+            code: "ARG_COUNT_MISMATCH",
+            meta: {
+              received: exp.arguments.length,
+              expected: 2,
+            },
+            start: exp.start,
+            end: exp.end,
+            loc: exp.loc,
+            remark: "second argument is optional",
+          } as ErrorSpan;
         }
 
         if (exp.arguments[0].type !== "ArrowFunctionExpression") {
-          throw new Error(`First parameter to js() must be an arrow function.`);
+          throw {
+            code: "INVALID_JS",
+            meta: {},
+            start: exp.start,
+            end: exp.end,
+            loc: exp.loc,
+            remark: "first argument to js() must be an arrow function",
+          } as ErrorSpan;
         }
 
         if (exp.arguments[1]?.type === "SpreadElement") {
-          throw new Error(`Second parameter to js() cannot be a spread.`);
+          throw {
+            code: "NOT_ALLOWED_HERE",
+            meta: {
+              syntax: "spread element",
+            },
+            start: exp.start,
+            end: exp.end,
+            loc: exp.loc,
+          } as ErrorSpan;
         }
 
         // Keep the call expression node the same, but don't lower the function body.
@@ -427,11 +474,11 @@ const lowerExpression = (exp: Expression): ECExp =>
       // they are weeded out later when type-checking information is availble.
 
       if (exp.property.type === "PrivateIdentifier") {
-        throw new Error("Private identifiers are forbidden in Ectype.");
+        throw forbiddenError("using private identifiers", exp.property);
       }
 
       if (exp.object.type === "Super") {
-        throw new Error("`super` is forbidden in Ectype.");
+        throw forbiddenError('"super"', exp.object);
       }
 
       // TODO: check if member expression is a keyword function, e.g. Type.sub
@@ -464,9 +511,7 @@ const lowerExpression = (exp: Expression): ECExp =>
     }))
     .with({ type: "UnaryExpression" }, (exp) => {
       if (!exp.prefix) {
-        throw new Error(
-          `Postfix operators are forbidden in Ectype (got ${exp.operator}).`
-        );
+        throw forbiddenError(`"${exp.operator}"`, exp);
       }
 
       if (
@@ -474,7 +519,7 @@ const lowerExpression = (exp: Expression): ECExp =>
         exp.operator === "void" ||
         exp.operator === "delete"
       ) {
-        throw new Error(`${exp.operator} is forbidden in Ectype.`);
+        throw forbiddenError(`"${exp.operator}`, exp);
       }
 
       return {
@@ -487,32 +532,28 @@ const lowerExpression = (exp: Expression): ECExp =>
 
     // forbidden expressions
     .with({ type: "ClassExpression" }, () => {
-      throw new Error("`class` expressions are forbidden in Ectype.");
+      throw forbiddenError('"class"', exp);
     })
     .with({ type: "FunctionExpression" }, () => {
-      throw new Error(
-        "`function` expressions are forbidden in Ectype. Use an arrow function () => {} instead."
-      );
+      throw forbiddenError('"function"', exp, "use an arrow function instead");
     })
     .with({ type: "MetaProperty" }, () => {
-      throw new Error("No meta-properties are supported in Ectype.");
+      throw unimplementedError("meta-properties", exp);
     })
     .with({ type: "NewExpression" }, () => {
-      throw new Error("`new` is forbidden in Ectype.");
+      throw forbiddenError('"new"', exp);
     })
     .with({ type: "ChainExpression" }, () => {
-      throw new Error(
-        "Optional chain `?.` expressions are forbidden in Ectype."
-      );
+      throw forbiddenError('optional chain "?."', exp);
     })
     .with({ type: "ThisExpression" }, () => {
-      throw new Error("`this` is forbidden in Ectype.");
+      throw forbiddenError('"this"', exp);
     })
     .with({ type: "UpdateExpression" }, () => {
-      throw new Error("++ and -- are forbidden in Ectype.");
+      throw forbiddenError("using postfix operators", exp);
     })
     .with({ type: "YieldExpression" }, () => {
-      throw new Error("Yield expressions are forbidden in Ectype.");
+      throw forbiddenError('"yield"', exp);
     })
     .exhaustive();
 
@@ -526,11 +567,11 @@ const lowerPattern = (pattern: Pattern): ECPattern =>
       // This is the same behavior lowering a MemberExpression node, but I
       // think they might diverge later.
       if (pat.property.type === "PrivateIdentifier") {
-        throw new Error("Private identifiers are forbidden in Ectype.");
+        throw forbiddenError("using private identifiers", pat.property);
       }
 
       if (pat.object.type === "Super") {
-        throw new Error("`super` is forbidden in Ectype.");
+        throw forbiddenError('"super"', pat.object);
       }
 
       return {
@@ -586,19 +627,19 @@ const lowerPattern = (pattern: Pattern): ECPattern =>
 
 const lowerProperty = (prop: Property | AssignmentProperty): ECProperty => {
   if (prop.kind === "get" || prop.kind === "set") {
-    throw new Error(`${prop.kind}ters are forbidden in Ectype.`);
+    throw forbiddenError(`using ${prop.kind}ters`, prop);
   }
 
   if (prop.method) {
-    throw new Error(
-      "Object methods are forbidden in Ectype. Use an arrow function expression instead."
+    throw forbiddenError(
+      "using object methods",
+      prop,
+      "use an fn member instead"
     );
   }
 
   if (prop.computed) {
-    throw new Error(
-      "Computed object field accesses are currently forbidden in Ectype."
-    );
+    throw unimplementedError("computed fields", prop);
   }
 
   return {
