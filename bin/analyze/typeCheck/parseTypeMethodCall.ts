@@ -60,26 +60,9 @@ export const bindParseTypeMethodCall = ({
 
     const memberExp = callExp.callee;
 
-    if (memberExp.computed) {
-      scope.error(
-        {
-          code: "INVALID_SYNTAX",
-          message: "Type method call cannot be a computed expression.",
-        },
-        memberExp
-      );
+    if (memberExp.computed || memberExp.property.type !== "ECIdentifier") {
+      scope.error("NOT_ALLOWED_HERE", { syntax: "computed field" }, memberExp);
       return null; // TODO I am not sure this is the correct behavior.
-    }
-
-    if (memberExp.property.type !== "ECIdentifier") {
-      scope.error(
-        {
-          code: "INVALID_SYNTAX",
-          message: "Type method call must be an identifier.",
-        },
-        memberExp.property
-      );
-      return null;
     }
 
     const method = memberExp.property.name;
@@ -87,13 +70,7 @@ export const bindParseTypeMethodCall = ({
     if (
       callExp.arguments.some((arg) => {
         if (arg.type === "ECSpreadElement") {
-          scope.error(
-            {
-              code: "INVALID_SYNTAX",
-              message: "Spread expressions are not permitted in type methods.",
-            },
-            arg
-          );
+          scope.error("NOT_ALLOWED_HERE", { syntax: "spread element" }, arg);
           return true;
         } else {
           return false;
@@ -281,18 +258,23 @@ export const bindParseTypeMethodCall = ({
           .with("eq", handleEq)
           .with("conform", () => {
             scope.error(
-              {
-                code: "INVALID_SYNTAX",
-                message: "conform cannot be called on a function.",
-              },
-              memberExp.property
+              "INVALID_TYPE_METHOD",
+              { name: "conform", baseType: "fn" },
+              memberExp.property,
+              "a function cannot be conformed at runtime"
             );
 
             // It's not valid, but we still know what type the user meant.
             return option(fnType);
           })
           .otherwise(() => {
-            throw new Error(`${method} is not a valid fn operation.`);
+            scope.error(
+              "INVALID_TYPE_METHOD",
+              { name: method, baseType: "fn" },
+              memberExp.property
+            );
+
+            return ErrorType;
           })
       )
       .with({ baseType: "tuple" }, (tupleType) =>
@@ -319,11 +301,8 @@ export const bindParseTypeMethodCall = ({
 
               if (el.type === "ECSpreadElement") {
                 scope.error(
-                  {
-                    code: "INVALID_SYNTAX",
-                    message:
-                      "Member type in tuple cannot be a spread expression.",
-                  },
+                  "NOT_ALLOWED_HERE",
+                  { syntax: "spread element" },
                   el
                 );
                 return [...acc, ErrorType];
@@ -398,11 +377,8 @@ export const bindParseTypeMethodCall = ({
 
               if (el.type === "ECSpreadElement") {
                 scope.error(
-                  {
-                    code: "INVALID_SYNTAX",
-                    message:
-                      "Contained type in array cannot be a spread expression.",
-                  },
+                  "NOT_ALLOWED_HERE",
+                  { syntax: "spread element" },
                   el
                 );
                 return ErrorType;
@@ -415,10 +391,8 @@ export const bindParseTypeMethodCall = ({
                 !elType.eq(arrayType.contains())
               ) {
                 scope.error(
-                  {
-                    code: "TYPE_MISMATCH",
-                    message: `Expected ${arrayType.contains()} but got ${elType} for element ${i}.`,
-                  },
+                  "ARG_TYPE_MISMATCH",
+                  { n: i, expected: arrayType.contains(), received: elType },
                   el
                 );
               }
@@ -457,11 +431,10 @@ export const bindParseTypeMethodCall = ({
         match(method)
           .with("from", () => {
             scope.error(
-              {
-                code: "INVALID_SYNTAX",
-                message: `"from" cannot be used on a conditional type.`,
-              },
-              memberExp.property
+              "INVALID_TYPE_METHOD",
+              { name: "from", baseType: "cond" },
+              memberExp.property,
+              "a conditional type cannot be statically checked"
             );
 
             // We still know what type the user meant here.
@@ -501,22 +474,17 @@ export const bindParseTypeMethodCall = ({
               (acc: Record<string, Type>, prop) => {
                 if (prop.type === "ECSpreadElement") {
                   scope.error(
-                    {
-                      code: "INVALID_SYNTAX",
-                      message: "Spread elements are not allowed in from().",
-                    },
+                    "NOT_ALLOWED_HERE",
+                    { syntax: "spread element" },
                     prop
                   );
-
                   return acc;
                 }
 
                 if (prop.computed) {
                   scope.error(
-                    {
-                      code: "INVALID_SYNTAX",
-                      message: "Computed properties are not allowed in from().",
-                    },
+                    "NOT_ALLOWED_HERE",
+                    { syntax: "computed field" },
                     prop
                   );
                   return acc;
@@ -531,10 +499,8 @@ export const bindParseTypeMethodCall = ({
                 const value = disallowPattern(prop.value);
                 if (!value) {
                   scope.error(
-                    {
-                      code: "UNIMPLEMENTED",
-                      message: "Patterns in from() are not yet supported.",
-                    },
+                    "UNIMPLEMENTED",
+                    { features: "patterns in struct.from()" },
                     prop.value
                   );
                   return acc;
@@ -552,10 +518,8 @@ export const bindParseTypeMethodCall = ({
             if (!inputType.eq(structType)) {
               // TODO explain incompatibility in error message
               scope.error(
-                {
-                  code: "TYPE_MISMATCH",
-                  message: `Wrong shape for struct type:\nGot:\n${inputType}\nExpected:\n${structType}`,
-                },
+                "FROM_TYPE_MISMATCH",
+                { received: inputType, expected: structType },
                 literalNode // TODO put error directly on incorrect field(s)
               );
 
@@ -675,10 +639,8 @@ export const bindParseTypeMethodCall = ({
 
             if (prop.type === "ECSpreadElement") {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "A spread element is not allowed in variant.from()",
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "spread element" },
                 prop
               );
               return variantType;
@@ -688,7 +650,7 @@ export const bindParseTypeMethodCall = ({
               throw new Error(`Argument to variant.from must use literal key.`);
             }
 
-            const { key, value } = prop;
+            const { key } = prop;
 
             if (key.type !== "ECIdentifier") {
               throw new Error(`variant.from key must be a string.`);
@@ -702,18 +664,13 @@ export const bindParseTypeMethodCall = ({
               );
             }
 
-            if (
-              value.type === "ECArrayPattern" ||
-              value.type === "ECObjectPattern" ||
-              value.type === "ECAssignmentPattern" ||
-              value.type === "ECRestElement"
-            ) {
+            const value = disallowPattern(prop.value);
+
+            if (value === null) {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "A variant tag type cannot be a pattern.",
-                },
-                value
+                "NOT_ALLOWED_HERE",
+                { syntax: "destructuring pattern" },
+                prop.value
               );
               return variantType;
             }
@@ -725,11 +682,11 @@ export const bindParseTypeMethodCall = ({
               !valueType.eq(variantType.get(key.name))
             ) {
               scope.error(
+                "KEY_TYPE_MISMATCH",
                 {
-                  code: "TYPE_MISMATCH",
-                  message: `Expected type ${variantType.get(
-                    key.name
-                  )} for variant option ${key.name} but got ${valueType}`,
+                  key: key.name,
+                  received: valueType,
+                  expected: variantType.get(key.name),
                 },
                 value
               );
@@ -768,10 +725,8 @@ export const bindParseTypeMethodCall = ({
 
               if (argType.baseType !== "type") {
                 scope.error(
-                  {
-                    code: "TYPE_MISMATCH",
-                    message: `Only type-values can be cast to Type (got ${argType}).`,
-                  },
+                  "FROM_TYPE_MISMATCH",
+                  { expected: TypeType, received: argType },
                   args[0]
                 );
                 // Still safe to return TypeType, since that's likely what the
@@ -782,10 +737,8 @@ export const bindParseTypeMethodCall = ({
             })
             .with("conform", () => {
               scope.error(
-                {
-                  code: "INVALID_OPERATION",
-                  message: `A value cannot be conformed to Type at runtime.`,
-                },
+                "INVALID_TYPE_METHOD",
+                { name: "conform", baseType: "type" },
                 memberExp.property
               );
 
@@ -932,11 +885,10 @@ export const bindParseTypeMethodCall = ({
                     const el = prop.value.elements[0];
 
                     if (el === null) {
+                      // I'm not actually sure how this can ever happen.
                       scope.error(
-                        {
-                          code: "INVALID_SYNTAX",
-                          message: "Invalid asserted type.",
-                        },
+                        "UNIMPLEMENTED",
+                        { features: "null array elements" },
                         prop.value
                       );
                       return ErrorType; // TODO may be more specific
@@ -944,11 +896,8 @@ export const bindParseTypeMethodCall = ({
 
                     if (el.type === "ECSpreadElement") {
                       scope.error(
-                        {
-                          code: "INVALID_SYNTAX",
-                          message:
-                            "Asserted type cannot be a spread expression.",
-                        },
+                        "NOT_ALLOWED_HERE",
+                        { syntax: "spread element" },
                         el
                       );
                       return ErrorType; // TODO may be more specific
@@ -1006,9 +955,10 @@ export const bindParseTypeMethodCall = ({
                   ) {
                     // Ensure that all return types match.
                     scope.error(
+                      "RETURN_TYPE_MISMATCH",
                       {
-                        code: "TYPE_MISMATCH",
-                        message: `Return types for "match" handlers do not match: ${seenReturnType} vs ${handlerReturnType}.`,
+                        seen: seenReturnType,
+                        received: handlerReturnType,
                       },
                       handler
                     ); // TODO this should be on the faulty return, not the whole handler
@@ -1094,10 +1044,8 @@ export const bindParseTypeMethodCall = ({
       !inferredReturnType.eq(fnType.returns())
     ) {
       scope.error(
-        {
-          code: "TYPE_MISMATCH",
-          message: `Expected function to return ${fnType.returns()} but got ${inferredReturnType}.`,
-        },
+        "RETURN_TYPE_MISMATCH",
+        { seen: fnType.returns(), received: inferredReturnType },
         fnNode
       ); // TODO error should be on faulty return, not the entire function
     }
