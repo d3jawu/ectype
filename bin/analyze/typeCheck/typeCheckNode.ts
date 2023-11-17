@@ -68,9 +68,8 @@ export const bindTypeCheckNode = ({
           return;
         }
 
-        const { exports: importedTypes, errors, warnings } = result;
+        const { exports: importedTypes, errors } = result;
         scope.importErrors(errors);
-        scope.importWarnings(warnings);
 
         node.specifiers.forEach((specifier) => {
           const remoteName = specifier.imported;
@@ -110,10 +109,8 @@ export const bindTypeCheckNode = ({
 
           if (testType.baseType !== "error" && !testType.eq(Bool)) {
             scope.error(
-              {
-                code: "TYPE_MISMATCH",
-                message: `Condition for for-loop must be a Bool.`,
-              },
+              "CONDITION_TYPE_MISMATCH",
+              { structure: "for-loop", received: testType },
               node.test
             );
           }
@@ -129,10 +126,8 @@ export const bindTypeCheckNode = ({
         const testType = typeCheckExp(node.test).ectype;
         if (testType.baseType !== "error" && !testType.eq(Bool)) {
           scope.error(
-            {
-              code: "TYPE_MISMATCH",
-              message: `Condition for if-statement must be a Bool.`,
-            },
+            "CONDITION_TYPE_MISMATCH",
+            { structure: "if-statement", received: testType },
             node.test
           );
         }
@@ -162,9 +157,10 @@ export const bindTypeCheckNode = ({
               !scope.current.inferredReturnType.eq(returnedType)
             ) {
               scope.error(
+                "RETURN_TYPE_MISMATCH",
                 {
-                  code: "TYPE_MISMATCH",
-                  message: `Function has inconsistent return types: got ${returnedType} but previously saw ${scope.current.inferredReturnType}.`,
+                  received: returnedType,
+                  seen: scope.current.inferredReturnType,
                 },
                 node.argument
               );
@@ -227,10 +223,8 @@ export const bindTypeCheckNode = ({
         const testType = typeCheckExp(node.test).ectype;
         if (testType.baseType !== "error" && !testType.eq(Bool)) {
           scope.error(
-            {
-              code: "TYPE_MISMATCH",
-              message: `Condition for while-statement must be a Bool.`,
-            },
+            "CONDITION_TYPE_MISMATCH",
+            { structure: "while-loop", received: testType },
             node.test
           );
         }

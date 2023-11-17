@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { ErrorMeta, errorTemplates } from "./types/Error.js";
+
 import { dirname, relative, resolve } from "node:path";
 import { analyzeFile } from "./analyze/analyzeFile.js";
 
@@ -18,6 +20,22 @@ if (!process.argv[3]) {
 
 const entryPoint = resolve(process.argv[3]);
 
+const errorMessage = <Code extends keyof ErrorMeta>(
+  code: Code,
+  meta: ErrorMeta[Code],
+  remark?: string
+) => {
+  const template = errorTemplates[code];
+
+  return (
+    Object.entries(meta).reduce((acc, [k, v]) => {
+      acc = acc.replace(`$${k}`, v.toString());
+
+      return acc;
+    }, template) + (!!remark ? ` (${remark})` : "")
+  );
+};
+
 try {
   const res = analyzeFile(entryPoint);
   if (res === null) {
@@ -25,7 +43,7 @@ try {
     process.exit(1);
   }
 
-  const { errors, warnings } = res;
+  const { errors } = res;
 
   let errored = false;
   Object.entries(errors).forEach(([path, errors]) => {
@@ -45,11 +63,16 @@ try {
       coloredFile +=
         file.substring(prevSpanEnd, start) +
         chalk.red(file.substring(start, end));
+
+      if (i === errors.length - 1) {
+        // Attach rest of file
+        coloredFile += file.substring(end, file.length);
+      }
     });
 
     const lines = coloredFile.split("\n");
 
-    errors.forEach(({ loc, message }) => {
+    errors.forEach(({ loc, code, meta, remark }) => {
       if (!loc) {
         console.log(`Location information missing for error.`);
         return;
@@ -58,11 +81,13 @@ try {
       const { start, end } = loc;
 
       console.log(
-        `${chalk.bgBlueBright(
-          relative(dirname(entryPoint), path)
-        )} ${chalk.bgRedBright.black("ERROR")} ${chalk.bgYellow(
-          `${start.line}:${start.column}`
-        )} ${chalk.bgWhite.black(message)}\n`
+        [
+          chalk.bgCyan(relative(dirname(entryPoint), path)),
+          chalk.bgMagenta(`${start.line}:${start.column}`),
+          chalk.bgRed(`E:${code}`),
+          errorMessage(code, meta, remark),
+          "\n",
+        ].join(" ")
       );
 
       // i is the line number, which is 1-indexed.
@@ -82,6 +107,7 @@ try {
     process.exit(1);
   }
 } catch (e: any) {
-  console.log(`Error: ${e.message}`);
+  console.log(`Unexpected error:`);
+  console.log(e.stack);
   process.exit(1);
 }

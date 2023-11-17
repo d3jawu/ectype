@@ -388,7 +388,7 @@ const lowerExpression = (exp: Expression): ECExp =>
               },
               type: "ECArrowFunctionExpression",
             },
-            lowerExpression(exp.arguments[1]),
+            ...(!!exp.arguments[1] ? [lowerExpression(exp.arguments[1])] : []),
           ],
         };
       }
@@ -420,7 +420,7 @@ const lowerExpression = (exp: Expression): ECExp =>
     .with({ type: "ImportExpression" }, (exp) => ({
       ...exp,
       type: "ECImportExpression",
-      source: lowerExpression(exp),
+      source: lowerExpression(exp.source),
     }))
     .with({ type: "MemberExpression" }, (exp) => {
       // Computed properties are valid for arrays but not structs, so

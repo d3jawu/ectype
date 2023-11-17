@@ -29,8 +29,7 @@ const lineLength =
   }, 0) + 2;
 
 import { analyzeFile } from "../bin/analyze/analyzeFile.js";
-
-import { Error } from "../bin/types/Error.js";
+import type { ErrorSpan } from "../bin/types/Error.js";
 
 let failed = false;
 
@@ -51,7 +50,7 @@ await (async () => {
       if (testPath.includes("-fail.js")) {
         // Expect static checking to fail.
         const { errors } = analyzeFile(testPath) || {
-          errors: {} as Record<string, Error[]>,
+          errors: {} as Record<string, ErrorSpan[]>,
         };
         if ((errors[testPath] || []).length === 0) {
           // TODO actual error checking. Be warned: swc seems to not reset span

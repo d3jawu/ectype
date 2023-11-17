@@ -78,10 +78,8 @@ export const bindParseTypeDeclaration = ({
         let returnType: Type;
         if (returns.type === "ECSpreadElement") {
           scope.error(
-            {
-              code: "INVALID_SYNTAX",
-              message: "Return type for fn() cannot be a spread expression.",
-            },
+            "NOT_ALLOWED_HERE",
+            { syntax: "spread element" },
             returns
           );
           returnType = ErrorType;
@@ -91,25 +89,17 @@ export const bindParseTypeDeclaration = ({
 
         const paramTypes: Type[] = params.elements.map((el) => {
           if (el === null) {
+            // I'm not sure how this can actually happen.
             scope.error(
-              {
-                code: "INVALID_SYNTAX",
-                message: "Invalid parameter.",
-              },
+              "UNIMPLEMENTED",
+              { features: "null array elements" },
               returns
             );
             return ErrorType;
           }
 
           if (el.type === "ECSpreadElement") {
-            scope.error(
-              {
-                code: "INVALID_SYNTAX",
-                message:
-                  "Parameter type for fn() cannot be a spread expression.",
-              },
-              el
-            );
+            scope.error("NOT_ALLOWED_HERE", { syntax: "spread element" }, el);
             return ErrorType;
           }
 
@@ -121,13 +111,7 @@ export const bindParseTypeDeclaration = ({
       .with("tuple", () => {
         const entryTypes = args.map((arg) => {
           if (arg.type === "ECSpreadElement") {
-            scope.error(
-              {
-                code: "INVALID_SYNTAX",
-                message: "Entry type for tuple cannot be a spread expression.",
-              },
-              arg
-            );
+            scope.error("NOT_ALLOWED_HERE", { syntax: "spread element" }, arg);
             return ErrorType;
           }
 
@@ -176,43 +160,28 @@ export const bindParseTypeDeclaration = ({
           (acc: Record<string, Type>, prop) => {
             if (prop.type === "ECSpreadElement") {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "Variant tag cannot be a spread property.",
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "spread element" },
                 prop
               );
               return acc;
             }
 
-            if (prop.key.type !== "ECIdentifier") {
+            if (prop.computed || prop.key.type !== "ECIdentifier") {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: `Variant tag must be an identifier.`,
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "computed field" },
                 prop
               );
               return acc;
-            }
-
-            if (prop.computed) {
-              scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "Variant tag cannot be a computed value.",
-                },
-                prop
-              );
             }
 
             if (prop.key.name[0] !== prop.key.name[0].toUpperCase()) {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: `variant tag ${prop.key.name} must begin with an uppercase letter.`,
-                },
-                prop.key
+                "VARIANT_TAG_NAME",
+                { received: prop.key.name },
+                prop.key,
+                "must begin with uppercase letter"
               );
               return acc;
             }
@@ -220,10 +189,8 @@ export const bindParseTypeDeclaration = ({
             const value = disallowPattern(prop.value);
             if (!value) {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "A variant tag type cannot be a pattern.",
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "destructuring pattern" },
                 prop.value
               );
               return acc;
@@ -255,11 +222,8 @@ export const bindParseTypeDeclaration = ({
           (acc: Record<string, Type>, prop) => {
             if (prop.type === "ECSpreadElement") {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message:
-                    "Spread elements are not allowed in a struct definition.",
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "spread element" },
                 prop
               );
               return acc;
@@ -267,10 +231,8 @@ export const bindParseTypeDeclaration = ({
 
             if (prop.computed) {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "Struct type keys cannot be computed.",
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "computed field" },
                 prop
               );
               return acc;
@@ -285,10 +247,8 @@ export const bindParseTypeDeclaration = ({
             const value = disallowPattern(prop.value);
             if (!value) {
               scope.error(
-                {
-                  code: "INVALID_SYNTAX",
-                  message: "A struct value cannot be a pattern.",
-                },
+                "NOT_ALLOWED_HERE",
+                { syntax: "destructuring pattern" },
                 prop.value
               );
               return acc;
@@ -312,10 +272,8 @@ export const bindParseTypeDeclaration = ({
 
         if (args[0].type === "ECSpreadElement") {
           scope.error(
-            {
-              code: "INVALID_SYNTAX",
-              message: "cond() parent type cannot be a spread expression.",
-            },
+            "NOT_ALLOWED_HERE",
+            { syntax: "spread element" },
             args[0]
           );
           return ErrorType;
@@ -349,10 +307,8 @@ export const bindParseTypeDeclaration = ({
           !inferredReturnType.eq(Bool)
         ) {
           scope.error(
-            {
-              code: "TYPE_MISMATCH",
-              message: "cond() predicate must return a boolean.",
-            },
+            "CONDITION_TYPE_MISMATCH",
+            { structure: "cond predicate", received: inferredReturnType },
             predicate
           ); // TODO this should be on the return statements themselves, not the whole function
         }

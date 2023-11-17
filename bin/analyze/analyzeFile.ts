@@ -7,7 +7,7 @@ import { typeValFrom } from "./typeValFrom.js";
 import * as core from "../../core/core.js";
 import { keyword } from "../../core/internal.js";
 
-import { Error, Warning } from "../types/Error.js";
+import { ErrorSpan } from "../types/Error.js";
 
 import { Comment, parse } from "acorn";
 
@@ -39,8 +39,7 @@ export const analyzeFile = (
   path: string
 ): {
   exports: Record<string, Type>;
-  errors: Record<string, Error[]>;
-  warnings: Record<string, Warning[]>;
+  errors: Record<string, ErrorSpan[]>;
 } | null => {
   // Don't analyze Node built-in modules.
   if (path.includes("node:")) {
@@ -94,7 +93,6 @@ export const analyzeFile = (
     return {
       exports: coreTypeMap,
       errors: {},
-      warnings: {},
     };
   }
 
