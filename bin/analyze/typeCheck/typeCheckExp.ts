@@ -326,13 +326,53 @@ export const bindTypeCheckExp = ({
             node.callee.name === "js"
           ) {
             if (node.arguments.length <= 0 || node.arguments.length > 2) {
-              throw new Error(`js() expects one or two arguments.`);
+              scope.error(
+                "ARG_COUNT_MISMATCH",
+                { received: node.arguments.length, expected: 2 },
+                node,
+                "second argument is optional"
+              );
+              return {
+                ...node,
+                type: "ECJSCall",
+                fn: {
+                  ...node, // use same span as parent node
+                  type: "ECArrowFunctionExpression",
+                  params: [],
+                  body: {
+                    ...node,
+                    type: "ECBlockStatement",
+                    body: [],
+                  },
+                  async: false,
+                },
+                ectype: ErrorType,
+              };
             }
 
             if (node.arguments[0].type !== "ECArrowFunctionExpression") {
-              throw new Error(
-                `First js() argument must be an arrow function literal.`
+              scope.error(
+                "INVALID_JS",
+                {},
+                node.arguments[0],
+                "first argument must be an arrow function expression"
               );
+              return {
+                ...node,
+                type: "ECJSCall",
+                fn: {
+                  ...node.arguments[0], // use same span as parent node
+                  type: "ECArrowFunctionExpression",
+                  params: [],
+                  body: {
+                    ...node.arguments[0],
+                    type: "ECBlockStatement",
+                    body: [],
+                  },
+                  async: false,
+                },
+                ectype: ErrorType,
+              };
             }
 
             if (
