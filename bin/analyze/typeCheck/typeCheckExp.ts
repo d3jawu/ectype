@@ -549,11 +549,14 @@ export const bindTypeCheckExp = ({
         return {
           ...node,
           object: target,
-          property: typeCheckExp(node.property),
+          property:
+            typeof node.property === "string"
+              ? node.property
+              : typeCheckExp(node.property),
           ectype: match<Type, Type>(targetType)
             .with({ baseType: "struct" }, (structType) => {
               // Read on a struct value.
-              if (node.computed || node.property.type !== "ECIdentifier") {
+              if (typeof node.property !== "string") {
                 scope.error(
                   "NOT_ALLOWED_HERE",
                   { syntax: "computed field" },
@@ -563,18 +566,30 @@ export const bindTypeCheckExp = ({
                 return ErrorType;
               }
 
-              if (!structType.has(node.property.name)) {
+              if (!structType.has(node.property)) {
                 throw new Error(
-                  `Type ${targetType} has no field ${node.property.name}.`
+                  `Type ${targetType} has no field ${node.property}.`
                 );
               }
 
-              return structType.field(node.property.name);
+              return structType.field(node.property);
             })
             .with({ baseType: "array" }, (arrayType) => {
-              if (node.computed) {
+              if (typeof node.property === "string") {
+                return (
+                  match(node.property)
+                    // TODO somehow generate string methods from the TypeScript definition.
+                    .with("length", () => Num)
+                    .with("includes", () => fn([Str], Bool))
+                    .with("toString", () => fn([], Str))
+                    .otherwise(() => {
+                      throw new Error(
+                        `Array functions are not yet implemented.`
+                      );
+                    })
+                );
+              } else {
                 // field access; must be a number.
-
                 const indexType = typeCheckExp(node.property).ectype;
 
                 if (indexType.baseType !== "error" && !indexType.eq(Num)) {
@@ -586,55 +601,41 @@ export const bindTypeCheckExp = ({
                 }
 
                 return arrayType.contains();
-              } else {
-                // must be an array member like length, map, etc.
-                if (node.property.type !== "ECIdentifier") {
-                  scope.error(
-                    "NOT_ALLOWED_HERE",
-                    { syntax: "computed field" },
-                    node.property,
-                    "must be an identifier"
-                  );
-
-                  return ErrorType;
-                }
-
-                return (
-                  match(node.property.name)
-                    // TODO somehow generate string methods from the TypeScript definition.
-                    .with("length", () => Num)
-                    .with("includes", () => fn([Str], Bool))
-                    .with("toString", () => fn([], Str))
-                    .otherwise(() => {
-                      throw new Error(
-                        `Array functions are not yet implemented.`
-                      );
-                    })
-                );
               }
             })
             .with({ baseType: "variant" }, (variantType) => {
               scope.error(
                 "FORBIDDEN",
                 { behavior: "reading a property on a variant instance" },
-                node.property,
+                typeof node.property === "string" ? node : node.property,
                 "did you mean to call a method on a variant instance instead?"
               );
 
               return ErrorType;
             })
             .with({ baseType: "num" }, () => {
-              const nodeType = node.property.type;
-              if (nodeType !== "ECIdentifier") {
-                throw new Error("Bracket accesses on a number are forbidden.");
+              const name = node.property;
+              if (typeof name !== "string") {
+                scope.error(
+                  "NOT_ALLOWED_HERE",
+                  {
+                    syntax: "computed field",
+                  },
+                  name
+                );
+                return ErrorType;
               }
 
-              return match(node.property.name)
+              return match(name)
                 .with("toString", () => fn([], Str))
                 .otherwise(() => {
-                  throw new Error(
-                    `"${nodeType}" is not a valid function on a number.`
+                  scope.error(
+                    "INVALID_TYPE_METHOD",
+                    { name, baseType: "num" },
+                    node
                   );
+
+                  return ErrorType;
                 });
             })
             .with({ baseType: "type" }, () => {
@@ -644,29 +645,26 @@ export const bindTypeCheckExp = ({
               throw new Error(`Type methods must be called.`);
             })
             .with({ baseType: "str" }, () => {
-              if (node.computed) {
-                // Bracket access
-                return Str;
-              } else {
-                if (node.property.type !== "ECIdentifier") {
-                  // Must be identifier if node.computed is false
-                  throw new Error(
-                    "Property must be identifier when node is computed (internal error)"
-                  );
-                }
-
-                const method = node.property.name;
-                return match(method)
+              if (typeof node.property === "string") {
+                const name = node.property;
+                return match(node.property)
                   .with("includes", () => fn([Str], Bool))
                   .otherwise(() => {
-                    throw new Error(
-                      `${method} is not a valid function on a string.`
+                    scope.error(
+                      "INVALID_TYPE_METHOD",
+                      { name, baseType: "str" },
+                      node
                     );
+
+                    return ErrorType;
                   });
+              } else {
+                // Bracket access
+                return Str;
               }
             })
             .with({ baseType: "tuple" }, (targetType) => {
-              if (node.computed) {
+              if (typeof node.property === "string") {
                 scope.error(
                   "FORBIDDEN",
                   { behavior: "property reads on a tuple instance" },

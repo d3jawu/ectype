@@ -1,6 +1,7 @@
 import type {
   AssignmentProperty,
   Expression,
+  Identifier,
   ModuleDeclaration,
   Node,
   Pattern,
@@ -11,6 +12,7 @@ import type {
 import type {
   ECBlockStatement,
   ECExp,
+  ECMemberExpression,
   ECNode,
   ECProperty,
   ECSpreadElement,
@@ -487,7 +489,9 @@ const lowerExpression = (exp: Expression): ECExp =>
         ...exp,
         type: "ECMemberExpression",
         object: lowerExpression(exp.object),
-        property: lowerExpression(exp.property),
+        property: exp.computed
+          ? lowerExpression(exp.property)
+          : (exp.property as Identifier).name,
       };
     })
     .with({ type: "ObjectExpression" }, (exp) => ({
@@ -564,22 +568,7 @@ const lowerPattern = (pattern: Pattern): ECPattern =>
       type: "ECIdentifier",
     }))
     .with({ type: "MemberExpression" }, (pat) => {
-      // This is the same behavior lowering a MemberExpression node, but I
-      // think they might diverge later.
-      if (pat.property.type === "PrivateIdentifier") {
-        throw forbiddenError("using private identifiers", pat.property);
-      }
-
-      if (pat.object.type === "Super") {
-        throw forbiddenError('"super"', pat.object);
-      }
-
-      return {
-        ...pat,
-        type: "ECMemberExpression",
-        object: lowerExpression(pat.object),
-        property: lowerExpression(pat.property),
-      };
+      return lowerExpression(pat) as ECMemberExpression;
     })
     .with({ type: "ObjectPattern" }, (pat) => ({
       ...pat,

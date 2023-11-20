@@ -60,12 +60,12 @@ export const bindParseTypeMethodCall = ({
 
     const memberExp = callExp.callee;
 
-    if (memberExp.computed || memberExp.property.type !== "ECIdentifier") {
+    if (typeof memberExp.property !== "string") {
       scope.error("NOT_ALLOWED_HERE", { syntax: "computed field" }, memberExp);
       return null; // TODO I am not sure this is the correct behavior.
     }
 
-    const method = memberExp.property.name;
+    const method = memberExp.property;
 
     if (
       callExp.arguments.some((arg) => {
@@ -260,7 +260,7 @@ export const bindParseTypeMethodCall = ({
             scope.error(
               "INVALID_TYPE_METHOD",
               { name: "conform", baseType: "fn" },
-              memberExp.property,
+              memberExp,
               "a function cannot be conformed at runtime"
             );
 
@@ -271,7 +271,7 @@ export const bindParseTypeMethodCall = ({
             scope.error(
               "INVALID_TYPE_METHOD",
               { name: method, baseType: "fn" },
-              memberExp.property
+              memberExp
             );
 
             return ErrorType;
@@ -433,7 +433,7 @@ export const bindParseTypeMethodCall = ({
             scope.error(
               "INVALID_TYPE_METHOD",
               { name: "from", baseType: "cond" },
-              memberExp.property,
+              memberExp,
               "a conditional type cannot be statically checked"
             );
 
@@ -739,7 +739,7 @@ export const bindParseTypeMethodCall = ({
               scope.error(
                 "INVALID_TYPE_METHOD",
                 { name: "conform", baseType: "type" },
-                memberExp.property
+                memberExp
               );
 
               // We still know what type the user meant, even if it's not allowed.

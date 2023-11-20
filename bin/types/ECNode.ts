@@ -303,8 +303,7 @@ export interface ECImportExpression extends Node {
 export interface ECMemberExpression extends Node {
   type: "ECMemberExpression";
   object: ECExp;
-  property: ECExp; // Must be ECIdentifier if computed is true.
-  computed: boolean;
+  property: ECExp | string; // string if not computed
 }
 
 export interface ECObjectExpression extends Node {
