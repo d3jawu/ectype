@@ -313,11 +313,10 @@ export interface ECObjectExpression extends Node {
 
 export interface ECProperty extends Node {
   type: "ECProperty";
-  key: ECExp;
+  key: ECExp | string; // string if not computed
   value: ECExp | ECPattern;
   method: boolean;
   shorthand: boolean;
-  computed: boolean;
 }
 
 export interface ECSequenceExpression extends Node {

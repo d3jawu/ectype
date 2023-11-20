@@ -481,7 +481,7 @@ export const bindParseTypeMethodCall = ({
                   return acc;
                 }
 
-                if (prop.computed) {
+                if (typeof prop.key !== "string") {
                   scope.error(
                     "NOT_ALLOWED_HERE",
                     { syntax: "computed field" },
@@ -490,23 +490,17 @@ export const bindParseTypeMethodCall = ({
                   return acc;
                 }
 
-                if (prop.key.type !== "ECIdentifier") {
-                  throw new Error(
-                    `Cannot use ${prop.key.type} key in struct shape.`
-                  );
-                }
-
                 const value = disallowPattern(prop.value);
                 if (!value) {
                   scope.error(
                     "UNIMPLEMENTED",
-                    { features: "patterns in struct.from()" },
+                    { features: "pattern values in struct.from()" },
                     prop.value
                   );
                   return acc;
                 }
 
-                acc[prop.key.name] = typeCheckExp(value).ectype;
+                acc[prop.key] = typeCheckExp(value).ectype;
 
                 return acc;
               },
@@ -646,22 +640,20 @@ export const bindParseTypeMethodCall = ({
               return variantType;
             }
 
-            if (prop.computed) {
-              throw new Error(`Argument to variant.from must use literal key.`);
+            if (typeof prop.key !== "string") {
+              scope.error(
+                "NOT_ALLOWED_HERE",
+                { syntax: "computed field" },
+                prop.key
+              );
+              return variantType;
             }
 
             const { key } = prop;
 
-            if (key.type !== "ECIdentifier") {
-              throw new Error(`variant.from key must be a string.`);
-            }
-
-            if (!variantType.has(key.name)) {
-              throw new Error(
-                `${
-                  key.name
-                } is not a valid option in variant ${variantType.toString()}`
-              );
+            if (!variantType.has(key)) {
+              scope.error("VARIANT_TAG_NAME", { received: key }, prop);
+              return variantType;
             }
 
             const value = disallowPattern(prop.value);
@@ -679,14 +671,14 @@ export const bindParseTypeMethodCall = ({
 
             if (
               valueType.baseType !== "error" &&
-              !valueType.eq(variantType.get(key.name))
+              !valueType.eq(variantType.get(key))
             ) {
               scope.error(
                 "KEY_TYPE_MISMATCH",
                 {
-                  key: key.name,
+                  key: key,
                   received: valueType,
-                  expected: variantType.get(key.name),
+                  expected: variantType.get(key),
                 },
                 value
               );
@@ -823,26 +815,32 @@ export const bindParseTypeMethodCall = ({
                 let seenTags: string[] = [];
                 handlersMap.properties.forEach((prop, i) => {
                   if (prop.type === "ECSpreadElement") {
-                    throw new Error(
-                      `Spread ... expressions in "match" are not yet implemented.`
+                    scope.error(
+                      "NOT_ALLOWED_HERE",
+                      { syntax: "spread element" },
+                      prop
                     );
+                    return;
                   }
 
-                  if (prop.key.type !== "ECIdentifier") {
+                  if (typeof prop.key !== "string") {
                     throw new Error(
                       `Handler key in "match" must be an identifier or string literal.`
                     );
                   }
 
-                  const tagName = prop.key.name; // constant to make TypeScript happy
+                  const tagName = prop.key; // constant to make TypeScript happy
 
                   if (
                     !variantOptions.some(([t]) => tagName === t) &&
                     tagName !== "_"
                   ) {
-                    throw new Error(
-                      `${tagName} is not a valid tag on this variant.`
+                    scope.error(
+                      "VARIANT_TAG_NAME",
+                      { received: tagName },
+                      prop
                     );
+                    return;
                   }
 
                   seenTags.push(tagName);

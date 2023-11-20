@@ -634,7 +634,9 @@ const lowerProperty = (prop: Property | AssignmentProperty): ECProperty => {
   return {
     ...prop,
     type: "ECProperty",
-    key: lowerExpression(prop.key),
+    key: prop.computed
+      ? lowerExpression(prop.key)
+      : (prop.key as Identifier).name,
     value:
       prop.value.type === "ObjectPattern" ||
       prop.value.type === "RestElement" ||

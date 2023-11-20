@@ -167,7 +167,7 @@ export const bindParseTypeDeclaration = ({
               return acc;
             }
 
-            if (prop.computed || prop.key.type !== "ECIdentifier") {
+            if (typeof prop.key !== "string") {
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
@@ -176,11 +176,11 @@ export const bindParseTypeDeclaration = ({
               return acc;
             }
 
-            if (prop.key.name[0] !== prop.key.name[0].toUpperCase()) {
+            if (prop.key[0] !== prop.key[0].toUpperCase()) {
               scope.error(
                 "VARIANT_TAG_NAME",
-                { received: prop.key.name },
-                prop.key,
+                { received: prop.key },
+                prop,
                 "must begin with uppercase letter"
               );
               return acc;
@@ -196,7 +196,7 @@ export const bindParseTypeDeclaration = ({
               return acc;
             }
 
-            acc[prop.key.name] = resolveTypeExp(value);
+            acc[prop.key] = resolveTypeExp(value);
 
             return acc;
           },
@@ -229,19 +229,13 @@ export const bindParseTypeDeclaration = ({
               return acc;
             }
 
-            if (prop.computed) {
+            if (typeof prop.key !== "string") {
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
                 prop
               );
               return acc;
-            }
-
-            if (prop.key.type !== "ECIdentifier") {
-              throw new Error(
-                `Cannot use ${prop.key.type} as key in struct shape.`
-              );
             }
 
             const value = disallowPattern(prop.value);
@@ -254,7 +248,7 @@ export const bindParseTypeDeclaration = ({
               return acc;
             }
 
-            acc[prop.key.name] = resolveTypeExp(value);
+            acc[prop.key] = resolveTypeExp(value);
 
             return acc;
           },
