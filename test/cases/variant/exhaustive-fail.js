@@ -10,8 +10,9 @@ const MaybeStr = variant({
 const someStr = MaybeStr.from({ Some: "abc" });
 
 // Type-checking should fail when a handler is missing.
-someStr.match({
-  Some: fn([Str], Null).from((s) => {
+///MATCH_HANDLER_MISSING
+variant.match(someStr, {
+  Some: (s) => {
     return null;
-  }),
+  },
 });

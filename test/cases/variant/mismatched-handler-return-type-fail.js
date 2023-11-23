@@ -1,6 +1,6 @@
 "use ectype";
 
-import { fn, Num, Str, struct } from "../../../core/core.js";
+import { fn, Num, Str, struct, variant } from "../../../core/core.js";
 
 const Point2D = struct({
   x: Num,
@@ -13,11 +13,12 @@ const maybePoint = Point2D.conform({
 });
 
 // Handlers cannot have different return types.
-maybePoint.match({
-  Some: fn([], Str).from(() => {
+variant.match(maybePoint, {
+  Some: () => {
     return "";
-  }),
-  None: fn([], Null).from(() => {
+  },
+  ///RETURN_TYPE_MISMATCH
+  None: () => {
     return null;
-  }),
+  },
 });

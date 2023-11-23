@@ -12,4 +12,5 @@ const myPoint = Point2D.from({
   y: 20,
 });
 
+///KEY_TYPE_MISMATCH
 myPoint.x = "abc";

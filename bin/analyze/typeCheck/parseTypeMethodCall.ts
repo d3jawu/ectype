@@ -838,7 +838,8 @@ export const bindParseTypeMethodCall = ({
                     scope.error(
                       "VARIANT_TAG_NAME",
                       { received: tagName },
-                      prop
+                      prop,
+                      `does not exist in ${variantType}`
                     );
                     return;
                   }
@@ -849,7 +850,7 @@ export const bindParseTypeMethodCall = ({
                   let _handler: ECArrowFunctionExpression;
                   // Handler can either be a function or tuple of [assertedType, handler]
                   if (tagName === "_") {
-                    _handlerArgType = typeValFrom(Unknown);
+                    _handlerArgType = Unknown;
                     if (prop.value.type !== "ECArrowFunctionExpression") {
                       throw new Error(
                         `Wildcard handler cannot take a type assertion.`
@@ -867,10 +868,10 @@ export const bindParseTypeMethodCall = ({
                       variantOptions.find(([t]) => t === tagName)![1]
                         .baseType !== "deferred"
                     ) {
-                      // TODO downgrade to warning
-                      throw new Error(
-                        `Type assertion is unnecessary on ${tagName} because its type is known statically.`
-                      );
+                      // TODO warning
+                      // throw new Error(
+                      // `Type assertion is unnecessary on ${tagName} because its type is known statically.`
+                      // );
                     }
 
                     // Asserted param type - use the type from the assertion.
@@ -975,9 +976,12 @@ export const bindParseTypeMethodCall = ({
 
                     tags.forEach((expectedTag) => {
                       if (!seenTags.includes(expectedTag)) {
-                        throw new Error(
-                          `"match" handlers are not exhaustive (missing ${expectedTag})`
+                        scope.error(
+                          "MATCH_HANDLER_MISSING",
+                          { missing: expectedTag },
+                          args[1]
                         );
+                        // Can still continue parsing
                       }
                     });
                   }

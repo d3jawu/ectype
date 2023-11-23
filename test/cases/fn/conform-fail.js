@@ -4,6 +4,7 @@ import { fn, Num, Str } from "../../../core/core.js";
 const MyFnType = fn([Str], Num);
 
 // A function cannot be conformed because its type cannot be checked at runtime.
+///INVALID_TYPE_METHOD
 const myFn = MyFnType.conform((p) => {
   if (p === "apple") {
     return 10;

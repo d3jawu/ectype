@@ -6,4 +6,5 @@ const Email = cond(Str, (val) => {
 });
 
 // Using "from" on a cond type should cause type-checking to fail.
+///INVALID_TYPE_METHOD
 const email = Email.from("a@b");

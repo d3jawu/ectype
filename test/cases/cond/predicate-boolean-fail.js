@@ -1,7 +1,6 @@
 "use ectype";
 import { Str, cond } from "../../../core/core.js";
-
-// Conditional predicate must return a boolean.
+///CONDITION_TYPE_MISMATCH
 const Email = cond(Str, (val) => {
   return "uh oh";
 });

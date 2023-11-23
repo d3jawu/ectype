@@ -11,14 +11,15 @@ const someStr = MaybeStr.from({ Some: "abc" });
 
 // Type-checking should fail when a handler matches a tag not found in the variant,
 // even if all actual tags are handled.
-someStr.match({
-  Some: fn([Str], Null).from((s) => {
+variant.match(someStr, {
+  Some: (s) => {
     return null;
-  }),
-  None: fn([], Null).from(() => {
+  },
+  None: () => {
     return null;
-  }),
-  NotInVariant: fn([], Null).from(() => {
+  },
+  ///VARIANT_TAG_NAME
+  NotInVariant: () => {
     return null;
-  }),
+  },
 });

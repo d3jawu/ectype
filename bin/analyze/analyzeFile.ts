@@ -40,6 +40,7 @@ export const analyzeFile = (
 ): {
   exports: Record<string, Type>;
   errors: Record<string, ErrorSpan[]>;
+  comments: Comment[];
 } | null => {
   // Don't analyze Node built-in modules.
   if (path.includes("node:")) {
@@ -61,8 +62,7 @@ export const analyzeFile = (
   if (
     ast.length === 0 ||
     ast[0].type !== "ExpressionStatement" ||
-    ast[0].expression.type !== "Literal" ||
-    typeof ast[0].expression.value !== "string"
+    !ast[0].directive
   ) {
     return null;
   }
@@ -71,19 +71,18 @@ export const analyzeFile = (
 
   // If the file opens with "use strict", check just the next statement.
   // Ectype will not check the whole file for a directive.
-  if (ast[0].expression.value === "use strict") {
+  if (ast[0].directive === "use strict") {
     if (
       ast.length === 1 ||
       ast[1].type !== "ExpressionStatement" ||
-      ast[1].expression.type !== "Literal" ||
-      typeof ast[1].expression.value !== "string"
+      !ast[1].directive
     ) {
       return null;
     }
 
-    initialString = ast[1].expression.value;
+    initialString = ast[1].directive;
   } else {
-    initialString = ast[0].expression.value;
+    initialString = ast[0].directive;
   }
 
   // Ectype library file, imported directly. This is an edge case, usually the
@@ -93,6 +92,7 @@ export const analyzeFile = (
     return {
       exports: coreTypeMap,
       errors: {},
+      comments,
     };
   }
 
@@ -116,10 +116,14 @@ export const analyzeFile = (
         errors: {
           [path]: [lowered],
         },
+        comments,
       };
     }
 
-    return typeCheck(lowered, path);
+    return {
+      ...typeCheck(lowered, path),
+      comments,
+    };
   }
 
   // If we get here, the file had some other unused string literal sitting in

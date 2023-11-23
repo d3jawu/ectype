@@ -65,7 +65,10 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECAssignmentExpression" },
         (node): Typed<ECAssignmentExpression> => {
-          if (node.left.type !== "ECIdentifier") {
+          if (
+            node.left.type !== "ECIdentifier" &&
+            node.left.type !== "ECMemberExpression"
+          ) {
             scope.error(
               "UNIMPLEMENTED",
               { features: "pattern assignments" },
@@ -102,15 +105,39 @@ export const bindTypeCheckExp = ({
             ectype = leftType;
           } else {
             if (!rightType.eq(leftType)) {
-              scope.error(
-                "ASSIGNMENT_TYPE_MISMATCH",
-                {
-                  received: rightType,
-                  expected: leftType,
-                  varName: node.left.name,
-                },
-                node.right
-              );
+              if (node.left.type === "ECIdentifier") {
+                scope.error(
+                  "ASSIGNMENT_TYPE_MISMATCH",
+                  {
+                    received: rightType,
+                    expected: leftType,
+                    varName: node.left.name,
+                  },
+                  node.right
+                );
+              } else if (
+                node.left.type === "ECMemberExpression" &&
+                typeof node.left.property === "string"
+              ) {
+                scope.error(
+                  "KEY_TYPE_MISMATCH",
+                  {
+                    expected: leftType,
+                    received: rightType,
+                    key: node.left.property,
+                  },
+                  node.right
+                );
+              } else {
+                scope.error(
+                  "CONTAINED_TYPE_MISMATCH",
+                  {
+                    contained: leftType,
+                    received: rightType,
+                  },
+                  node.right
+                );
+              }
             }
             // If the types don't match, use the RHS (since that's what the exp evaluates to).
             ectype = rightType;
@@ -567,9 +594,16 @@ export const bindTypeCheckExp = ({
               }
 
               if (!structType.has(node.property)) {
-                throw new Error(
-                  `Type ${targetType} has no field ${node.property}.`
+                scope.error(
+                  "INVALID_FIELD",
+                  {
+                    field: node.property,
+                    type: structType,
+                  },
+                  node
                 );
+
+                return ErrorType;
               }
 
               return structType.field(node.property);
