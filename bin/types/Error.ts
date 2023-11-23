@@ -56,6 +56,10 @@ export type ErrorMeta = {
     received: Type;
     expected: Type;
   };
+  CONTAINED_TYPE_MISMATCH: {
+    contained: Type;
+    received: Type;
+  };
   RETURN_TYPE_MISMATCH: {
     received: Type;
     seen: Type;
@@ -75,6 +79,13 @@ export type ErrorMeta = {
   FROM_TYPE_MISMATCH: {
     received: Type;
     expected: Type;
+  };
+  MATCH_HANDLER_MISSING: {
+    missing: string;
+  };
+  INVALID_FIELD: {
+    type: Type;
+    field: string;
   };
   INVALID_TYPE_METHOD: {
     name: string;
@@ -101,6 +112,7 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
   KEY_TYPE_MISMATCH: 'expected $expected for "$key" but got $received',
   INDEX_TYPE_MISMATCH:
     "expected index to be of type $expected but got $received",
+  CONTAINED_TYPE_MISMATCH: "element must be $contained but got $received",
   RETURN_TYPE_MISMATCH: "expected function to return $seen but got $received",
   BINARY_TYPE_MISMATCH:
     "left-hand side type $left does not match right-hand side type $right",
@@ -108,6 +120,9 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
     '"true" expression type $consequent does not match "false" expression type $alternate',
   OPERATOR_TYPE_MISMATCH: '"$operator" cannot be used with $type',
   FROM_TYPE_MISMATCH: "from() expected $expected but got $received",
+  MATCH_HANDLER_MISSING:
+    "match() handlers are not exhaustive (missing $missing)",
+  INVALID_FIELD: "field $field is not valid on $type",
   INVALID_TYPE_METHOD: "$name is not a valid $baseType method",
   VARIANT_TAG_NAME: "variant tag $received is invalid",
   INVALID_JS: "call to js() is invalid",

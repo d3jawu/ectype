@@ -2,5 +2,5 @@
 
 import { Type } from "../../../core/core.js";
 
-// Can't cast a value to a type.
+///FROM_TYPE_MISMATCH
 const A = Type.from(10);

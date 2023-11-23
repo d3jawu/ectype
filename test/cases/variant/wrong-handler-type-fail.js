@@ -1,6 +1,6 @@
 "use ectype";
 
-import { fn, Num, Str, struct } from "../../../core/core.js";
+import { Num, Str, struct, variant } from "../../../core/core.js";
 
 const Point2D = struct({
   x: Num,
@@ -12,12 +12,21 @@ const maybePoint = Point2D.conform({
   y: 20,
 });
 
-maybePoint.match({
-  Some: fn([struct({ a: Str, b: Str })], Null).from((pair) => {
-    pair.a = "oh no"; // If allowed, this would be a static guarantee of field of the wrong type
+// TODO: with the reworks to variant, I'm not sure this test is actually testing
+// what it should be.
+variant.match(maybePoint, {
+  Some: [
+    struct({ a: Str, b: Str }),
+    (pair) => {
+      ///INVALID_FIELD
+      pair.w;
+      return null;
+    },
+  ],
+  None: () => {
     return null;
-  }),
-  None: fn([], Null).from(() => {
+  },
+  _: () => {
     return null;
-  }),
+  },
 });
