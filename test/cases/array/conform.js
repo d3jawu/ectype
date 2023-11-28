@@ -16,7 +16,7 @@ ok(
     None: () => {
       return false;
     },
-  })
+  }),
 );
 
 const notNumArray = NumArray.conform(["a", "b", "c"]);
@@ -29,7 +29,7 @@ ok(
     None: () => {
       return true;
     },
-  })
+  }),
 );
 
 export { NumArray };

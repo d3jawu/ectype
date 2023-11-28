@@ -29,14 +29,14 @@ export const coreTypeMap = Object.entries(core).reduce(
 
     return a;
   },
-  {}
+  {},
 );
 
 // If the file at path is an Ectype file, analyzeFile parses, lowers, and type-checks
 // it, returning its exports and any errors and warnings encountered. If it is
 // not an Ectype file, null is returned.
 export const analyzeFile = (
-  path: string
+  path: string,
 ): {
   exports: Record<string, Type>;
   errors: Record<string, ErrorSpan[]>;

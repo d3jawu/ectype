@@ -14,7 +14,7 @@ ok(
     None: () => {
       return false;
     },
-  })
+  }),
 );
 
 ok(
@@ -25,5 +25,5 @@ ok(
     None: () => {
       return true;
     },
-  })
+  }),
 );

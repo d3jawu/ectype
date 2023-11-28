@@ -46,7 +46,7 @@ export const bindParseTypeDeclaration = ({
 }) => {
   // Returns an ECTypedeclaration if call was a type declaration, e.g. struct({}), or null otherwise.
   const parseTypeDeclaration = (
-    callExp: ECCallExpression
+    callExp: ECCallExpression,
   ): Typed<ECTypeDeclaration> | null => {
     if (
       callExp.callee.type !== "ECIdentifier" ||
@@ -63,7 +63,7 @@ export const bindParseTypeDeclaration = ({
       .with("fn", () => {
         if (args.length !== 2) {
           throw new Error(
-            `Expected exactly 2 arguments to fn() but got ${args.length}`
+            `Expected exactly 2 arguments to fn() but got ${args.length}`,
           );
         }
 
@@ -80,7 +80,7 @@ export const bindParseTypeDeclaration = ({
           scope.error(
             "NOT_ALLOWED_HERE",
             { syntax: "spread element" },
-            returns
+            returns,
           );
           returnType = ErrorType;
         } else {
@@ -93,7 +93,7 @@ export const bindParseTypeDeclaration = ({
             scope.error(
               "UNIMPLEMENTED",
               { features: "null array elements" },
-              returns
+              returns,
             );
             return ErrorType;
           }
@@ -123,7 +123,7 @@ export const bindParseTypeDeclaration = ({
       .with("array", () => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to array() but got ${args.length}`
+            `Expected exactly 1 argument to array() but got ${args.length}`,
           );
         }
 
@@ -146,7 +146,7 @@ export const bindParseTypeDeclaration = ({
       .with("variant", () => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to variant() but got ${args.length}`
+            `Expected exactly 1 argument to variant() but got ${args.length}`,
           );
         }
 
@@ -162,7 +162,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "spread element" },
-                prop
+                prop,
               );
               return acc;
             }
@@ -171,7 +171,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
-                prop
+                prop,
               );
               return acc;
             }
@@ -181,7 +181,7 @@ export const bindParseTypeDeclaration = ({
                 "VARIANT_TAG_NAME",
                 { received: prop.key },
                 prop,
-                "must begin with uppercase letter"
+                "must begin with uppercase letter",
               );
               return acc;
             }
@@ -191,7 +191,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "destructuring pattern" },
-                prop.value
+                prop.value,
               );
               return acc;
             }
@@ -200,7 +200,7 @@ export const bindParseTypeDeclaration = ({
 
             return acc;
           },
-          {}
+          {},
         );
 
         return typeValFrom(variant(options));
@@ -208,7 +208,7 @@ export const bindParseTypeDeclaration = ({
       .with("struct", () => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to struct() but got ${args.length}`
+            `Expected exactly 1 argument to struct() but got ${args.length}`,
           );
         }
 
@@ -224,7 +224,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "spread element" },
-                prop
+                prop,
               );
               return acc;
             }
@@ -233,7 +233,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
-                prop
+                prop,
               );
               return acc;
             }
@@ -243,7 +243,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "destructuring pattern" },
-                prop.value
+                prop.value,
               );
               return acc;
             }
@@ -252,7 +252,7 @@ export const bindParseTypeDeclaration = ({
 
             return acc;
           },
-          {}
+          {},
         );
 
         return typeValFrom(struct(shape));
@@ -260,7 +260,7 @@ export const bindParseTypeDeclaration = ({
       .with("cond", () => {
         if (args.length !== 2) {
           throw new Error(
-            `Expected exactly 2 arguments to cond() but got ${args.length}`
+            `Expected exactly 2 arguments to cond() but got ${args.length}`,
           );
         }
 
@@ -268,7 +268,7 @@ export const bindParseTypeDeclaration = ({
           scope.error(
             "NOT_ALLOWED_HERE",
             { syntax: "spread element" },
-            args[0]
+            args[0],
           );
           return ErrorType;
         }
@@ -291,7 +291,7 @@ export const bindParseTypeDeclaration = ({
           predicateParams[param.name] = parentType;
         } else if (predicate.params.length > 1) {
           throw new Error(
-            `cond() predicate can take at most one param (got ${predicate.params.length}).`
+            `cond() predicate can take at most one param (got ${predicate.params.length}).`,
           );
         }
 
@@ -303,14 +303,14 @@ export const bindParseTypeDeclaration = ({
           scope.error(
             "CONDITION_TYPE_MISMATCH",
             { structure: "cond predicate", received: inferredReturnType },
-            predicate
+            predicate,
           ); // TODO this should be on the return statements themselves, not the whole function
         }
 
         return typeValFrom(
           cond(parentType, () => {
             throw new Error(`Cannot use cond predicate at analysis-time.`);
-          })
+          }),
         );
       })
       .otherwise((t) => {

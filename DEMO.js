@@ -167,7 +167,7 @@ const pair = fn([Type], Type).from((T) =>
   struct({
     a: T,
     b: T,
-  })
+  }),
 );
 
 const NumPair = pair(Num);

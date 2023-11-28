@@ -27,7 +27,7 @@ export const bindTypeCheckNode = ({
         { type: "ContinueStatement" },
         { type: "DebuggerStatement" },
         { type: "EmptyStatement" },
-        () => {}
+        () => {},
       )
       .with({ type: "ECImportDeclaration" }, (node) => {
         // Bypass imports from ectype itself
@@ -41,7 +41,7 @@ export const bindTypeCheckNode = ({
 
         if (typeof node.source !== "string") {
           throw new Error(
-            "How is it even possible to have a non-string import path. This throw only exists to make TypeScript happy"
+            "How is it even possible to have a non-string import path. This throw only exists to make TypeScript happy",
           );
         }
 
@@ -58,7 +58,7 @@ export const bindTypeCheckNode = ({
               `Failed to import ${joinPaths(dirname(path), node.source)} (as ${
                 node.source
               }) from ${path}`,
-              { cause }
+              { cause },
             );
           }
         })();
@@ -87,7 +87,7 @@ export const bindTypeCheckNode = ({
           const exportedType = scope.current.get(specifier.local);
           if (exportedType === null) {
             throw new Error(
-              `Could not export ${specifier.local} because it is not defined.`
+              `Could not export ${specifier.local} because it is not defined.`,
             );
           }
 
@@ -111,7 +111,7 @@ export const bindTypeCheckNode = ({
             scope.error(
               "CONDITION_TYPE_MISMATCH",
               { structure: "for-loop", received: testType },
-              node.test
+              node.test,
             );
           }
         }
@@ -128,7 +128,7 @@ export const bindTypeCheckNode = ({
           scope.error(
             "CONDITION_TYPE_MISMATCH",
             { structure: "if-statement", received: testType },
-            node.test
+            node.test,
           );
         }
 
@@ -162,7 +162,7 @@ export const bindTypeCheckNode = ({
                   received: returnedType,
                   seen: scope.current.inferredReturnType,
                 },
-                node.argument
+                node.argument,
               );
             }
           }
@@ -206,7 +206,7 @@ export const bindTypeCheckNode = ({
             .with({ type: "ECIdentifier" }, (id) => id.name)
             .otherwise(() => {
               throw new Error(
-                `Declarations with ${decl.id.type} are not yet supported.`
+                `Declarations with ${decl.id.type} are not yet supported.`,
               );
             });
 
@@ -225,7 +225,7 @@ export const bindTypeCheckNode = ({
           scope.error(
             "CONDITION_TYPE_MISMATCH",
             { structure: "while-loop", received: testType },
-            node.test
+            node.test,
           );
         }
 

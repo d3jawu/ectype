@@ -16,7 +16,7 @@ export type Scope = {
     code: Code,
     meta: ErrorMeta[Code],
     node: Node,
-    remark?: string
+    remark?: string,
   ) => void;
   importErrors: (errs: ErrorMap) => void;
 };
@@ -24,7 +24,7 @@ export type Scope = {
 // typeCheck returns a map of exports and their types.
 export const typeCheck = (
   body: ECNode[],
-  path: string
+  path: string,
 ): {
   exports: Record<string, Type>;
   errors: ErrorMap;

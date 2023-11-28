@@ -24,7 +24,7 @@ ok(
     None: () => {
       return false;
     },
-  })
+  }),
 );
 
 const Vector = struct({
@@ -55,7 +55,7 @@ ok(
     None: () => {
       return false;
     },
-  })
+  }),
 );
 
 maybeVector = Vector.conform({
@@ -77,5 +77,5 @@ ok(
     None: () => {
       return true;
     },
-  })
+  }),
 );

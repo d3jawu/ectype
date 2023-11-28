@@ -13,26 +13,26 @@ export type Typed<T> = //
         ectype: Type;
       }
     : T extends ECJSCall
-    ? ECJSCall & {
-        ectype: Type;
-      }
-    : T extends ECTypeDeclaration
-    ? ECTypeDeclaration & {
-        ectype: Type;
-      }
-    : // Normal expression
-    T extends ECExp
-    ? {
-        [K in keyof T]: Typed<T[K]>;
-      } & { ectype: Type }
-    : // Array of expressions
-    T extends object[]
-    ? Typed<T[0]>[]
-    : // Any object (which might contain expressions within it), e.g. ECStatement
-    T extends object
-    ? {
-        [K in keyof T]: Typed<T[K]>;
-      }
-    : T;
+      ? ECJSCall & {
+          ectype: Type;
+        }
+      : T extends ECTypeDeclaration
+        ? ECTypeDeclaration & {
+            ectype: Type;
+          }
+        : // Normal expression
+          T extends ECExp
+          ? {
+              [K in keyof T]: Typed<T[K]>;
+            } & { ectype: Type }
+          : // Array of expressions
+            T extends object[]
+            ? Typed<T[0]>[]
+            : // Any object (which might contain expressions within it), e.g. ECStatement
+              T extends object
+              ? {
+                  [K in keyof T]: Typed<T[K]>;
+                }
+              : T;
 
 export type TypedExp = Typed<ECExp>;

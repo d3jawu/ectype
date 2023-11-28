@@ -9,7 +9,8 @@
     "watch": "tsc --watch",
     "clean": "rm -rf dist/",
     "test": "node dist/test/test.js",
-    "check": "node dist/bin/ectype.js check"
+    "check": "node dist/bin/ectype.js check",
+    "prettier": "prettier \"./**/*.{ts,js}\" --write"
   },
   "files": [
     "dist/**/*",

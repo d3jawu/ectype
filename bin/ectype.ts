@@ -23,7 +23,7 @@ const entryPoint = resolve(process.argv[3]);
 const errorMessage = <Code extends keyof ErrorMeta>(
   code: Code,
   meta: ErrorMeta[Code],
-  remark?: string
+  remark?: string,
 ) => {
   const template = errorTemplates[code];
 
@@ -86,15 +86,15 @@ try {
           chalk.bgMagenta(`${start.line}:${start.column}`),
           chalk.bgRed(`E:${code}`),
           errorMessage(code, meta, remark) + ":\n",
-        ].join(" ")
+        ].join(" "),
       );
 
       // i is the line number, which is 1-indexed.
       for (let i = start.line; i <= end.line; i += 1) {
         console.log(
           `${chalk.bgGray.black(
-            i.toString().padStart(end.line.toString().length)
-          )} ${lines[i - 1]}`
+            i.toString().padStart(end.line.toString().length),
+          )} ${lines[i - 1]}`,
         );
       }
 

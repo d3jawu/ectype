@@ -72,7 +72,7 @@ export const bindTypeCheckExp = ({
             scope.error(
               "UNIMPLEMENTED",
               { features: "pattern assignments" },
-              node.left
+              node.left,
             );
 
             return {
@@ -113,7 +113,7 @@ export const bindTypeCheckExp = ({
                     expected: leftType,
                     varName: node.left.name,
                   },
-                  node.right
+                  node.right,
                 );
               } else if (
                 node.left.type === "ECMemberExpression" &&
@@ -126,7 +126,7 @@ export const bindTypeCheckExp = ({
                     received: rightType,
                     key: node.left.property,
                   },
-                  node.right
+                  node.right,
                 );
               } else {
                 scope.error(
@@ -135,7 +135,7 @@ export const bindTypeCheckExp = ({
                     contained: leftType,
                     received: rightType,
                   },
-                  node.right
+                  node.right,
                 );
               }
             }
@@ -149,7 +149,7 @@ export const bindTypeCheckExp = ({
             right: typeCheckExp(node.right),
             ectype: ErrorType,
           };
-        }
+        },
       )
       .with({ type: "ECAwaitExpression" }, () => {
         throw new Error(`await is not yet implemented.`);
@@ -175,7 +175,7 @@ export const bindTypeCheckExp = ({
                 scope.error(
                   "BINARY_TYPE_MISMATCH",
                   { left: leftType, right: rightType },
-                  node
+                  node,
                 );
               }
 
@@ -185,7 +185,7 @@ export const bindTypeCheckExp = ({
                 scope.error(
                   "OPERATOR_TYPE_MISMATCH",
                   { operator: node.operator, type: leftType },
-                  left
+                  left,
                 );
               }
 
@@ -195,7 +195,7 @@ export const bindTypeCheckExp = ({
                 scope.error(
                   "OPERATOR_TYPE_MISMATCH",
                   { operator: node.operator, type: rightType },
-                  right
+                  right,
                 );
               }
 
@@ -207,7 +207,7 @@ export const bindTypeCheckExp = ({
                   "OPERATOR_TYPE_MISMATCH",
                   { operator: node.operator, type: leftType },
                   left,
-                  "must be Num"
+                  "must be Num",
                 );
               }
 
@@ -216,7 +216,7 @@ export const bindTypeCheckExp = ({
                   "OPERATOR_TYPE_MISMATCH",
                   { operator: node.operator, type: rightType },
                   right,
-                  "must be Num"
+                  "must be Num",
                 );
               }
 
@@ -232,7 +232,7 @@ export const bindTypeCheckExp = ({
                   "OPERATOR_TYPE_MISMATCH",
                   { operator: node.operator, type: leftType },
                   left,
-                  "must be Num or Str"
+                  "must be Num or Str",
                 );
               }
 
@@ -245,7 +245,7 @@ export const bindTypeCheckExp = ({
                   "OPERATOR_TYPE_MISMATCH",
                   { operator: node.operator, type: rightType },
                   right,
-                  "must be Num or Str"
+                  "must be Num or Str",
                 );
               }
 
@@ -257,7 +257,7 @@ export const bindTypeCheckExp = ({
                 scope.error(
                   "BINARY_TYPE_MISMATCH",
                   { left: leftType, right: rightType },
-                  node
+                  node,
                 );
 
                 // If the types don't match, the number will be coerced to a string.
@@ -284,7 +284,7 @@ export const bindTypeCheckExp = ({
                     "OPERATOR_TYPE_MISMATCH",
                     { operator: node.operator, type: leftType },
                     left,
-                    "must be Num"
+                    "must be Num",
                   );
                 }
 
@@ -293,12 +293,12 @@ export const bindTypeCheckExp = ({
                     "OPERATOR_TYPE_MISMATCH",
                     { operator: node.operator, type: rightType },
                     right,
-                    "must be Num"
+                    "must be Num",
                   );
                 }
 
                 return Num;
-              }
+              },
             )
             .exhaustive(),
         };
@@ -315,7 +315,7 @@ export const bindTypeCheckExp = ({
             "OPERATOR_TYPE_MISMATCH",
             { operator: node.operator, type: leftType },
             left,
-            "must be Bool"
+            "must be Bool",
           );
         }
 
@@ -324,7 +324,7 @@ export const bindTypeCheckExp = ({
             "OPERATOR_TYPE_MISMATCH",
             { operator: node.operator, type: rightType },
             right,
-            "must be Bool"
+            "must be Bool",
           );
         }
 
@@ -338,7 +338,7 @@ export const bindTypeCheckExp = ({
       .with(
         { type: "ECCallExpression" },
         (
-          node
+          node,
         ):
           | Typed<ECCallExpression>
           | Typed<ECTypeDeclaration>
@@ -357,7 +357,7 @@ export const bindTypeCheckExp = ({
                 "ARG_COUNT_MISMATCH",
                 { received: node.arguments.length, expected: 2 },
                 node,
-                "second argument is optional"
+                "second argument is optional",
               );
               return {
                 ...node,
@@ -382,7 +382,7 @@ export const bindTypeCheckExp = ({
                 "INVALID_JS",
                 {},
                 node.arguments[0],
-                "first argument must be an arrow function expression"
+                "first argument must be an arrow function expression",
               );
               return {
                 ...node,
@@ -409,7 +409,7 @@ export const bindTypeCheckExp = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "spread element" },
-                node.arguments[1]
+                node.arguments[1],
               );
 
               return {
@@ -459,7 +459,7 @@ export const bindTypeCheckExp = ({
                       ...arg,
                       argument: typeCheckExp(arg.argument),
                     }
-                  : typeCheckExp(arg)
+                  : typeCheckExp(arg),
               ),
               ectype: ErrorType,
             };
@@ -467,7 +467,7 @@ export const bindTypeCheckExp = ({
 
           if (fnType.baseType !== "fn") {
             throw new Error(
-              `Callee is not a function (got ${fnType.baseType}).`
+              `Callee is not a function (got ${fnType.baseType}).`,
             );
           }
 
@@ -478,7 +478,7 @@ export const bindTypeCheckExp = ({
             throw new Error(
               `Expected ${fnType.params().length} arguments but got ${
                 node.arguments.length
-              }`
+              }`,
             );
           }
 
@@ -488,7 +488,7 @@ export const bindTypeCheckExp = ({
               scope.error(
                 "UNIMPLEMENTED",
                 { features: "spread elements in function calls" },
-                arg
+                arg,
               );
 
               return {
@@ -508,7 +508,7 @@ export const bindTypeCheckExp = ({
                   received: argType,
                   expected: fnTypeParams[i],
                 },
-                arg
+                arg,
               );
             }
 
@@ -531,7 +531,7 @@ export const bindTypeCheckExp = ({
             arguments: typedArgs,
             ectype: returnType,
           };
-        }
+        },
       )
       .with({ type: "ECConditionalExpression" }, (node) => {
         const test = typeCheckExp(node.test);
@@ -540,7 +540,7 @@ export const bindTypeCheckExp = ({
           scope.error(
             "CONDITION_TYPE_MISMATCH",
             { structure: "ternary expression", received: testType },
-            node.test
+            node.test,
           );
         }
 
@@ -557,7 +557,7 @@ export const bindTypeCheckExp = ({
           scope.error(
             "TERNARY_TYPE_MISMATCH",
             { consequent: consequentType, alternate: alternateType },
-            node
+            node,
           );
         }
 
@@ -587,7 +587,7 @@ export const bindTypeCheckExp = ({
                 scope.error(
                   "NOT_ALLOWED_HERE",
                   { syntax: "computed field" },
-                  node
+                  node,
                 );
 
                 return ErrorType;
@@ -600,7 +600,7 @@ export const bindTypeCheckExp = ({
                     field: node.property,
                     type: structType,
                   },
-                  node
+                  node,
                 );
 
                 return ErrorType;
@@ -618,7 +618,7 @@ export const bindTypeCheckExp = ({
                     .with("toString", () => fn([], Str))
                     .otherwise(() => {
                       throw new Error(
-                        `Array functions are not yet implemented.`
+                        `Array functions are not yet implemented.`,
                       );
                     })
                 );
@@ -630,7 +630,7 @@ export const bindTypeCheckExp = ({
                   scope.error(
                     "INDEX_TYPE_MISMATCH",
                     { received: indexType, expected: Num },
-                    node.property
+                    node.property,
                   );
                 }
 
@@ -642,7 +642,7 @@ export const bindTypeCheckExp = ({
                 "FORBIDDEN",
                 { behavior: "reading a property on a variant instance" },
                 typeof node.property === "string" ? node : node.property,
-                "did you mean to call a method on a variant instance instead?"
+                "did you mean to call a method on a variant instance instead?",
               );
 
               return ErrorType;
@@ -655,7 +655,7 @@ export const bindTypeCheckExp = ({
                   {
                     syntax: "computed field",
                   },
-                  name
+                  name,
                 );
                 return ErrorType;
               }
@@ -666,7 +666,7 @@ export const bindTypeCheckExp = ({
                   scope.error(
                     "INVALID_TYPE_METHOD",
                     { name, baseType: "num" },
-                    node
+                    node,
                   );
 
                   return ErrorType;
@@ -687,7 +687,7 @@ export const bindTypeCheckExp = ({
                     scope.error(
                       "INVALID_TYPE_METHOD",
                       { name, baseType: "str" },
-                      node
+                      node,
                     );
 
                     return ErrorType;
@@ -703,7 +703,7 @@ export const bindTypeCheckExp = ({
                   "FORBIDDEN",
                   { behavior: "property reads on a tuple instance" },
                   node,
-                  "did you mean to use [] brackets instead?"
+                  "did you mean to use [] brackets instead?",
                 );
 
                 return ErrorType;
@@ -713,7 +713,7 @@ export const bindTypeCheckExp = ({
                 scope.error(
                   "FORBIDDEN",
                   { behavior: "reading a non-numeric index on a tuple" },
-                  node.property
+                  node.property,
                 );
                 return ErrorType;
               }
@@ -721,7 +721,7 @@ export const bindTypeCheckExp = ({
               const index = node.property.value;
               if (index < 0 || index >= targetType.fields().length) {
                 throw new Error(
-                  `${index} is not a valid index on ${targetType}.`
+                  `${index} is not a valid index on ${targetType}.`,
                 );
               }
 
@@ -729,7 +729,7 @@ export const bindTypeCheckExp = ({
             })
             .otherwise(() => {
               throw new Error(
-                `Member expressions are not supported on ${targetType}.`
+                `Member expressions are not supported on ${targetType}.`,
               );
             }),
         };
@@ -763,12 +763,12 @@ export const bindTypeCheckExp = ({
       }))
       .with({ type: "ECArrayExpression" }, () => {
         throw new Error(
-          `Bare array expressions are forbidden; they must be attached to an array type.`
+          `Bare array expressions are forbidden; they must be attached to an array type.`,
         );
       })
       .with({ type: "ECArrowFunctionExpression" }, () => {
         throw new Error(
-          `Bare function expressions are forbidden; they must be attached to a function type.`
+          `Bare function expressions are forbidden; they must be attached to a function type.`,
         );
       })
       .with({ type: "ECObjectExpression" }, (node) => {
@@ -776,7 +776,7 @@ export const bindTypeCheckExp = ({
           "FORBIDDEN",
           { behavior: "a bare object literal" },
           node,
-          "did you mean to use from()?"
+          "did you mean to use from()?",
         );
 
         return {
@@ -808,9 +808,9 @@ export const bindTypeCheckExp = ({
         { type: "ECJSCall" },
         ({ type }) => {
           throw new Error(
-            `${type} can only occur after type checking; this means something has gone wrong internally.`
+            `${type} can only occur after type checking; this means something has gone wrong internally.`,
           );
-        }
+        },
       )
       .exhaustive();
 
@@ -842,7 +842,7 @@ export const bindTypeCheckExp = ({
             }
 
             return maybeType.type();
-          })
+          }),
       )
       // TODO resolve anonymous types from type function calls (e.g. struct()).
       .otherwise(() => {
@@ -850,7 +850,7 @@ export const bindTypeCheckExp = ({
         const expType = typeCheckExp(node).ectype;
         if (expType.baseType !== "type") {
           throw new Error(
-            `Expected a type-value but got ${expType.toString()}`
+            `Expected a type-value but got ${expType.toString()}`,
           );
         }
 

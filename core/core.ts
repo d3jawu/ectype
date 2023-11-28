@@ -174,7 +174,7 @@ const fn = (params: Type[], returns: Type): FnType => {
       val.__ecparams__ &&
         val.__ecreturns__ &&
         fnParamsEq(val.__ecparams__, params) &&
-        returns.eq(val.__ecreturns__)
+        returns.eq(val.__ecreturns__),
     );
   };
 
@@ -335,7 +335,7 @@ const struct = (shape: Record<string, Type>): StructType => {
     }
 
     return Object.keys(shape).every((key) =>
-      shape[key].valid(val[key as keyof typeof val])
+      shape[key].valid(val[key as keyof typeof val]),
     );
   };
 
@@ -470,7 +470,7 @@ variant.match = (
       | [Type, (val: unknown) => unknown];
     // A little white lie to TypeScript that the wildcard is always present.
     _: (val: unknown) => unknown;
-  }
+  },
 ): unknown => {
   /* 
   Assume that static analysis has ensured that:
@@ -484,7 +484,7 @@ variant.match = (
     if (handlers[tag]?.constructor === Array) {
       const [assertedType, handler] = handlers[tag] as [
         Type,
-        (val: unknown) => unknown
+        (val: unknown) => unknown,
       ];
 
       // Do runtime type-check against asserted type.

@@ -20,7 +20,7 @@ export const bindInferReturnType = ({
   // Handles its own scope creation.
   const inferReturnType = (
     fnNode: ECArrowFunctionExpression,
-    paramTypes: Record<string, Type>
+    paramTypes: Record<string, Type>,
   ): Type => {
     // Spawn new function scope
     const originalScope = scope.current;
@@ -30,7 +30,7 @@ export const bindInferReturnType = ({
     fnNode.params.forEach((param, i) => {
       if (param.type !== "ECIdentifier") {
         throw new Error(
-          `Function parameters other than identifiers are not yet implemented (got ${param.type})`
+          `Function parameters other than identifiers are not yet implemented (got ${param.type})`,
         );
       }
 
@@ -44,7 +44,7 @@ export const bindInferReturnType = ({
       const statements = fnNode.body.body;
       if (statements.length === 0) {
         throw new Error(
-          `Function body cannot be empty (it must return a value).`
+          `Function body cannot be empty (it must return a value).`,
         );
       }
 
@@ -56,7 +56,7 @@ export const bindInferReturnType = ({
 
       if (scope.current.inferredReturnType === null) {
         throw new Error(
-          `Could not infer a type. Is the function missing a return statement?`
+          `Could not infer a type. Is the function missing a return statement?`,
         );
       }
 

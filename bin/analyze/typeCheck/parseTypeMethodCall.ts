@@ -45,7 +45,7 @@ export const bindParseTypeMethodCall = ({
 }) => {
   // Returns an ECTypeMethodCall if the incoming call expression matches, null otherwise.
   const parseTypeMethodCall = (
-    callExp: ECCallExpression
+    callExp: ECCallExpression,
   ): Typed<ECTypeMethodCall> | null => {
     if (callExp.callee.type !== "ECMemberExpression") {
       return null;
@@ -85,7 +85,7 @@ export const bindParseTypeMethodCall = ({
     const handleEq = () => {
       if (args.length !== 1) {
         throw new Error(
-          `Expected exactly 1 argument to eq but got ${args.length}`
+          `Expected exactly 1 argument to eq but got ${args.length}`,
         );
       }
 
@@ -104,7 +104,7 @@ export const bindParseTypeMethodCall = ({
     const handleValid = () => {
       if (args.length !== 1) {
         throw new Error(
-          `Expected exactly 1 argument to valid but got ${args.length}`
+          `Expected exactly 1 argument to valid but got ${args.length}`,
         );
       }
       // TODO warn if valid() is always true or false (which is the case if both types are known statically).
@@ -132,7 +132,7 @@ export const bindParseTypeMethodCall = ({
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Null.`);
-          })
+          }),
       )
       .with({ baseType: "bool" }, () =>
         match(method)
@@ -155,7 +155,7 @@ export const bindParseTypeMethodCall = ({
           .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Bool.`);
-          })
+          }),
       )
       .with({ baseType: "num" }, () =>
         match(method)
@@ -177,7 +177,7 @@ export const bindParseTypeMethodCall = ({
           .with("conform", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to Num.conform but got ${args.length}`
+                `Expected exactly 1 argument to Num.conform but got ${args.length}`,
               );
             }
 
@@ -187,7 +187,7 @@ export const bindParseTypeMethodCall = ({
           .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Num.`);
-          })
+          }),
       )
       .with({ baseType: "str" }, () =>
         match(method)
@@ -209,7 +209,7 @@ export const bindParseTypeMethodCall = ({
           .with("conform", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to Num.conform but got ${args.length}`
+                `Expected exactly 1 argument to Num.conform but got ${args.length}`,
               );
             }
 
@@ -219,14 +219,14 @@ export const bindParseTypeMethodCall = ({
           .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Str.`);
-          })
+          }),
       )
       .with({ baseType: "fn" }, (fnType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to fn.from but got ${args.length}`
+                `Expected exactly 1 argument to fn.from but got ${args.length}`,
               );
             }
 
@@ -261,7 +261,7 @@ export const bindParseTypeMethodCall = ({
               "INVALID_TYPE_METHOD",
               { name: "conform", baseType: "fn" },
               memberExp,
-              "a function cannot be conformed at runtime"
+              "a function cannot be conformed at runtime",
             );
 
             // It's not valid, but we still know what type the user meant.
@@ -271,18 +271,18 @@ export const bindParseTypeMethodCall = ({
             scope.error(
               "INVALID_TYPE_METHOD",
               { name: method, baseType: "fn" },
-              memberExp
+              memberExp,
             );
 
             return ErrorType;
-          })
+          }),
       )
       .with({ baseType: "tuple" }, (tupleType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to tuple.from but got ${args.length}`
+                `Expected exactly 1 argument to tuple.from but got ${args.length}`,
               );
             }
 
@@ -290,7 +290,7 @@ export const bindParseTypeMethodCall = ({
 
             if (literalNode.type !== "ECArrayExpression") {
               throw new Error(
-                `tuple.from() argument must be an array literal.`
+                `tuple.from() argument must be an array literal.`,
               );
             }
 
@@ -303,7 +303,7 @@ export const bindParseTypeMethodCall = ({
                 scope.error(
                   "NOT_ALLOWED_HERE",
                   { syntax: "spread element" },
-                  el
+                  el,
                 );
                 return [...acc, ErrorType];
               }
@@ -315,7 +315,7 @@ export const bindParseTypeMethodCall = ({
 
             if (!inputType.eq(tupleType)) {
               throw new Error(
-                `Invalid cast to tuple type: ${inputType} vs ${tupleType}`
+                `Invalid cast to tuple type: ${inputType} vs ${tupleType}`,
               );
             }
 
@@ -324,7 +324,7 @@ export const bindParseTypeMethodCall = ({
           .with("valid", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to tuple.valid but got ${args.length}`
+                `Expected exactly 1 argument to tuple.valid but got ${args.length}`,
               );
             }
 
@@ -351,14 +351,14 @@ export const bindParseTypeMethodCall = ({
           })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid tuple operation.`);
-          })
+          }),
       )
       .with({ baseType: "array" }, (arrayType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to array.from but got ${args.length}`
+                `Expected exactly 1 argument to array.from but got ${args.length}`,
               );
             }
 
@@ -366,7 +366,7 @@ export const bindParseTypeMethodCall = ({
 
             if (literalNode.type !== "ECArrayExpression") {
               throw new Error(
-                `array.from() argument must be an array literal.`
+                `array.from() argument must be an array literal.`,
               );
             }
 
@@ -379,7 +379,7 @@ export const bindParseTypeMethodCall = ({
                 scope.error(
                   "NOT_ALLOWED_HERE",
                   { syntax: "spread element" },
-                  el
+                  el,
                 );
                 return ErrorType;
               }
@@ -393,7 +393,7 @@ export const bindParseTypeMethodCall = ({
                 scope.error(
                   "ARG_TYPE_MISMATCH",
                   { n: i, expected: arrayType.contains(), received: elType },
-                  el
+                  el,
                 );
               }
             });
@@ -425,7 +425,7 @@ export const bindParseTypeMethodCall = ({
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid array operation.`);
-          })
+          }),
       )
       .with({ baseType: "cond" }, (condType) =>
         match(method)
@@ -434,7 +434,7 @@ export const bindParseTypeMethodCall = ({
               "INVALID_TYPE_METHOD",
               { name: "from", baseType: "cond" },
               memberExp,
-              "a conditional type cannot be statically checked"
+              "a conditional type cannot be statically checked",
             );
 
             // We still know what type the user meant here.
@@ -443,7 +443,7 @@ export const bindParseTypeMethodCall = ({
           .with("conform", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to cond.conform but got ${args.length}`
+                `Expected exactly 1 argument to cond.conform but got ${args.length}`,
               );
             }
 
@@ -451,14 +451,14 @@ export const bindParseTypeMethodCall = ({
           })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid array operation.`);
-          })
+          }),
       )
       .with({ baseType: "struct" }, (structType) =>
         match(method)
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to struct.from but got ${args.length}`
+                `Expected exactly 1 argument to struct.from but got ${args.length}`,
               );
             }
 
@@ -466,7 +466,7 @@ export const bindParseTypeMethodCall = ({
 
             if (literalNode.type !== "ECObjectExpression") {
               throw new Error(
-                `struct.from() parameter must be an object literal.`
+                `struct.from() parameter must be an object literal.`,
               );
             }
 
@@ -476,7 +476,7 @@ export const bindParseTypeMethodCall = ({
                   scope.error(
                     "NOT_ALLOWED_HERE",
                     { syntax: "spread element" },
-                    prop
+                    prop,
                   );
                   return acc;
                 }
@@ -485,7 +485,7 @@ export const bindParseTypeMethodCall = ({
                   scope.error(
                     "NOT_ALLOWED_HERE",
                     { syntax: "computed field" },
-                    prop
+                    prop,
                   );
                   return acc;
                 }
@@ -495,7 +495,7 @@ export const bindParseTypeMethodCall = ({
                   scope.error(
                     "UNIMPLEMENTED",
                     { features: "pattern values in struct.from()" },
-                    prop.value
+                    prop.value,
                   );
                   return acc;
                 }
@@ -504,7 +504,7 @@ export const bindParseTypeMethodCall = ({
 
                 return acc;
               },
-              {}
+              {},
             );
 
             const inputType = struct(shape);
@@ -514,7 +514,7 @@ export const bindParseTypeMethodCall = ({
               scope.error(
                 "FROM_TYPE_MISMATCH",
                 { received: inputType, expected: structType },
-                literalNode // TODO put error directly on incorrect field(s)
+                literalNode, // TODO put error directly on incorrect field(s)
               );
 
               // Still safe to return structType, since that's defined elsewhere
@@ -526,7 +526,7 @@ export const bindParseTypeMethodCall = ({
           .with("conform", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to struct.conform but got ${args.length}`
+                `Expected exactly 1 argument to struct.conform but got ${args.length}`,
               );
             }
             // TODO type-check this for:
@@ -538,7 +538,7 @@ export const bindParseTypeMethodCall = ({
           .with("valid", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to struct.valid but got ${args.length}`
+                `Expected exactly 1 argument to struct.valid but got ${args.length}`,
               );
             }
 
@@ -549,7 +549,7 @@ export const bindParseTypeMethodCall = ({
 
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to struct.has but got ${args.length}`
+                `Expected exactly 1 argument to struct.has but got ${args.length}`,
               );
             }
 
@@ -579,7 +579,7 @@ export const bindParseTypeMethodCall = ({
           .with("toString", () => {
             if (args.length !== 0) {
               throw new Error(
-                `Expected exactly no arguments to struct.toString but got ${args.length}`
+                `Expected exactly no arguments to struct.toString but got ${args.length}`,
               );
             }
 
@@ -590,7 +590,7 @@ export const bindParseTypeMethodCall = ({
           })
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid struct operation.`);
-          })
+          }),
       )
       .with({ baseType: "variant" }, (variantType) =>
         match(method)
@@ -612,20 +612,20 @@ export const bindParseTypeMethodCall = ({
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to variant.from but got ${args.length}`
+                `Expected exactly 1 argument to variant.from but got ${args.length}`,
               );
             }
 
             const arg = args[0];
             if (arg.type !== "ECObjectExpression") {
               throw new Error(
-                `Argument to variant.from must be an object literal.`
+                `Argument to variant.from must be an object literal.`,
               );
             }
 
             if (arg.properties.length !== 1) {
               throw new Error(
-                `Argument to variant.from must have exactly one key set.`
+                `Argument to variant.from must have exactly one key set.`,
               );
             }
 
@@ -635,7 +635,7 @@ export const bindParseTypeMethodCall = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "spread element" },
-                prop
+                prop,
               );
               return variantType;
             }
@@ -644,7 +644,7 @@ export const bindParseTypeMethodCall = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
-                prop.key
+                prop.key,
               );
               return variantType;
             }
@@ -662,7 +662,7 @@ export const bindParseTypeMethodCall = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "destructuring pattern" },
-                prop.value
+                prop.value,
               );
               return variantType;
             }
@@ -680,7 +680,7 @@ export const bindParseTypeMethodCall = ({
                   received: valueType,
                   expected: variantType.get(key),
                 },
-                value
+                value,
               );
             }
 
@@ -695,7 +695,7 @@ export const bindParseTypeMethodCall = ({
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid variant operation.`);
-          })
+          }),
       )
       .with({ baseType: "type" }, (typeType) => {
         // Since Type is its own type (calling type() on Type returns Type), it has the same type (Type) as a runtime type-value, e.g. the return value of a fn([Type], Type),
@@ -709,7 +709,7 @@ export const bindParseTypeMethodCall = ({
             .with("from", () => {
               if (args.length !== 1) {
                 throw new Error(
-                  `Expected exactly 1 argument to type.from but got ${args.length}`
+                  `Expected exactly 1 argument to type.from but got ${args.length}`,
                 );
               }
 
@@ -719,7 +719,7 @@ export const bindParseTypeMethodCall = ({
                 scope.error(
                   "FROM_TYPE_MISMATCH",
                   { expected: TypeType, received: argType },
-                  args[0]
+                  args[0],
                 );
                 // Still safe to return TypeType, since that's likely what the
                 // user meant when they called Type.from.
@@ -731,7 +731,7 @@ export const bindParseTypeMethodCall = ({
               scope.error(
                 "INVALID_TYPE_METHOD",
                 { name: "conform", baseType: "type" },
-                memberExp
+                memberExp,
               );
 
               // We still know what type the user meant, even if it's not allowed.
@@ -742,7 +742,7 @@ export const bindParseTypeMethodCall = ({
             });
         } else {
           throw new Error(
-            `Internal error: a type's underlying type cannot be Type.`
+            `Internal error: a type's underlying type cannot be Type.`,
           );
         }
       })
@@ -751,7 +751,7 @@ export const bindParseTypeMethodCall = ({
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
-                `Expected exactly 1 argument to unknown.from but got ${args.length}`
+                `Expected exactly 1 argument to unknown.from but got ${args.length}`,
               );
             }
 
@@ -763,13 +763,13 @@ export const bindParseTypeMethodCall = ({
           .with("valid", handleValid)
           .otherwise(() => {
             throw new Error(`${method} is not a valid function on Unknown`);
-          })
+          }),
       )
       .with({ baseType: "deferred" }, () =>
         match(method)
           .with("from", () => {
             throw new Error(
-              `"from" cannot be used with a type that is not known statically.`
+              `"from" cannot be used with a type that is not known statically.`,
             );
           })
           .with("conform", () => {
@@ -777,9 +777,9 @@ export const bindParseTypeMethodCall = ({
           })
           .otherwise(() => {
             throw new Error(
-              `${method} is not a valid function on a Deferred type.`
+              `${method} is not a valid function on a Deferred type.`,
             );
-          })
+          }),
       )
       .with({ baseType: "keyword" }, (kw) =>
         match(kw.keyword())
@@ -788,7 +788,7 @@ export const bindParseTypeMethodCall = ({
               .with("match", () => {
                 if (args.length !== 2) {
                   throw new Error(
-                    `Expected exactly 2 arguments to variant match but got ${args.length}.`
+                    `Expected exactly 2 arguments to variant match but got ${args.length}.`,
                   );
                 }
 
@@ -796,14 +796,14 @@ export const bindParseTypeMethodCall = ({
                 const variantType = variantVal.ectype;
                 if (variantType.baseType !== "variant") {
                   throw new Error(
-                    `First argument to variant match must be a variant.`
+                    `First argument to variant match must be a variant.`,
                   );
                 }
 
                 const handlersMap = args[1];
                 if (handlersMap.type !== "ECObjectExpression") {
                   throw new Error(
-                    `Second argument to variant match should be an object mapping tags to handlers.`
+                    `Second argument to variant match should be an object mapping tags to handlers.`,
                   );
                 }
 
@@ -818,14 +818,14 @@ export const bindParseTypeMethodCall = ({
                     scope.error(
                       "NOT_ALLOWED_HERE",
                       { syntax: "spread element" },
-                      prop
+                      prop,
                     );
                     return;
                   }
 
                   if (typeof prop.key !== "string") {
                     throw new Error(
-                      `Handler key in "match" must be an identifier or string literal.`
+                      `Handler key in "match" must be an identifier or string literal.`,
                     );
                   }
 
@@ -839,7 +839,7 @@ export const bindParseTypeMethodCall = ({
                       "VARIANT_TAG_NAME",
                       { received: tagName },
                       prop,
-                      `does not exist in ${variantType}`
+                      `does not exist in ${variantType}`,
                     );
                     return;
                   }
@@ -853,14 +853,14 @@ export const bindParseTypeMethodCall = ({
                     _handlerArgType = Unknown;
                     if (prop.value.type !== "ECArrowFunctionExpression") {
                       throw new Error(
-                        `Wildcard handler cannot take a type assertion.`
+                        `Wildcard handler cannot take a type assertion.`,
                       );
                     }
                     _handler = prop.value;
                   } else if (prop.value.type === "ECArrowFunctionExpression") {
                     // Known param type - use the type from the variant.
                     _handlerArgType = variantOptions.find(
-                      ([t]) => t === tagName
+                      ([t]) => t === tagName,
                     )![1]; // Guaranteed to find, because we have already eliminated the case where the tag is not in the variant.
                     _handler = prop.value;
                   } else if (prop.value.type === "ECArrayExpression") {
@@ -877,7 +877,7 @@ export const bindParseTypeMethodCall = ({
                     // Asserted param type - use the type from the assertion.
                     if (prop.value.elements.length !== 2) {
                       throw new Error(
-                        `Type assertion in match must have (only) type and handler.`
+                        `Type assertion in match must have (only) type and handler.`,
                       );
                     }
 
@@ -888,7 +888,7 @@ export const bindParseTypeMethodCall = ({
                       scope.error(
                         "UNIMPLEMENTED",
                         { features: "null array elements" },
-                        prop.value
+                        prop.value,
                       );
                       return ErrorType; // TODO may be more specific
                     }
@@ -897,7 +897,7 @@ export const bindParseTypeMethodCall = ({
                       scope.error(
                         "NOT_ALLOWED_HERE",
                         { syntax: "spread element" },
-                        el
+                        el,
                       );
                       return ErrorType; // TODO may be more specific
                     }
@@ -911,7 +911,7 @@ export const bindParseTypeMethodCall = ({
                       "ECArrowFunctionExpression"
                     ) {
                       throw new Error(
-                        `Second value in match assertion must be a handler function.`
+                        `Second value in match assertion must be a handler function.`,
                       );
                     }
 
@@ -919,7 +919,7 @@ export const bindParseTypeMethodCall = ({
                     unknownExists = true;
                   } else {
                     throw new Error(
-                      `Expected either a handler function or type assertion (got ${prop.value.type}).`
+                      `Expected either a handler function or type assertion (got ${prop.value.type}).`,
                     );
                   }
                   const handlerArgType = _handlerArgType;
@@ -931,7 +931,7 @@ export const bindParseTypeMethodCall = ({
                     const param = handler.params[0];
                     if (param.type !== "ECIdentifier") {
                       throw new Error(
-                        `Handler parameter must be an identifier.`
+                        `Handler parameter must be an identifier.`,
                       );
                     }
 
@@ -943,7 +943,7 @@ export const bindParseTypeMethodCall = ({
                   // Infer return types for handler.
                   const handlerReturnType = inferReturnType(
                     handler,
-                    paramTypes
+                    paramTypes,
                   );
 
                   if (i === 0) {
@@ -959,7 +959,7 @@ export const bindParseTypeMethodCall = ({
                         seen: seenReturnType,
                         received: handlerReturnType,
                       },
-                      handler
+                      handler,
                     ); // TODO this should be on the faulty return, not the whole handler
                   }
                 });
@@ -969,7 +969,7 @@ export const bindParseTypeMethodCall = ({
                   if (unknownExists) {
                     // Wildcard is always required for statically unknown variants.
                     throw new Error(
-                      `A wildcard is always required in a handler for a variant that cannot be statically checked.`
+                      `A wildcard is always required in a handler for a variant that cannot be statically checked.`,
                     );
                   } else {
                     const tags = variantType.tags();
@@ -979,7 +979,7 @@ export const bindParseTypeMethodCall = ({
                         scope.error(
                           "MATCH_HANDLER_MISSING",
                           { missing: expectedTag },
-                          args[1]
+                          args[1],
                         );
                         // Can still continue parsing
                       }
@@ -991,21 +991,21 @@ export const bindParseTypeMethodCall = ({
               })
               .otherwise(() => {
                 throw new Error(
-                  `${method} is not a valid method on 'variant'.`
+                  `${method} is not a valid method on 'variant'.`,
                 );
-              })
+              }),
           )
           .otherwise(() => {
             throw new Error(
-              `Keyword methods on ${kw.keyword()} are not supported.`
+              `Keyword methods on ${kw.keyword()} are not supported.`,
             );
-          })
+          }),
       )
       .otherwise(() => {
         throw new Error(
           `Type methods on ${
             targetType.type().baseType
-          } are not yet implemented. (Tried to call '${method}')`
+          } are not yet implemented. (Tried to call '${method}')`,
         );
       });
 
@@ -1025,7 +1025,7 @@ export const bindParseTypeMethodCall = ({
 
     if (expectedParams.length !== fnNode.params.length) {
       throw new Error(
-        `Expected ${expectedParams.length} parameters but implementation has ${fnNode.params.length}.`
+        `Expected ${expectedParams.length} parameters but implementation has ${fnNode.params.length}.`,
       );
     }
 
@@ -1033,7 +1033,7 @@ export const bindParseTypeMethodCall = ({
     fnNode.params.forEach((param, i) => {
       if (param.type !== "ECIdentifier") {
         throw new Error(
-          `Function parameters other than identifiers are not yet implemented (got ${param.type})`
+          `Function parameters other than identifiers are not yet implemented (got ${param.type})`,
         );
       }
 
@@ -1048,7 +1048,7 @@ export const bindParseTypeMethodCall = ({
       scope.error(
         "RETURN_TYPE_MISMATCH",
         { seen: fnType.returns(), received: inferredReturnType },
-        fnNode
+        fnNode,
       ); // TODO error should be on faulty return, not the entire function
     }
   };

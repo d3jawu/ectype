@@ -76,7 +76,7 @@ await (async () => {
 
             if (!foundError) {
               throw new Error(
-                `Missing expected error ${errorCode} on line ${errorLine}`
+                `Missing expected error ${errorCode} on line ${errorLine}`,
               );
             }
 
@@ -88,9 +88,8 @@ await (async () => {
         errors.forEach((err) => {
           if (!err.expected) {
             throw new Error(
-              `Unexpected ${err.code} ${JSON.stringify(err.meta)} at ${
-                err.loc?.start.line
-              }:${err.loc?.start.column}`
+              `Unexpected ${err.code} ${JSON.stringify(err.meta)} at ${err.loc
+                ?.start.line}:${err.loc?.start.column}`,
             );
           }
         });
@@ -105,7 +104,7 @@ await (async () => {
     } catch (e) {
       failed = true;
       process.stdout.write(
-        `${chalk.black.bgRedBright("FAIL")} (${chalk.bold.redBright(stage)})\n`
+        `${chalk.black.bgRedBright("FAIL")} (${chalk.bold.redBright(stage)})\n`,
       );
       console.log(e);
       console.log(testPath);

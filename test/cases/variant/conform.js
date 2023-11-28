@@ -19,7 +19,7 @@ ok(
     None: () => {
       return false;
     },
-  })
+  }),
 );
 
 const noneStr = MaybeStr.from({ None: null });
@@ -33,5 +33,5 @@ ok(
       ok(n === null);
       return true;
     },
-  })
+  }),
 );

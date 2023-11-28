@@ -7,7 +7,7 @@ const pair = fn([Type], Type).from((T) =>
   struct({
     a: T,
     b: T,
-  })
+  }),
 );
 
 const NumPair = pair(Num);
@@ -31,8 +31,8 @@ ok(
       _: () => {
         return false;
       },
-    }
-  )
+    },
+  ),
 );
 
 // Correct handler arg type, wrong incoming value.
@@ -52,8 +52,8 @@ ok(
       _: () => {
         return true;
       },
-    }
-  )
+    },
+  ),
 );
 
 // Wrong arg type should fall back to wildcard.
@@ -76,8 +76,8 @@ ok(
       _: () => {
         return true;
       },
-    }
-  )
+    },
+  ),
 );
 
 // Wrong arg type should fall back to wildcard even if incoming value matches.
@@ -97,6 +97,6 @@ ok(
       _: () => {
         return true;
       },
-    }
-  )
+    },
+  ),
 );

@@ -27,7 +27,7 @@ import type { ErrorSpan } from "../types/Error.js";
 const forbiddenError = (
   behavior: string,
   node: Node,
-  remark?: string
+  remark?: string,
 ): ErrorSpan => ({
   code: "FORBIDDEN",
   meta: {
@@ -42,7 +42,7 @@ const forbiddenError = (
 const unimplementedError = (
   features: string,
   node: Node,
-  remark?: string
+  remark?: string,
 ): ErrorSpan => ({
   code: "UNIMPLEMENTED",
   meta: {
@@ -209,7 +209,7 @@ const lowerNode = (node: Statement | ModuleDeclaration): ECNode =>
 
     // unpack expression
     .with({ type: "ExpressionStatement" }, (val) =>
-      lowerExpression(val.expression)
+      lowerExpression(val.expression),
     )
 
     // forbidden statements
@@ -506,7 +506,7 @@ const lowerExpression = (exp: Expression): ECExp =>
       }),
     }))
     .with({ type: "ParenthesizedExpression" }, (exp) =>
-      lowerExpression(exp.expression)
+      lowerExpression(exp.expression),
     )
     .with({ type: "SequenceExpression" }, (exp) => ({
       ...exp,
@@ -623,7 +623,7 @@ const lowerProperty = (prop: Property | AssignmentProperty): ECProperty => {
     throw forbiddenError(
       "using object methods",
       prop,
-      "use an fn member instead"
+      "use an fn member instead",
     );
   }
 
