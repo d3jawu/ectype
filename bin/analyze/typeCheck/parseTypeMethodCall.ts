@@ -114,21 +114,21 @@ export const bindParseTypeMethodCall = ({
     const ectype = match(targetType.type()) // Note that we are matching against the underlying type.
       .with({ baseType: "null" }, () =>
         match(method)
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to null.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to null.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`${method} is not a valid method on Null.`);
@@ -136,21 +136,21 @@ export const bindParseTypeMethodCall = ({
       )
       .with({ baseType: "bool" }, () =>
         match(method)
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to bool.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to bool.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("eq", handleEq)
           .with("valid", handleValid)
           .otherwise(() => {
@@ -159,21 +159,21 @@ export const bindParseTypeMethodCall = ({
       )
       .with({ baseType: "num" }, () =>
         match(method)
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to num.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to num.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("conform", () => {
             if (args.length !== 1) {
               throw new Error(
@@ -191,21 +191,21 @@ export const bindParseTypeMethodCall = ({
       )
       .with({ baseType: "str" }, () =>
         match(method)
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to str.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to str.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("conform", () => {
             if (args.length !== 1) {
               throw new Error(
@@ -240,21 +240,21 @@ export const bindParseTypeMethodCall = ({
 
             return fnType;
           })
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to fn.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to fn.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("eq", handleEq)
           .with("conform", () => {
             scope.error(
@@ -330,21 +330,21 @@ export const bindParseTypeMethodCall = ({
 
             return Bool;
           })
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to tuple.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to tuple.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("eq", handleEq)
           .with("field", () => {
             throw new Error(`tuple.field cannot be used at runtime.`);
@@ -407,21 +407,21 @@ export const bindParseTypeMethodCall = ({
 
             return option(arrayType);
           })
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to array.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to array.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("eq", handleEq)
           .otherwise(() => {
             throw new Error(`'${method}' is not a valid array operation.`);
@@ -560,21 +560,21 @@ export const bindParseTypeMethodCall = ({
 
             // map type needs to be implemented first
           })
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to struct.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to struct.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("eq", handleEq)
           .with("toString", () => {
             if (args.length !== 0) {
@@ -594,21 +594,21 @@ export const bindParseTypeMethodCall = ({
       )
       .with({ baseType: "variant" }, (variantType) =>
         match(method)
-          .with("sub", () => {
-            if (args.length !== 1) {
-              throw new Error(
-                `Expected exactly 1 argument to variant.sub but got ${args.length}`
-              );
-            }
+          // .with("sub", () => {
+          //   if (args.length !== 1) {
+          //     throw new Error(
+          //       `Expected exactly 1 argument to variant.sub but got ${args.length}`
+          //     );
+          //   }
 
-            const argType = typeCheckExp(args[0]).ectype;
+          //   const argType = typeCheckExp(args[0]).ectype;
 
-            if (argType.baseType !== "type") {
-              throw new Error(`Argument to sub() must be a type.`);
-            }
+          //   if (argType.baseType !== "type") {
+          //     throw new Error(`Argument to sub() must be a type.`);
+          //   }
 
-            return Bool;
-          })
+          //   return Bool;
+          // })
           .with("from", () => {
             if (args.length !== 1) {
               throw new Error(
