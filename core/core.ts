@@ -4,6 +4,7 @@ import type {
   ArrayType,
   BoolType,
   CondType,
+  FnaType,
   FnType,
   NullType,
   NumType,
@@ -161,7 +162,13 @@ export type TypedFunction = {
   __ecreturns__: Type;
 };
 
-const fn = (params: Type[], returns: Type): FnType => {
+const _fn = <T extends "fn" | "fna">(
+  baseType: T,
+  params: Type[],
+  returns: Type,
+): // This return type is a bit more verbose than it needs to be, but it makes
+// the mapping of types more clear.
+T extends "fn" ? FnType : T extends "fna" ? FnaType : never => {
   const valid = (_val: unknown): boolean => {
     if (typeof _val !== "function") {
       return false;
@@ -219,14 +226,20 @@ const fn = (params: Type[], returns: Type): FnType => {
     //   );
     // },
     eq: (other) =>
-      other.baseType === "fn" &&
+      other.baseType === baseType &&
       other.params().length === params.length &&
       other.params().every((p, i) => p.eq(params[i])) &&
       other.returns().eq(returns),
-    toString: () => `fn([${params.join(", ")}], ${returns})`,
-    baseType: "fn",
-  };
+    toString: () => `${baseType}([${params.join(", ")}], ${returns})`,
+    baseType,
+  } as T extends "fn" ? FnType : T extends "fna" ? FnaType : never; // Unfortunately an assertion is required here.
 };
+
+const fn = (params: Type[], returns: Type): FnType =>
+  _fn("fn", params, returns);
+
+const fna = (params: Type[], returns: Type): FnaType =>
+  _fn("fna", params, returns);
 
 const array = (contains: Type): ArrayType => {
   const valid = (val: unknown) => {
@@ -565,6 +578,7 @@ export {
   array,
   cond,
   fn,
+  fna,
   js,
   struct,
   tuple,

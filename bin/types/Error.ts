@@ -24,6 +24,9 @@ export type ErrorMeta = {
   NOT_ALLOWED_HERE: {
     syntax: "computed field" | "spread element" | "destructuring pattern";
   };
+  MISSING_EXPECTED: {
+    syntax: string;
+  };
   CONDITION_TYPE_MISMATCH: {
     structure:
       | "if-statement"
@@ -83,6 +86,9 @@ export type ErrorMeta = {
   MATCH_HANDLER_MISSING: {
     missing: string;
   };
+  ASYNC_MISMATCH: {
+    expected: "async" | "synchronous";
+  };
   INVALID_FIELD: {
     type: Type;
     field: string;
@@ -99,9 +105,10 @@ export type ErrorMeta = {
 
 export const errorTemplates: Record<keyof ErrorMeta, string> = {
   UNIMPLEMENTED: "$features are not yet supported",
-  FORBIDDEN: "$behavior is forbidden",
+  FORBIDDEN: "$behavior is forbidden", // Avoid FORBIDDEN in favor of a more specific message where possible.
   UNDEFINED_VARIABLE: "$name is not defined.",
   NOT_ALLOWED_HERE: "a $syntax is not allowed here",
+  MISSING_EXPECTED: "expected $syntax here",
   CONDITION_TYPE_MISMATCH:
     "condition for $structure must be a Bool but got $received",
   ASSIGNMENT_TYPE_MISMATCH:
@@ -122,6 +129,7 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
   FROM_TYPE_MISMATCH: "from() expected $expected but got $received",
   MATCH_HANDLER_MISSING:
     "match() handlers are not exhaustive (missing $missing)",
+  ASYNC_MISMATCH: "expected $expected function here",
   INVALID_FIELD: "field $field is not valid on $type",
   INVALID_TYPE_METHOD: "$name is not a valid $baseType method",
   VARIANT_TAG_NAME: "variant tag $received is invalid",

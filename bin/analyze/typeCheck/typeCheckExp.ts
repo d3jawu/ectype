@@ -151,8 +151,45 @@ export const bindTypeCheckExp = ({
           };
         },
       )
-      .with({ type: "ECAwaitExpression" }, () => {
-        throw new Error(`await is not yet implemented.`);
+      .with({ type: "ECAwaitExpression" }, (node) => {
+        const rhs = typeCheckExp(node.argument);
+        const rhsType = rhs.ectype;
+
+        if (rhs.type !== "ECCallExpression") {
+          scope.error("MISSING_EXPECTED", { syntax: "function call" }, rhs);
+          return {
+            ...node,
+            argument: rhs,
+            ectype: ErrorType,
+          };
+        }
+
+        const calleeType = rhs.callee.ectype;
+
+        if (calleeType.baseType !== "fna") {
+          scope.error("ASYNC_MISMATCH", { expected: "async" }, rhs);
+
+          // Try falling back to non-async return type.
+          if (calleeType.baseType === "fn") {
+            return {
+              ...node,
+              argument: rhs,
+              ectype: calleeType.returns(),
+            };
+          } else {
+            return {
+              ...node,
+              argument: rhs,
+              ectype: ErrorType,
+            };
+          }
+        }
+
+        return {
+          ...node,
+          argument: rhs,
+          ectype: calleeType.returns(),
+        };
       })
       .with({ type: "ECBinaryExpression" }, (node) => {
         const left = typeCheckExp(node.left);
@@ -442,8 +479,8 @@ export const bindTypeCheckExp = ({
 
           // Normal call expression.
           const typedFn = typeCheckExp(node.callee); // Type of the function being called.
-          const fnType = typedFn.ectype;
-          if (fnType.baseType === "error") {
+          const fnxType = typedFn.ectype;
+          if (fnxType.baseType === "error") {
             // If user called a non-function, no return type can be inferred and
             // we have no choice but to pass the error up. (We don't log another
             // error; it would have been logged when the incoming error surfaced.)
@@ -465,18 +502,18 @@ export const bindTypeCheckExp = ({
             };
           }
 
-          if (fnType.baseType !== "fn") {
+          if (fnxType.baseType !== "fn" && fnxType.baseType !== "fna") {
             throw new Error(
-              `Callee is not a function (got ${fnType.baseType}).`,
+              `Callee is not a function (got ${fnxType.baseType}).`,
             );
           }
 
-          const fnTypeParams = fnType.params();
+          const fnxTypeParams = fnxType.params();
 
           // Check argument count.
-          if (node.arguments.length !== fnTypeParams.length) {
+          if (node.arguments.length !== fnxTypeParams.length) {
             throw new Error(
-              `Expected ${fnType.params().length} arguments but got ${
+              `Expected ${fnxType.params().length} arguments but got ${
                 node.arguments.length
               }`,
             );
@@ -500,13 +537,13 @@ export const bindTypeCheckExp = ({
             const typedArg = typeCheckExp(arg);
             const argType = typedArg.ectype;
 
-            if (argType.baseType !== "error" && !argType.eq(fnTypeParams[i])) {
+            if (argType.baseType !== "error" && !argType.eq(fnxTypeParams[i])) {
               scope.error(
                 "ARG_TYPE_MISMATCH",
                 {
                   n: i,
                   received: argType,
-                  expected: fnTypeParams[i],
+                  expected: fnxTypeParams[i],
                 },
                 arg,
               );
@@ -516,14 +553,14 @@ export const bindTypeCheckExp = ({
           });
 
           // If return type is a Type, try to resolve it.
-          const returnBaseType = fnType.returns().baseType;
+          const returnBaseType = fnxType.returns().baseType;
           const returnType =
             returnBaseType === "type"
               ? (() => {
                   // For now, all function types resolve to Deferred.
                   return typeValFrom(Deferred);
                 })()
-              : fnType.returns();
+              : fnxType.returns();
 
           return {
             ...node,
