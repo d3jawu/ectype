@@ -16,6 +16,7 @@ import {
   array,
   cond,
   fn,
+  fna,
   struct,
   tuple,
   variant,
@@ -31,7 +32,7 @@ import { disallowPattern } from "./disallowPattern.js";
 
 // TODO derive this from the exports on core.js, instead of hard-coding?
 const isTypeName = (name: string): boolean =>
-  ["fn", "tuple", "array", "variant", "struct", "cond"].includes(name);
+  ["fn", "fna", "tuple", "array", "variant", "struct", "cond"].includes(name);
 
 export const bindParseTypeDeclaration = ({
   scope,
@@ -46,7 +47,7 @@ export const bindParseTypeDeclaration = ({
 }) => {
   // Returns an ECTypedeclaration if call was a type declaration, e.g. struct({}), or null otherwise.
   const parseTypeDeclaration = (
-    callExp: ECCallExpression,
+    callExp: ECCallExpression
   ): Typed<ECTypeDeclaration> | null => {
     if (
       callExp.callee.type !== "ECIdentifier" ||
@@ -60,17 +61,19 @@ export const bindParseTypeDeclaration = ({
     const args = callExp.arguments;
 
     const ectype = match(targetType)
-      .with("fn", () => {
+      .with("fn", "fna", (baseType) => {
         if (args.length !== 2) {
           throw new Error(
-            `Expected exactly 2 arguments to fn() but got ${args.length}`,
+            `Expected exactly 2 arguments to ${baseType}() but got ${args.length}`
           );
         }
 
         const params = args[0];
 
         if (params.type !== "ECArrayExpression") {
-          throw new Error(`First argument to fn() must be an array literal.`);
+          throw new Error(
+            `First argument to ${baseType}() must be an array literal.`
+          );
         }
 
         const returns = args[1];
@@ -80,7 +83,7 @@ export const bindParseTypeDeclaration = ({
           scope.error(
             "NOT_ALLOWED_HERE",
             { syntax: "spread element" },
-            returns,
+            returns
           );
           returnType = ErrorType;
         } else {
@@ -93,7 +96,7 @@ export const bindParseTypeDeclaration = ({
             scope.error(
               "UNIMPLEMENTED",
               { features: "null array elements" },
-              returns,
+              returns
             );
             return ErrorType;
           }
@@ -106,7 +109,11 @@ export const bindParseTypeDeclaration = ({
           return resolveTypeExp(el);
         });
 
-        return typeValFrom(fn(paramTypes, returnType));
+        if (baseType === "fna") {
+          return typeValFrom(fna(paramTypes, returnType));
+        } else {
+          return typeValFrom(fn(paramTypes, returnType));
+        }
       })
       .with("tuple", () => {
         const entryTypes = args.map((arg) => {
@@ -123,7 +130,7 @@ export const bindParseTypeDeclaration = ({
       .with("array", () => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to array() but got ${args.length}`,
+            `Expected exactly 1 argument to array() but got ${args.length}`
           );
         }
 
@@ -146,7 +153,7 @@ export const bindParseTypeDeclaration = ({
       .with("variant", () => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to variant() but got ${args.length}`,
+            `Expected exactly 1 argument to variant() but got ${args.length}`
           );
         }
 
@@ -162,7 +169,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "spread element" },
-                prop,
+                prop
               );
               return acc;
             }
@@ -171,7 +178,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
-                prop,
+                prop
               );
               return acc;
             }
@@ -181,7 +188,7 @@ export const bindParseTypeDeclaration = ({
                 "VARIANT_TAG_NAME",
                 { received: prop.key },
                 prop,
-                "must begin with uppercase letter",
+                "must begin with uppercase letter"
               );
               return acc;
             }
@@ -191,7 +198,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "destructuring pattern" },
-                prop.value,
+                prop.value
               );
               return acc;
             }
@@ -200,7 +207,7 @@ export const bindParseTypeDeclaration = ({
 
             return acc;
           },
-          {},
+          {}
         );
 
         return typeValFrom(variant(options));
@@ -208,7 +215,7 @@ export const bindParseTypeDeclaration = ({
       .with("struct", () => {
         if (args.length !== 1) {
           throw new Error(
-            `Expected exactly 1 argument to struct() but got ${args.length}`,
+            `Expected exactly 1 argument to struct() but got ${args.length}`
           );
         }
 
@@ -224,7 +231,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "spread element" },
-                prop,
+                prop
               );
               return acc;
             }
@@ -233,7 +240,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "computed field" },
-                prop,
+                prop
               );
               return acc;
             }
@@ -243,7 +250,7 @@ export const bindParseTypeDeclaration = ({
               scope.error(
                 "NOT_ALLOWED_HERE",
                 { syntax: "destructuring pattern" },
-                prop.value,
+                prop.value
               );
               return acc;
             }
@@ -252,7 +259,7 @@ export const bindParseTypeDeclaration = ({
 
             return acc;
           },
-          {},
+          {}
         );
 
         return typeValFrom(struct(shape));
@@ -260,7 +267,7 @@ export const bindParseTypeDeclaration = ({
       .with("cond", () => {
         if (args.length !== 2) {
           throw new Error(
-            `Expected exactly 2 arguments to cond() but got ${args.length}`,
+            `Expected exactly 2 arguments to cond() but got ${args.length}`
           );
         }
 
@@ -268,7 +275,7 @@ export const bindParseTypeDeclaration = ({
           scope.error(
             "NOT_ALLOWED_HERE",
             { syntax: "spread element" },
-            args[0],
+            args[0]
           );
           return ErrorType;
         }
@@ -291,7 +298,7 @@ export const bindParseTypeDeclaration = ({
           predicateParams[param.name] = parentType;
         } else if (predicate.params.length > 1) {
           throw new Error(
-            `cond() predicate can take at most one param (got ${predicate.params.length}).`,
+            `cond() predicate can take at most one param (got ${predicate.params.length}).`
           );
         }
 
@@ -303,14 +310,14 @@ export const bindParseTypeDeclaration = ({
           scope.error(
             "CONDITION_TYPE_MISMATCH",
             { structure: "cond predicate", received: inferredReturnType },
-            predicate,
+            predicate
           ); // TODO this should be on the return statements themselves, not the whole function
         }
 
         return typeValFrom(
           cond(parentType, () => {
             throw new Error(`Cannot use cond predicate at analysis-time.`);
-          }),
+          })
         );
       })
       .otherwise((t) => {

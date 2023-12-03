@@ -11,6 +11,7 @@ export type Type =
   | NumType
   | StrType
   | FnType
+  | FnaType
   | ArrayType
   | TupleType
   | StructType
@@ -81,6 +82,10 @@ export type FnType = {
   eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "fn";
+};
+
+export type FnaType = Omit<FnType, "baseType"> & {
+  baseType: "fna";
 };
 
 export type ArrayType = {

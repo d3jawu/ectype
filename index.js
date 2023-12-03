@@ -9,6 +9,7 @@ export {
   array,
   cond,
   fn,
+  fna,
   js,
   struct,
   tuple,
