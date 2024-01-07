@@ -15,6 +15,7 @@ export type Type =
   | ArrayType
   | TupleType
   | StructType
+  | ObjectMapType
   | VariantType
   | CondType
   | TypeType
@@ -122,6 +123,16 @@ export type StructType = {
   eq: (other: Type) => boolean;
   toString: () => string;
   baseType: "struct";
+};
+
+export type ObjectMapType = {
+  from: (val: unknown) => typeof val;
+  conform: (val: unknown) => unknown;
+  valid: (val: unknown) => boolean;
+  contains: () => Type;
+  eq: (other: Type) => boolean;
+  toString: () => string;
+  baseType: "objectMap";
 };
 
 export type VariantType = {
@@ -256,10 +267,12 @@ export type ErrorType = {
   // Uhh this is kinda tentative. Ideally ErrorType would have no methods.
   eq: () => false; // Requires that error checking on type mismatches produce a better error message than "types don't match".
   valid: () => false; // Requires that valid() is never called from the analyzer (currently true).
+  toString: () => string;
 };
 
 export const ErrorType: ErrorType = {
   baseType: "error",
   eq: () => false,
   valid: () => false,
+  toString: () => "Error",
 };

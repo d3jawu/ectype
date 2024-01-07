@@ -12,6 +12,7 @@ export {
   fna,
   js,
   struct,
+  objectMap,
   tuple,
   variant,
 } from "./dist/core/core.js";

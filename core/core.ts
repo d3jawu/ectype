@@ -8,6 +8,7 @@ import type {
   FnType,
   NullType,
   NumType,
+  ObjectMapType,
   StrType,
   StructType,
   TupleType,
@@ -408,6 +409,39 @@ const struct = (shape: Record<string, Type>): StructType => {
   };
 };
 
+const objectMap = (contains: Type): ObjectMapType => {
+  const valid = (val: unknown) => {
+    if (typeof val !== "object" || val === null) {
+      return false;
+    }
+
+    return Object.values(val).every((v) => contains.valid(v));
+  };
+
+  return {
+    from: (val) => val,
+    conform(val) {
+      const MaybeType = variant({
+        Some: this,
+        None: Null,
+      });
+
+      return this.valid(objectMap)
+        ? MaybeType.from({
+            Some: val,
+          })
+        : MaybeType.from({
+            None: null,
+          });
+    },
+    valid,
+    contains: () => contains,
+    eq: (other) =>
+      other.baseType === "objectMap" && other.contains().eq(contains),
+    baseType: "objectMap",
+  };
+};
+
 const variant = (options: Record<string, Type>): VariantType => {
   const valid = (val: unknown) => {
     if (typeof val !== "object" || val === null) {
@@ -581,6 +615,7 @@ export {
   fna,
   js,
   struct,
+  objectMap,
   tuple,
   variant,
 };
