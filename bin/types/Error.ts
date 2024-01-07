@@ -83,6 +83,9 @@ export type ErrorMeta = {
     received: Type;
     expected: Type;
   };
+  NOT_A_FUNCTION: {
+    received: Type;
+  };
   MATCH_HANDLER_MISSING: {
     missing: string;
   };
@@ -127,6 +130,7 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
     '"true" expression type $consequent does not match "false" expression type $alternate',
   OPERATOR_TYPE_MISMATCH: '"$operator" cannot be used with $type',
   FROM_TYPE_MISMATCH: "from() expected $expected but got $received",
+  NOT_A_FUNCTION: "callee is not a function (got $received)",
   MATCH_HANDLER_MISSING:
     "match() handlers are not exhaustive (missing $missing)",
   ASYNC_MISMATCH: "expected $expected function here",
