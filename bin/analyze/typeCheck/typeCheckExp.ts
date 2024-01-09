@@ -723,24 +723,24 @@ export const bindTypeCheckExp = ({
                     return ErrorType;
                   })
                   .with({ baseType: "num" }, () => {
-                    const name = node.property;
-                    if (typeof name !== "string") {
+                    const method = node.property;
+                    if (typeof method !== "string") {
                       scope.error(
                         "NOT_ALLOWED_HERE",
                         {
                           syntax: "computed field",
                         },
-                        name,
+                        method,
                       );
                       return ErrorType;
                     }
 
-                    return match(name)
+                    return match(method)
                       .with("toString", () => fn([], Str))
                       .otherwise(() => {
                         scope.error(
                           "INVALID_TYPE_METHOD",
-                          { name, baseType: "num" },
+                          { method, baseType: "num" },
                           node,
                         );
 
@@ -755,13 +755,13 @@ export const bindTypeCheckExp = ({
                   })
                   .with({ baseType: "str" }, () => {
                     if (typeof node.property === "string") {
-                      const name = node.property;
+                      const method = node.property;
                       return match(node.property)
                         .with("includes", () => fn([Str], Bool))
                         .otherwise(() => {
                           scope.error(
                             "INVALID_TYPE_METHOD",
-                            { name, baseType: "str" },
+                            { method, baseType: "str" },
                             node,
                           );
 
@@ -914,11 +914,18 @@ export const bindTypeCheckExp = ({
             const maybeType = scope.current.get(node.name);
 
             if (maybeType === null) {
-              throw new Error(`${node.name} is not defined.`);
+              scope.error("UNDEFINED_VARIABLE", { name: node.name }, node);
+              return ErrorType;
             }
 
             if (maybeType.baseType !== "type") {
-              throw new Error(`${node.name} is not a type-value.`);
+              scope.error(
+                "NOT_A_TYPE",
+                { received: maybeType },
+                node,
+                `variable "${node.name}"`,
+              );
+              return ErrorType;
             }
 
             return maybeType.type();
@@ -929,9 +936,8 @@ export const bindTypeCheckExp = ({
         // Try getting the type of the expression.
         const expType = typeCheckExp(node).ectype;
         if (expType.baseType !== "type") {
-          throw new Error(
-            `Expected a type-value but got ${expType.toString()}`,
-          );
+          scope.error("NOT_A_TYPE", { received: expType }, node);
+          return ErrorType;
         }
 
         return expType.type();

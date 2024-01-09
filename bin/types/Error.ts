@@ -86,6 +86,9 @@ export type ErrorMeta = {
   NOT_A_FUNCTION: {
     received: Type;
   };
+  NOT_A_TYPE: {
+    received: Type;
+  };
   MATCH_HANDLER_MISSING: {
     missing: string;
   };
@@ -97,7 +100,7 @@ export type ErrorMeta = {
     field: string;
   };
   INVALID_TYPE_METHOD: {
-    name: string;
+    method: string;
     baseType: Type["baseType"];
   };
   VARIANT_TAG_NAME: {
@@ -131,11 +134,12 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
   OPERATOR_TYPE_MISMATCH: '"$operator" cannot be used with $type',
   FROM_TYPE_MISMATCH: "from() expected $expected but got $received",
   NOT_A_FUNCTION: "callee is not a function (got $received)",
+  NOT_A_TYPE: "expected a type value but got $received",
   MATCH_HANDLER_MISSING:
-    "match() handlers are not exhaustive (missing $missing)",
+    "match() handlers are not exhaustive: missing $missing)",
   ASYNC_MISMATCH: "expected $expected function here",
   INVALID_FIELD: "field $field is not valid on $type",
-  INVALID_TYPE_METHOD: "$name is not a valid $baseType method",
+  INVALID_TYPE_METHOD: "$method is not a valid $baseType method",
   VARIANT_TAG_NAME: "variant tag $received is invalid",
   INVALID_JS: "call to js() is invalid",
 };
