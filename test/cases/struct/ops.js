@@ -7,6 +7,11 @@ const Point2D = struct({
   y: Num,
 });
 
-const myPoint = Point2D.conform({
+const myPoint = Point2D.from({
   x: 10,
+  y: 20,
 });
+
+myPoint.x = 30;
+
+myPoint.x + 10;

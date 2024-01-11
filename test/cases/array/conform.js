@@ -31,5 +31,3 @@ ok(
     },
   }),
 );
-
-export { NumArray };
