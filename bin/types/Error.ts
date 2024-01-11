@@ -63,7 +63,15 @@ export type ErrorMeta = {
     contained: Type;
     received: Type;
   };
-  RETURN_TYPE_MISMATCH: {
+  EXPECTED_RETURN_TYPE_MISMATCH: {
+    received: Type;
+    expected: Type;
+  };
+  INFERRED_RETURN_TYPE_MISMATCH: {
+    received: Type;
+    seen: Type;
+  };
+  HANDLER_RETURN_TYPE_MISMATCH: {
     received: Type;
     seen: Type;
   };
@@ -126,7 +134,12 @@ export const errorTemplates: Record<keyof ErrorMeta, string> = {
   INDEX_TYPE_MISMATCH:
     "expected index to be of type $expected but got $received",
   CONTAINED_TYPE_MISMATCH: "element must be $contained but got $received",
-  RETURN_TYPE_MISMATCH: "expected function to return $seen but got $received",
+  EXPECTED_RETURN_TYPE_MISMATCH:
+    "expected function to return $expected but got $received",
+  INFERRED_RETURN_TYPE_MISMATCH:
+    "function cannot return $received when it previously also returned $seen",
+  HANDLER_RETURN_TYPE_MISMATCH:
+    "match handler cannot return $received when another handler also returned $seen",
   BINARY_TYPE_MISMATCH:
     "left-hand side type $left does not match right-hand side type $right",
   TERNARY_TYPE_MISMATCH:

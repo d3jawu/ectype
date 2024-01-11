@@ -21,10 +21,19 @@ FnType.from((p) => {
     return 10;
   }
 
-  ///RETURN_TYPE_MISMATCH
+  ///EXPECTED_RETURN_TYPE_MISMATCH
   return "xyz";
 });
 
+FnType.from((p) => {
+  if (p === "abc") {
+    ///EXPECTED_RETURN_TYPE_MISMATCH
+    return "abc";
+  }
+
+  return 10;
+});
+
 // Should fail for expression functions, too.
-///RETURN_TYPE_MISMATCH
+///EXPECTED_RETURN_TYPE_MISMATCH
 FnType.from((n) => "abc");

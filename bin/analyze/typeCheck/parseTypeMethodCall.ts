@@ -28,7 +28,7 @@ import { option } from "../../../lib/option.js";
 
 import { match } from "ts-pattern";
 import { disallowPattern } from "./disallowPattern.js";
-import { bindInferReturnType } from "./inferReturnType.js";
+import { bindCheckReturnType } from "./checkReturnType.js";
 import { Scope } from "./typeCheck";
 
 export const bindParseTypeMethodCall = ({
@@ -1020,7 +1020,7 @@ export const bindParseTypeMethodCall = ({
                   }
 
                   // Infer return types for handler.
-                  const handlerReturnType = inferReturnType(
+                  const handlerReturnType = checkReturnType(
                     handler,
                     paramTypes,
                   );
@@ -1033,7 +1033,7 @@ export const bindParseTypeMethodCall = ({
                   ) {
                     // Ensure that all return types match.
                     scope.error(
-                      "RETURN_TYPE_MISMATCH",
+                      "HANDLER_RETURN_TYPE_MISMATCH",
                       {
                         seen: seenReturnType,
                         received: handlerReturnType,
@@ -1137,20 +1137,10 @@ export const bindParseTypeMethodCall = ({
       paramTypes[param.name] = expectedParams[i];
     });
 
-    const inferredReturnType = inferReturnType(fnNode, paramTypes);
-    if (
-      inferredReturnType.baseType !== "error" &&
-      !inferredReturnType.eq(fnxType.returns())
-    ) {
-      scope.error(
-        "RETURN_TYPE_MISMATCH",
-        { seen: fnxType.returns(), received: inferredReturnType },
-        fnNode,
-      ); // TODO error should be on faulty return, not the entire function
-    }
+    checkReturnType(fnNode, paramTypes, fnxType.returns());
   };
 
-  const inferReturnType = bindInferReturnType({
+  const checkReturnType = bindCheckReturnType({
     scope,
     typeCheckExp,
     typeCheckNode,

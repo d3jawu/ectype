@@ -26,7 +26,7 @@ import {
 
 import { Scope } from "./typeCheck";
 
-import { bindInferReturnType } from "./inferReturnType.js";
+import { bindCheckReturnType } from "./checkReturnType.js";
 
 import { match } from "ts-pattern";
 import { ErrorType, TypeType } from "../../../core/internal.js";
@@ -360,7 +360,7 @@ export const bindParseTypeDeclaration = ({
           );
         }
 
-        const inferredReturnType = inferReturnType(predicate, predicateParams);
+        const inferredReturnType = checkReturnType(predicate, predicateParams);
         if (
           inferredReturnType.baseType !== "error" &&
           !inferredReturnType.eq(Bool)
@@ -395,7 +395,7 @@ export const bindParseTypeDeclaration = ({
     };
   };
 
-  const inferReturnType = bindInferReturnType({
+  const checkReturnType = bindCheckReturnType({
     scope,
     typeCheckExp,
     typeCheckNode,

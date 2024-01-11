@@ -32,7 +32,7 @@ variant.match(maybePoint, {
   Some: () => {
     return "";
   },
-  ///RETURN_TYPE_MISMATCH
+  ///HANDLER_RETURN_TYPE_MISMATCH
   None: () => {
     return null;
   },

@@ -10,6 +10,7 @@ import { dirname, join as joinPaths } from "path";
 
 import { Bool, Type } from "../../../core/core.js";
 import { bindTypeCheckExp } from "./typeCheckExp.js";
+import { ErrorType } from "../../../core/internal.js";
 
 export const bindTypeCheckNode = ({
   path,
@@ -143,29 +144,47 @@ export const bindTypeCheckNode = ({
       })
       .with({ type: "ECReturnStatement" }, (node) => {
         if (!node.argument) {
-          throw new Error(`A value must be returned.`);
+          scope.error("MISSING_EXPECTED", { syntax: "return value" }, node);
+          return;
         }
         const returnedType = typeCheckExp(node.argument).ectype;
 
-        if (scope.current.functionScope) {
-          // This behavior may become brittle if type system changes, e.g. if types stop being invariant or if untagged unions are introduced.
-          if (scope.current.inferredReturnType === null) {
-            scope.current.inferredReturnType = returnedType;
+        if (scope.current.functionScope.kind === "inferred") {
+          if (scope.current.functionScope.returns === null) {
+            scope.current.functionScope.returns = returnedType;
           } else {
             if (
-              scope.current.inferredReturnType.baseType !== "error" &&
-              !scope.current.inferredReturnType.eq(returnedType)
+              scope.current.functionScope.returns.baseType !== "error" &&
+              !scope.current.functionScope.returns.eq(returnedType)
             ) {
               scope.error(
-                "RETURN_TYPE_MISMATCH",
+                "INFERRED_RETURN_TYPE_MISMATCH",
                 {
                   received: returnedType,
-                  seen: scope.current.inferredReturnType,
+                  seen: scope.current.functionScope.returns,
                 },
                 node.argument,
               );
+              scope.current.functionScope.returns = ErrorType;
             }
           }
+        } else if (scope.current.functionScope.kind === "expected") {
+          if (!scope.current.functionScope.returns.eq(returnedType)) {
+            scope.error(
+              "EXPECTED_RETURN_TYPE_MISMATCH",
+              {
+                received: returnedType,
+                expected: scope.current.functionScope.returns,
+              },
+              node.argument,
+            );
+          }
+        } else {
+          scope.error(
+            "FORBIDDEN",
+            { behavior: "return outside of a function " },
+            node,
+          );
         }
       })
       .with({ type: "ECSwitchStatement" }, (node) => {
