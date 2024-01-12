@@ -60,9 +60,14 @@ try {
     errors.forEach(({ start, end }, i) => {
       const prevSpanEnd = errors[i - 1]?.end || 0;
 
+      // If the spans overlap, bump up the start of the current span to avoid duplicating text.
+      if (prevSpanEnd > start) {
+        start = prevSpanEnd;
+      }
+
       coloredFile +=
         file.substring(prevSpanEnd, start) +
-        chalk.red(file.substring(start, end));
+        chalk.redBright(file.substring(start, end));
 
       if (i === errors.length - 1) {
         // Attach rest of file
