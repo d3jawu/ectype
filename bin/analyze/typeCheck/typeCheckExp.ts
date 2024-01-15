@@ -148,7 +148,7 @@ export const bindTypeCheckExp = ({
             ...node,
             left: lhs as Typed<ECIdentifier>,
             right: rhs,
-            ectype: ErrorType,
+            ectype,
           };
         },
       )
